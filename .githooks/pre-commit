@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+command -v gitleaks >/dev/null 2>&1 || {
+  echo "Install Gitleaks before committing." >&2
+  exit 1
+}
+gitleaks git --pre-commit --staged --redact .
+python3 scripts/check_portable_content.py --staged

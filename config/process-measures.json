@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "capabilityKey": "process-reporting",
+  "dateBasis": "Australia/Brisbane calendar days; targetDate requires exact YYYY-MM-DD",
+  "cohort": "All visible non-fictional cases and events captured at asOf; no terminal-status inference",
+  "refresh": "Native views are live; cross-list files are frozen local/manual projections",
+  "measures": [
+    {"key":"case-count","label":"Recorded cases","unit":"cases","denominator":"all unique non-fictional CaseUIDs","missing":"invalid identity rejects export"},
+    {"key":"follow-up-gaps","label":"Missing role or next action; unconfirmed target dates","unit":"cases","denominator":"recorded cases","missing":"blank role/action and non-ISO target text reported separately; no inferred assignment"},
+    {"key":"past-targets","label":"Recorded target dates before as-of date","unit":"cases","denominator":"cases with qualified ISO target dates","missing":"pending or malformed date text excluded and counted as unconfirmed"},
+    {"key":"case-age","label":"Age since case creation","unit":"calendar days","denominator":"cases with valid nonfuture Created dates","missing":"unknown; not stage turnaround or active working time"},
+    {"key":"event-coverage","label":"Cases with validated readiness or assurance history","unit":"cases","denominator":"recorded cases","missing":"no valid events means no recorded history, never a completed stage"},
+    {"key":"readiness-to-decision","label":"Recorded ready-for-decision finding to linked recorded decision","unit":"calendar days","denominator":"valid explicit ReadinessEventUID pairs for same case/document/version/hash","missing":"not measurable when no qualified pairs"},
+    {"key":"decision-to-publication","label":"Recorded decision to linked recorded publication event","unit":"calendar days","denominator":"valid explicit ParentEventUID pairs with Decision parent and Publication child","missing":"not measurable when no qualified pairs"},
+    {"key":"implementation-to-verification","label":"Recorded implementation to linked recorded verification event","unit":"calendar days","denominator":"valid explicit ParentEventUID pairs with Implementation parent and Verification child","missing":"not measurable when no qualified pairs; result success is not inferred"}
+  ],
+  "stageRules": "Recorded assertions only; dates come from AssessedOn/OccurredOn, never Created. Same case/document/version/hash required. Pending, not-applicable, fictional, invalid, future, negative or ambiguous pairs are excluded with reasons. Every explicit pair is a sample; repeated case episodes are not silently collapsed.",
+  "views": [
+    {"key":"portfolio","resource":"cases","title":"Portfolio by recorded status","query":"<GroupBy Collapse=\"TRUE\"><FieldRef Name=\"caseStatus\"/></GroupBy><OrderBy><FieldRef Name=\"Created\" Ascending=\"TRUE\"/></OrderBy>","fields":["LinkTitle","CaseUID","caseStatus","accountableRole","nextAction","targetDate","Created"]},
+    {"key":"oldest-cases","resource":"cases","title":"Oldest recorded cases and follow-up","query":"<OrderBy><FieldRef Name=\"Created\" Ascending=\"TRUE\"/></OrderBy>","fields":["LinkTitle","CaseUID","Created","caseStatus","accountableRole","nextAction","targetDate","evidenceDraftLink"]},
+    {"key":"stage-history","resource":"assurance","title":"Process stage history by case","query":"<Where><Or><Eq><FieldRef Name=\"FictionalTest\"/><Value Type=\"Boolean\">0</Value></Eq><IsNull><FieldRef Name=\"FictionalTest\"/></IsNull></Or></Where><GroupBy Collapse=\"TRUE\"><FieldRef Name=\"CaseUID\"/></GroupBy><OrderBy><FieldRef Name=\"OccurredOn\" Ascending=\"TRUE\"/></OrderBy>","fields":["LinkTitle","CaseUID","DocumentReference","ReviewedVersionRef","Stage","RecordState","OccurredOn","ParentEventUID","ReadinessEventUID","ConditionsState","EvidenceReference"]}
+  ]
+}

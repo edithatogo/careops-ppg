@@ -1,0 +1,23 @@
+{
+  "classification": "SYNTHETIC TEMPLATE — fill privately",
+  "operation": null,
+  "resourceRef": null,
+  "accountClientRef": null,
+  "authenticationState": null,
+  "permissionOrLicenceEvidenceRef": null,
+  "evidenceLevel": "not_tested",
+  "timestampUtc": null,
+  "result": null,
+  "readbackRef": null,
+  "effectScope": null,
+  "errorCategory": null,
+  "nextAction": null,
+  "objectWriterRef": null,
+  "sourceSnapshotRef": null,
+  "sourceRevision": null,
+  "preimageRef": null,
+  "operationHandleRef": null,
+  "checkpointAdvanced": false,
+  "restorationReadbackRef": null,
+  "retryCondition": null
+}

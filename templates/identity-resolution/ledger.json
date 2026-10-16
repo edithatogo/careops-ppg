@@ -1,0 +1,15 @@
+{
+  "sourceSystemId": "fictional-register",
+  "aliases": [
+    {
+      "source": "fictional-register",
+      "alias": "EXAMPLE-A-v1",
+      "DocumentUID": "00000000-0000-4000-8000-000000000001"
+    },
+    {
+      "source": "fictional-register",
+      "alias": "EXAMPLE-B-v1",
+      "DocumentUID": "00000000-0000-4000-8000-000000000002"
+    }
+  ]
+}

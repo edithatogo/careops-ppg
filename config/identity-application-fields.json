@@ -1,0 +1,13 @@
+[
+  "rawSourceRecordRef",
+  "sourceAsOfUtc",
+  "sourceCustodian",
+  "sourceDocumentId",
+  "sourceNextReviewDateRaw",
+  "sourceNextReviewMonth",
+  "sourceRisk",
+  "sourceRowNumber",
+  "sourceSnapshotRef",
+  "sourceStatus",
+  "sourceTitle"
+]

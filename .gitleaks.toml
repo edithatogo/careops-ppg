@@ -1,0 +1,12 @@
+title = "careops-ppg secret scanning"
+
+[extend]
+useDefault = true
+
+# Deterministic identity-exception hash in two fictional fixtures; not a credential.
+[[allowlists]]
+description = "Exact fictional exception fingerprint"
+condition = "AND"
+paths = ['''^templates/identity-resolution/(proposal|report)\.json$''']
+regexTarget = "line"
+regexes = ['''"exceptionKey": "4835789178d9658ad7ac55fabbecb44dc3cd125e122b656af4d66e1108b1cb2e"''']

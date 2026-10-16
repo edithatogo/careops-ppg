@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Identity resolution proposal \u2014 no write authority",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "exceptionKey",
+    "source",
+    "sourceSha256",
+    "sourceFingerprint",
+    "contractHash",
+    "schemaVersion",
+    "status",
+    "resolution",
+    "existingUID",
+    "rationale",
+    "evidenceReferences",
+    "decisionEvidence",
+    "applyAvailable",
+    "history"
+  ],
+  "properties": {
+    "exceptionKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceSha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sourceFingerprint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contractHash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "proposed",
+        "accepted",
+        "applied",
+        "verified",
+        "rejected"
+      ]
+    },
+    "resolution": {
+      "enum": [
+        "unresolved",
+        "ambiguous",
+        "existing_uid",
+        "request_new_uid"
+      ]
+    },
+    "existingUID": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "evidenceReferences": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "decisionEvidence": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "applyAvailable": {
+      "const": false
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "applicationEvidence": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verificationEvidence": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

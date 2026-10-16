@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "listTitle": "PPG Consultation and Handoff Events",
+  "description": "Version-linked human consultation responses and ownership handoff assertions. Recording only: no messages, assignments, approval or source/case changes.",
+  "fields": [
+    {
+      "name": "EventUID",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "CaseUID",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "DocumentReference",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "ReviewedVersionRef",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "DocumentSHA256",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "SubjectRole",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "EventKind",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "RecordState",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "ConditionsState",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "FromRole",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ActorName",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "EvidenceReference",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ParentEventUID",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "SupersedesEventUID",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "OccurredOn",
+      "type": "DateTime",
+      "required": false
+    },
+    {
+      "name": "Summary",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ResponseSummary",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ConditionsNotes",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "NextAction",
+      "type": "Note",
+      "required": false
+    },
+    {
+      "name": "FictionalTest",
+      "type": "Boolean",
+      "required": false
+    }
+  ],
+  "choices": {
+    "EventKind": [
+      "Consultation",
+      "Ownership handoff"
+    ],
+    "RecordState": [
+      "Unknown",
+      "Pending response",
+      "Responded",
+      "Proposed",
+      "Accepted",
+      "Declined",
+      "Withdrawn",
+      "Not required"
+    ],
+    "ConditionsState": [
+      "Unknown",
+      "None recorded",
+      "Open",
+      "Resolved"
+    ]
+  },
+  "defaults": {
+    "EventKind": "Consultation",
+    "RecordState": "Unknown",
+    "ConditionsState": "Unknown"
+  },
+  "validationFormula": "=AND(OR(AND([EventKind]=\"Consultation\",OR([RecordState]=\"Unknown\",[RecordState]=\"Pending response\",[RecordState]=\"Responded\",[RecordState]=\"Declined\",[RecordState]=\"Not required\")),AND([EventKind]=\"Ownership handoff\",OR([RecordState]=\"Unknown\",[RecordState]=\"Proposed\",[RecordState]=\"Accepted\",[RecordState]=\"Declined\",[RecordState]=\"Withdrawn\"))),OR(NOT(OR([RecordState]=\"Responded\",[RecordState]=\"Accepted\",[RecordState]=\"Declined\",[RecordState]=\"Withdrawn\",[RecordState]=\"Not required\")),AND(NOT(ISBLANK([ActorName])),NOT(ISBLANK([OccurredOn])),NOT(ISBLANK([Summary])),NOT(ISBLANK([EvidenceReference])))),OR([EventKind]<>\"Ownership handoff\",NOT(ISBLANK([FromRole]))),OR([RecordState]<>\"Responded\",NOT(ISBLANK([ResponseSummary]))),OR([EventKind]<>\"Ownership handoff\",[RecordState]<>\"Accepted\",NOT(ISBLANK([ParentEventUID]))),OR([ConditionsState]<>\"Open\",NOT(ISBLANK([ConditionsNotes]))),OR([ConditionsState]<>\"Resolved\",NOT(ISBLANK([EvidenceReference]))))",
+  "validationMessage": "Use the state for this event kind. Recorded responses/decisions need actor, date, rationale and evidence; handoffs need FromRole and accepted handoffs need a proposal reference; open conditions need notes.",
+  "views": [
+    {
+      "title": "All consultation and handoff events",
+      "query": "<OrderBy><FieldRef Name=\"Created\" Ascending=\"FALSE\"/></OrderBy>"
+    },
+    {
+      "title": "Awaiting consultation response",
+      "query": "<Where><And><Eq><FieldRef Name=\"EventKind\"/><Value Type=\"Choice\">Consultation</Value></Eq><Or><Eq><FieldRef Name=\"RecordState\"/><Value Type=\"Choice\">Unknown</Value></Eq><Eq><FieldRef Name=\"RecordState\"/><Value Type=\"Choice\">Pending response</Value></Eq></Or></And></Where><OrderBy><FieldRef Name=\"Created\" Ascending=\"FALSE\"/></OrderBy>"
+    },
+    {
+      "title": "Ownership offered - not accepted",
+      "query": "<Where><And><Eq><FieldRef Name=\"EventKind\"/><Value Type=\"Choice\">Ownership handoff</Value></Eq><Or><Eq><FieldRef Name=\"RecordState\"/><Value Type=\"Choice\">Unknown</Value></Eq><Eq><FieldRef Name=\"RecordState\"/><Value Type=\"Choice\">Proposed</Value></Eq></Or></And></Where><OrderBy><FieldRef Name=\"Created\" Ascending=\"FALSE\"/></OrderBy>"
+    },
+    {
+      "title": "Outstanding consultation conditions",
+      "query": "<Where><Eq><FieldRef Name=\"ConditionsState\"/><Value Type=\"Choice\">Open</Value></Eq></Where><OrderBy><FieldRef Name=\"Created\" Ascending=\"FALSE\"/></OrderBy>"
+    },
+    {
+      "title": "Response and ownership history",
+      "query": "<OrderBy><FieldRef Name=\"Created\" Ascending=\"FALSE\"/></OrderBy>"
+    }
+  ],
+  "viewFields": [
+    "LinkTitle",
+    "EventUID",
+    "CaseUID",
+    "DocumentReference",
+    "ReviewedVersionRef",
+    "SubjectRole",
+    "FromRole",
+    "EventKind",
+    "RecordState",
+    "ConditionsState",
+    "ActorName",
+    "OccurredOn",
+    "EvidenceReference",
+    "ParentEventUID",
+    "NextAction"
+  ],
+  "versionScope": "Exact case/document/version/hash only; changed versions need new records. Historical responses and role acceptances do not transfer.",
+  "nativeLimits": "List validation cannot authenticate actors or inspect evidence, verify cross-row proposal/supersession links or infer current operative version. Use the optional validator and manual checks.",
+  "writeBoundary": "This event List only; no source, Review Queue, readiness/assurance, assignment or notification writes."
+}

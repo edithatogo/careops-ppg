@@ -1,0 +1,13 @@
+{
+  "EventUID": "fictional-consultation-pending-v1",
+  "CaseUID": "FICTIONAL-CONSULTATION-CASE",
+  "DocumentReference": "fictional-consultation-document",
+  "ReviewedVersionRef": "fictional-v1",
+  "DocumentSHA256": "3a6024dd4c93a94866b644ed0b66eb2a5d4241f3dbd3e4d99082cc9155dfceba",
+  "SubjectRole": "Fictional receiving role",
+  "EventKind": "Consultation",
+  "RecordState": "Pending response",
+  "ConditionsState": "Unknown",
+  "FictionalTest": true,
+  "NextAction": "FICTIONAL: await actual response; no message is sent."
+}

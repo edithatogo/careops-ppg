@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "listTitle": "PPG Assurance Events",
+  "description": "Version-specific human decision/publication/implementation/verification assertions. No approval, publication, source or case status automation. Add events to retain history.",
+  "fields": [
+    {
+      "name": "EventUID",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "CaseUID",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "DocumentReference",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "ReviewedVersionRef",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "DocumentSHA256",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "Stage",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "RecordState",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "ConditionsState",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "DecisionOutcome",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "VerificationResult",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "ActorName",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "Summary",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "EvidenceReference",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ConditionsNotes",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ParentEventUID",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ReadinessEventUID",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "DecisionReference",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "PublicationURL",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "PublishedVersionRef",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ImplementationActions",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "VerificationMethod",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "SupersedesEventUID",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "PackageEvidenceReference",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "OccurredOn",
+      "type": "DateTime",
+      "required": false
+    },
+    {
+      "name": "NextAction",
+      "type": "Note",
+      "required": false
+    },
+    {
+      "name": "FictionalTest",
+      "type": "Boolean",
+      "required": false
+    }
+  ],
+  "choices": {
+    "Stage": [
+      "Decision",
+      "Publication",
+      "Implementation",
+      "Verification"
+    ],
+    "RecordState": [
+      "Unknown",
+      "Pending evidence",
+      "Recorded",
+      "Not applicable"
+    ],
+    "ConditionsState": [
+      "Unknown",
+      "None recorded",
+      "Open",
+      "Resolved"
+    ],
+    "DecisionOutcome": [
+      "Unknown",
+      "Approved (recorded)",
+      "Endorsed (recorded)",
+      "Rejected",
+      "Deferred",
+      "Not applicable"
+    ],
+    "VerificationResult": [
+      "Not verified",
+      "Verified (recorded)",
+      "Failed",
+      "Inconclusive",
+      "Not applicable"
+    ]
+  },
+  "defaults": {
+    "Stage": "Decision",
+    "RecordState": "Pending evidence",
+    "ConditionsState": "Unknown",
+    "DecisionOutcome": "Unknown",
+    "VerificationResult": "Not verified"
+  },
+  "validationFormula": "=AND(AND(OR([RecordState]=\"Unknown\",[RecordState]=\"Pending evidence\",AND(AND(NOT(ISBLANK([ActorName])),NOT(ISBLANK([OccurredOn])),NOT(ISBLANK([Summary])),NOT(ISBLANK([EvidenceReference]))),OR([RecordState]=\"Not applicable\",IF([Stage]=\"Decision\",AND(NOT(ISBLANK([DecisionReference])),[DecisionOutcome]<>\"Unknown\"),IF([Stage]=\"Publication\",AND(NOT(ISBLANK([PublicationURL])),NOT(ISBLANK([PublishedVersionRef])),NOT(ISBLANK([ParentEventUID]))),IF([Stage]=\"Implementation\",AND(NOT(ISBLANK([ImplementationActions])),NOT(ISBLANK([ParentEventUID]))),AND(NOT(ISBLANK([VerificationMethod])),NOT(ISBLANK([ParentEventUID])),[VerificationResult]<>\"Not verified\"))))))),OR([ConditionsState]<>\"Open\",NOT(ISBLANK([ConditionsNotes])))),OR([Stage]=\"Decision\",[DecisionOutcome]=\"Unknown\"),OR([Stage]=\"Verification\",[VerificationResult]=\"Not verified\"))",
+  "views": [
+    {
+      "title": "All assurance events",
+      "stage": null,
+      "state": null
+    },
+    {
+      "title": "Missing stage evidence",
+      "stage": null,
+      "state": "Pending evidence"
+    },
+    {
+      "title": "Outstanding conditions",
+      "conditions": "Open"
+    },
+    {
+      "title": "Awaiting publication",
+      "stage": "Publication",
+      "state": "Pending evidence"
+    },
+    {
+      "title": "Awaiting implementation",
+      "stage": "Implementation",
+      "state": "Pending evidence"
+    },
+    {
+      "title": "Awaiting verification",
+      "stage": "Verification",
+      "state": "Pending evidence"
+    },
+    {
+      "title": "Decision history - version specific",
+      "stage": "Decision",
+      "state": null
+    }
+  ]
+}

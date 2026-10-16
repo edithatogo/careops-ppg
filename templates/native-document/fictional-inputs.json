@@ -1,0 +1,38 @@
+{
+  "documentKind": "review-package",
+  "CaseUID": "FICTIONAL-NATIVE-WORD-CASE",
+  "sourceSnapshotRef": "fictional-snapshot-v1",
+  "sourceSHA256": "7a1ac8bc70970b03bd3e45783671d97ea2c8f5fad84bb107232c6a1363a92f77",
+  "templateVersion": "review-package-20261016-planned-native-mapping-v1",
+  "templateSHA256": "dd779e65d2b42cbf0730baadc929bf3e7f3cc66d10789dcd6ec4e95db4980c47",
+  "outputRevision": "fictional-001",
+  "includedRecordIDs": [
+    "fictional-doc-1",
+    "fictional-doc-2"
+  ],
+  "status": "DRAFT / HUMAN CHECK REQUIRED",
+  "humanReview": "Not assessed",
+  "roleAcceptance": "Not recorded",
+  "policyApproval": "Not recorded",
+  "comparisonRows": [
+    {
+      "source": "FICTIONAL source1",
+      "control": "FICTIONAL control1",
+      "change": "FICTIONAL draft change; no clinical instruction"
+    },
+    {
+      "source": "FICTIONAL source2",
+      "control": "FICTIONAL control2",
+      "change": "Line one\nLine two — Unicode preserved"
+    }
+  ],
+  "consultationRows": [
+    {
+      "role": "Fictional reviewing role",
+      "question": "Fictional consultation question",
+      "version": "fictional-v1",
+      "response": "Not received"
+    }
+  ],
+  "optionalSectionIncluded": false
+}

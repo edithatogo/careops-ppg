@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "mode": "read-only",
+  "source": "fictional-register",
+  "sourceSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "contractHash": "008be3d782393b7ba2a0ee2e74f4899bef076773dcb591248fb87aee6b4173cd",
+  "inputCount": 2,
+  "matchedCount": 1,
+  "exceptions": [
+    {
+      "exceptionKey": "4835789178d9658ad7ac55fabbecb44dc3cd125e122b656af4d66e1108b1cb2e",
+      "code": "unknown_alias",
+      "sourceRowForNavigation": 987,
+      "sourceFingerprint": "90272dc33c15eb5018513564ebd3314a486e1f2cf92c34fc62c32630a56a81c8",
+      "sourceAlias": "EXAMPLE-B-v2",
+      "sourceFields": {
+        "sourceDocumentId": "EXAMPLE-B-v2",
+        "sourceTitle": "Fictional identity exception"
+      },
+      "candidateUIDs": [
+        "00000000-0000-4000-8000-000000000002"
+      ],
+      "candidateBasis": "Missing source-qualified UIDs only; these are investigation leads, never identity matches.",
+      "status": "unresolved",
+      "nextAction": "Compare authoritative identity evidence; record a proposal. Never infer identity from title or row."
+    }
+  ],
+  "missingUIDs": [
+    "00000000-0000-4000-8000-000000000002"
+  ],
+  "matchedUIDs": [
+    "00000000-0000-4000-8000-000000000001"
+  ],
+  "sourceProvenance": {
+    "rawSnapshotRef": "fictional://snapshot"
+  },
+  "writesPermitted": false,
+  "applyAvailable": false
+}

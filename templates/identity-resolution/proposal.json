@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "status": "proposed",
+  "exceptionKey": "4835789178d9658ad7ac55fabbecb44dc3cd125e122b656af4d66e1108b1cb2e",
+  "source": "fictional-register",
+  "sourceSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sourceFingerprint": "90272dc33c15eb5018513564ebd3314a486e1f2cf92c34fc62c32630a56a81c8",
+  "contractHash": "008be3d782393b7ba2a0ee2e74f4899bef076773dcb591248fb87aee6b4173cd",
+  "resolution": "unresolved",
+  "existingUID": null,
+  "rationale": "",
+  "evidenceReferences": [],
+  "decisionEvidence": null,
+  "applyAvailable": false,
+  "history": []
+}

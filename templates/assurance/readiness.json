@@ -1,0 +1,16 @@
+{
+  "CaseUID": "fictional-assurance-20261016",
+  "DocumentReference": "fictional-assurance-document",
+  "ReviewedVersionRef": "fictional-assurance-v1",
+  "DocumentSHA256": "6b3b7bd32131b57a54d7a742eee04b3aca95d60724e5b1194347437525e1d547",
+  "Title": "[FICTIONAL TEST] Assurance-linked readiness",
+  "EventUID": "fictional-assurance-readiness-20261016",
+  "Finding": "Ready for decision",
+  "AssessorName": "Fictional assessor",
+  "AssessedOn": "2026-10-16T00:00:00Z",
+  "FindingSummary": "Fictional software qualification; no real assessment",
+  "EvidenceReference": "fictional://assurance/readiness/v1",
+  "ConditionsState": "Open",
+  "ConditionsNotes": "Fictional condition awaiting recorded resolution",
+  "FictionalTest": true
+}

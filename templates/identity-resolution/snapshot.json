@@ -1,0 +1,20 @@
+{
+  "sourceSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "rawSnapshotRef": "fictional://snapshot",
+  "records": [
+    {
+      "sourceRow": 2,
+      "fields": {
+        "sourceDocumentId": "EXAMPLE-A-v1",
+        "sourceTitle": "Fictional known document"
+      }
+    },
+    {
+      "sourceRow": 987,
+      "fields": {
+        "sourceDocumentId": "EXAMPLE-B-v2",
+        "sourceTitle": "Fictional identity exception"
+      }
+    }
+  ]
+}

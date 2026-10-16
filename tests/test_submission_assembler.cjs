@@ -1,0 +1,24 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+globalThis.crypto=require('node:crypto').webcrypto;
+require('../tools/submission-package/assembler.js');
+const A=globalThis.PPGSubmission;
+const metadata={caseUID:'fictional-case',title:'Fictional submission <script>not executed</script>',version:'DRAFT-1',sourceBaseline:'fictional snapshot',documentType:'Procedure',documentScope:'department',custodianRole:'Example custodian role',decisionRoute:'Proposed example route; not confirmed',nextAction:'Human review'};
+(async()=>{
+ const incomplete=await A.assemble(metadata,[{name:'draft.md',role:'draft',bytes:new TextEncoder().encode('DRAFT example')}],{packageID:'fixture-incomplete',generatedAt:'2026-10-15T00:00:00Z'});
+ assert.equal(incomplete.report.missing,7);assert.equal(incomplete.report.sent,false);assert.equal(incomplete.report.status,'ASSEMBLED DRAFT / HUMAN CHECK REQUIRED');
+ const files=A.requirements.map(([role],i)=>({name:role+(i===0?'.md':'.txt'),role,sourceReference:'fictional evidence',bytes:new TextEncoder().encode('Fictional evidence '+role)}));
+ files.push({name:'Unicode-é-#.txt',role:'supporting',bytes:new Uint8Array([0,255,13,10,128])});
+ assert.equal(A.check(metadata,files.map(f=>f.role==='draft'?{...f,name:'draft.pdf'}:f)).missing,1);
+ assert.equal(A.check(metadata,files.map(f=>f.role==='consultation'?{...f,bytes:new Uint8Array()}:f)).missing,1);
+ const result=await A.assemble(metadata,files,{packageID:'fixture-complete',generatedAt:'2026-10-15T00:00:00Z'});
+ const replay=await A.assemble(metadata,files);const replay2=await A.assemble(metadata,files);assert.notEqual(replay.filename,replay2.filename);
+ assert.equal(result.report.missing,0);assert.ok(result.report.humanChecks.length>=7);assert.equal(result.report.sourceWrites,false);
+ assert.equal(A.check(metadata,files.filter(f=>f.role!=='riskHra'),{riskHra:'Operator states not applicable, requires verification'}).missing,0);
+ assert.throws(()=>A.check(metadata,files,{endorsement:'skip'}),/cannot be bypassed/);
+ await assert.rejects(A.assemble(metadata,[files[0],{...files[0],name:files[0].name.toUpperCase()}]),/Duplicate/);
+ await assert.rejects(A.assemble(metadata,[{...files[0],name:'../escape'}]),/Unsafe/);
+ await assert.rejects(A.assemble({...metadata,sourceBaseline:''},files),/provenance/);
+ fs.mkdirSync('.local/submission-package',{recursive:true});fs.writeFileSync('.local/submission-package/fictional-package.zip',result.bytes);fs.writeFileSync('.local/submission-package/fictional-completeness.json',JSON.stringify(result.report,null,2));
+ console.log('Passed: incomplete/complete structure, human-check boundary, N-A scope, duplicate/path guard, missing provenance and binary fixture.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

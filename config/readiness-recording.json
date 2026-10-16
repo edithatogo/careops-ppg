@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "listTitle": "PPG Readiness Events",
+  "description": "Human findings for an exact document version; not automated completeness, policy approval or current-version confirmation. Record a new event to retain history.",
+  "fields": [
+    {
+      "name": "EventUID",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "CaseUID",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "DocumentReference",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "ReviewedVersionRef",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "DocumentSHA256",
+      "type": "Text",
+      "required": true
+    },
+    {
+      "name": "Finding",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "AssessorName",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "AssessedOn",
+      "type": "DateTime",
+      "required": false
+    },
+    {
+      "name": "FindingSummary",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "EvidenceReference",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "ConditionsState",
+      "type": "Choice",
+      "required": true
+    },
+    {
+      "name": "ConditionsNotes",
+      "type": "Note",
+      "required": false
+    },
+    {
+      "name": "NextAction",
+      "type": "Note",
+      "required": false
+    },
+    {
+      "name": "SupersedesEventUID",
+      "type": "Text",
+      "required": false
+    },
+    {
+      "name": "FictionalTest",
+      "type": "Boolean",
+      "required": false
+    }
+  ],
+  "choices": {
+    "Finding": [
+      "Not assessed",
+      "Needs changes",
+      "Ready for decision",
+      "Not applicable"
+    ],
+    "ConditionsState": [
+      "Unknown",
+      "None recorded",
+      "Open",
+      "Resolved"
+    ]
+  },
+  "defaults": {
+    "Finding": "Not assessed",
+    "ConditionsState": "Unknown"
+  },
+  "versionScope": "A finding applies only to ReviewedVersionRef and DocumentSHA256; a different version needs a new event.",
+  "writeBoundary": "Readiness events only; no catalogue, queue, source, approval or publication writes."
+}

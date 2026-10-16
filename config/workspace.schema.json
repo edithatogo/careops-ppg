@@ -1,0 +1,308 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ppg:workspace:v1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "principles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "responsibleRole": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lifecycle": {
+            "enum": [
+              "planned",
+              "pilot",
+              "live",
+              "retired"
+            ]
+          },
+          "executionMode": {
+            "enum": [
+              "native-interactive",
+              "native-scheduled",
+              "local-manual"
+            ]
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "acceptanceCriteria": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "key",
+          "purpose",
+          "responsibleRole",
+          "lifecycle",
+          "executionMode",
+          "resources",
+          "dependencies",
+          "acceptanceCriteria"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "artefacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capabilityKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resourceRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "provenanceRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contentStatus": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "enum": [
+              "hosted",
+              "local-only",
+              "archive"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "capabilityKey",
+          "type",
+          "resourceRef",
+          "provenanceRef",
+          "contentStatus",
+          "location"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resourceRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "accessBoundary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "enum": [
+              "page",
+              "list",
+              "library",
+              "link"
+            ]
+          },
+          "placement": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "resourceRef",
+          "accessBoundary",
+          "type",
+          "placement"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "statusPolicy": {
+      "type": "object",
+      "properties": {
+        "intervalMinutes": {
+          "const": 15
+        },
+        "staleAfterMinutes": {
+          "const": 30
+        },
+        "sourceOverdueAfterMinutes": {
+          "const": 90
+        },
+        "notifications": {
+          "const": false
+        },
+        "sourceOfTruth": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "intervalMinutes",
+        "staleAfterMinutes",
+        "sourceOverdueAfterMinutes",
+        "notifications",
+        "sourceOfTruth"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "principles",
+    "capabilities",
+    "artefacts",
+    "surfaces",
+    "statusPolicy"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "status": {
+      "type": "object",
+      "properties": {
+        "latestCheck": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "latestAttemptOutcome": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lastSuccessfulReconciliation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observedVersion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "committedVersion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nextAction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidenceLink": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capabilityKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "healthy",
+            "held",
+            "failed",
+            "unknown"
+          ]
+        },
+        "projectedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "committedCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "latestCheck",
+        "latestAttemptOutcome",
+        "lastSuccessfulReconciliation",
+        "observedVersion",
+        "committedVersion",
+        "reason",
+        "nextAction",
+        "evidenceLink",
+        "capabilityKey",
+        "status",
+        "projectedAt",
+        "committedCount"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
