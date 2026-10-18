@@ -17,3 +17,7 @@ or retirement. Native adapters require their own target-specific qualification.
 
 Run affected tests, the content check and Gitleaks before pushing. Do not weaken
 secret detection or suppress content findings to publish operational material.
+
+For modular source delivery, read `conductor/suite-delivery.md` and the ordered
+queue in `.careops/module.json`. Preserve the portable boundaries above, qualified
+CI and current native/file owners. Source guidance does not authorise deployment.

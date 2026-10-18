@@ -28,6 +28,10 @@ class ReleaseCandidateTests(unittest.TestCase):
             (root / 'tests/fixture.txt').write_text('Fictional test source\n')
             (root / 'config/fixture.json').write_text('{"fictional": true}\n')
             (root / '.github/fixture.txt').write_text('Fictional workflow source\n')
+            for name in ['.careops/module.json', 'conductor/index.md', 'conductor/suite-delivery.md', '.python-version', '.node-version']:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / name, path)
             (root / '.gitignore').write_text('.local/\n__pycache__/\n')
             def git(*args):
                 return subprocess.check_output(['git', '-C', str(root), *args])
@@ -50,6 +54,8 @@ class ReleaseCandidateTests(unittest.TestCase):
                 self.assertEqual(bundle.read('config/fixture.json'), (root / 'config/fixture.json').read_bytes())
                 self.assertEqual(bundle.read('NOTICE.md'), (root / 'NOTICE.md').read_bytes())
                 self.assertEqual(bundle.read('templates/review-package.md'), (root / 'templates/review-package.md').read_bytes())
+                for name in ['.careops/module.json', 'conductor/index.md', 'conductor/suite-delivery.md', '.python-version', '.node-version']:
+                    self.assertEqual(bundle.read(name), (root / name).read_bytes())
                 self.assertFalse(any(name.startswith('.git/') for name in bundle.namelist()))
             self.assertNotEqual(run('one').returncode, 0)
             self.assertEqual(receipt['archiveSha256'], hashlib.sha256(archive.read_bytes()).hexdigest())
