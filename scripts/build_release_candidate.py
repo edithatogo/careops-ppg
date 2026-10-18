@@ -23,7 +23,8 @@ def package(output):
     output.mkdir(parents=True, exist_ok=False)
     archive = output / 'careops-ppg-portable.zip'
     subprocess.run(['git', 'archive', '--format=zip', '--output', str(archive.resolve()),
-                    revision, 'README.md', 'NOTICE.md', 'AGENTS.md', '.github', 'config', 'scripts', 'tools', 'templates', 'tests'],
+                    revision, 'README.md', 'NOTICE.md', 'AGENTS.md', '.github', '.careops', 'conductor',
+                    '.python-version', '.node-version', 'config', 'scripts', 'tools', 'templates', 'tests'],
                    cwd=ROOT, check=True)
     page = output / 'PPG-submission-assembler.html'
     build(page)
