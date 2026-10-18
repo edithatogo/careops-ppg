@@ -11,9 +11,9 @@ concurrency:
 jobs:
   source-security:
     name: Shared source security
-    uses: edithatogo/careops/.github/workflows/reusable-source-security.yml@2b5eccbb1e41a0becee48a98124f19e07e946f29
+    uses: edithatogo/careops/.github/workflows/reusable-source-security.yml@f0e8db252b181955d31185f1ccdd1e77dee1f5f9
     with:
-      policy-revision: 2b5eccbb1e41a0becee48a98124f19e07e946f29
+      policy-revision: f0e8db252b181955d31185f1ccdd1e77dee1f5f9
   portable-content:
     name: Portable content
     runs-on: ubuntu-latest
