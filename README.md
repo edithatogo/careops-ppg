@@ -66,7 +66,7 @@ No public licence is granted by this repository.
 ## Source CI and updates
 
 Security calls the shared CareOps source checks at the immutable revision
-`953eba2d4427bc5c35252b589f51c6414d4f717c`, with read-only permissions and no
+`1373e971013724dfaa268e215a45505bb89300cd`, with read-only permissions and no
 inherited secrets. Full-history Gitleaks, immutable action references, actionlint
 and zizmor supplement this repository's portable-content check and PPG tests.
 Tests exercise both the minimum supported Python/Node versions and a separate
@@ -84,4 +84,22 @@ exists. An unavailable preview is recorded as unavailable with tests skipped; a
 green discovery job does not qualify that runtime. Candidate results never modify
 the working runtime or promote an update. Propose exact-version changes in a PR
 and pass every current-head required check before promotion. No package release,
-SBOM or attestation is claimed.
+SBOM or attestation is implied by the canary alone.
+
+## Portable package candidates
+
+The package workflow builds the existing fallback assembler and bundles it with
+exact committed scripts, source, templates and fictional test fixtures. It
+refuses dirty source and existing output revisions. An independent unpacked
+consumer runs the Python and JavaScript suites and rebuilds the identical HTML.
+The actual archive receives an SPDX file inventory; main-only OIDC jobs download
+the same bytes and verify exact source, workflow and signer attestations. No
+public licence is granted, no release is published, and no policy content or
+native service is processed. SharePoint remains the preferred structured-document
+route; packaging does not replace that preference or establish its availability.
+
+Development CI tools use an isolated exact Python3.14.8 environment with integrity
+hashes and wheels only, while PPG behaviour still runs on Python3.15.0 and
+Node26.12.0. Tool versions, lock digest and terminal qualification are retained;
+no missing or failed qualification is promoted. Existing minimum-runtime tests
+remain. Source packages and canaries do not establish operational acceptance.

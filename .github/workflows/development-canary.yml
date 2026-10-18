@@ -17,44 +17,98 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Read qualified shared candidate resolver
+        id: policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: edithatogo/careops
-          ref: 3712b88f438b046e68fe37d8db2f4b6a4387b473
+          ref: 1373e971013724dfaa268e215a45505bb89300cd
           path: .careops-ci-tools
           persist-credentials: false
           submodules: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - id: python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.15.0'
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - id: node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26.12.0'
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - id: bootstrap
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: '0.13.1'
           enable-cache: false
       - name: Resolve a separate exact hash-locked CI tool candidate
+        id: resolve
         run: |
           mkdir -p .local/tool-canary
           python .careops-ci-tools/portfolio-scripts/ci_delivery.py lock --root .careops-ci-tools --preview --output .careops-ci-tools/.local/canary/requirements.lock --receipt .local/tool-canary/candidate.json
           cp .careops-ci-tools/.local/canary/requirements.lock .local/tool-canary/requirements.lock
-          python -m pip install --require-hashes -r .local/tool-canary/requirements.lock
+          uv venv --python 3.14.8 "$RUNNER_TEMP/ppg-tool-canary"
+          uv pip install --python "$RUNNER_TEMP/ppg-tool-canary/bin/python" --require-hashes --only-binary=:all: -r .local/tool-canary/requirements.lock
+          "$RUNNER_TEMP/ppg-tool-canary/bin/python" -VV > .local/tool-canary/tool-python-version.txt
           python -VV > .local/tool-canary/python-version.txt
           node --version > .local/tool-canary/node-version.txt
       - name: Exercise PPG behaviour and candidate tooling
+        id: qualification
         run: |
           python -m unittest discover -s tests -p 'test_*.py'
           node tests/test_submission_assembler.cjs
           node tests/test_metadata_prefill.cjs
           python scripts/build_submission_assembler.py
-          ruff check --select E9,F63,F7,F82 scripts tests
-          pip-audit --disable-pip --no-deps -r .local/tool-canary/requirements.lock
-          zizmor --offline --persona pedantic --format plain .github/workflows
+          "$RUNNER_TEMP/ppg-tool-canary/bin/ruff" check --select E9,F63,F7,F82 scripts tests
+          "$RUNNER_TEMP/ppg-tool-canary/bin/python" -m pip_audit --disable-pip --no-deps -r .local/tool-canary/requirements.lock
+          "$RUNNER_TEMP/ppg-tool-canary/bin/zizmor" --offline --persona pedantic --format plain .github/workflows
+      - name: Record actual tool qualification outcomes
+        if: always()
+        env:
+          SOURCE_OUTCOME: ${{ steps.source.outcome }}
+          POLICY_OUTCOME: ${{ steps.policy.outcome }}
+          PYTHON_OUTCOME: ${{ steps.python.outcome }}
+          NODE_OUTCOME: ${{ steps.node.outcome }}
+          BOOTSTRAP_OUTCOME: ${{ steps.bootstrap.outcome }}
+          RESOLVE_OUTCOME: ${{ steps.resolve.outcome }}
+          QUALIFICATION_OUTCOME: ${{ steps.qualification.outcome }}
+        run: |
+          python3 - <<'PYCODE'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path('.local/tool-canary')
+          root.mkdir(parents=True, exist_ok=True)
+          lock = root / 'requirements.lock'
+          digest = hashlib.sha256(lock.read_bytes()).hexdigest() if lock.exists() else None
+          stages = {name: os.environ[name.upper() + '_OUTCOME'] for name in ['source', 'policy', 'python', 'node', 'bootstrap', 'resolve', 'qualification']}
+          failed = next((name for name, outcome in stages.items() if outcome == 'failure'), None)
+          if failed in ['source', 'policy', 'python', 'node', 'bootstrap']:
+              state = 'setup-blocked'
+          elif failed:
+              state = 'executed-failure'
+          elif 'cancelled' in stages.values():
+              state = 'cancelled'
+          elif all(outcome == 'success' for outcome in stages.values()):
+              state = 'qualified-tool-candidate'
+          else:
+              state = 'not-executed'
+          runtimes = {}
+          try:
+              candidate = json.loads((root / 'candidate.json').read_text()) if (root / 'candidate.json').exists() else {}
+              for name in ['python-version', 'node-version', 'tool-python-version']:
+                  path = root / (name + '.txt')
+                  runtimes[name] = path.read_text().strip() if path.exists() else ''
+              if state == 'qualified-tool-candidate' and (not digest or candidate.get('lockSha256') != digest):
+                  state = 'evidence-mismatch'
+              if state == 'qualified-tool-candidate' and not (runtimes['python-version'].startswith('Python 3.15.0 ') and runtimes['node-version'] == 'v26.12.0' and runtimes['tool-python-version'].startswith('Python 3.14.8 ')):
+                  state = 'runtime-mismatch'
+          except (OSError, ValueError, TypeError):
+              state = 'evidence-invalid'
+          receipt = {'sourceCommit': os.environ['GITHUB_SHA'], 'stages': stages, 'failedStage': failed, 'runtimes': runtimes, 'lockSha256': digest, 'state': state, 'promoted': False, 'nativeWrites': False}
+          (root / 'qualification.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PYCODE
       - name: Retain candidate versions and lock without promotion
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -76,7 +130,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: edithatogo/careops
-          ref: 3712b88f438b046e68fe37d8db2f4b6a4387b473
+          ref: 1373e971013724dfaa268e215a45505bb89300cd
           path: .careops-ci-tools
           persist-credentials: false
           submodules: false
