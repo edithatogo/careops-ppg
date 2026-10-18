@@ -61,3 +61,21 @@ future files. Keep source records, credentials, real correspondence, private
 bindings and receipts outside Git, including for private repositories.
 
 No public licence is granted by this repository.
+
+
+## Source CI and updates
+
+Security calls the shared CareOps source checks at the immutable revision
+`953eba2d4427bc5c35252b589f51c6414d4f717c`, with read-only permissions and no
+inherited secrets. Full-history Gitleaks, immutable action references, actionlint
+and zizmor supplement this repository's portable-content check and PPG tests.
+Tests exercise both the minimum supported Python/Node versions and a separate
+current-runtime candidate. A green source check does not establish native M365
+operation or policy approval.
+
+Dependabot proposes weekly GitHub Actions updates. Shared-workflow changes must
+update the workflow reference and `policy-revision` together, then pass every
+current-head check. These tools have no third-party Python or Node package
+runtime dependencies, so there is no application dependency lock to regenerate.
+No package release, SBOM, attestation or development-canary qualification is
+claimed by this source-CI adoption.
