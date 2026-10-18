@@ -16,9 +16,9 @@ class ReleaseCandidateTests(unittest.TestCase):
     def test_exact_source_generated_page_and_refusal_guards(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            for name in ['README.md', 'AGENTS.md']:
+            for name in ['README.md', 'NOTICE.md', 'AGENTS.md']:
                 (root / name).write_text('Fictional source fixture. No public licence is granted.\n')
-            for name in ['scripts', 'tools/submission-package', 'templates', 'tests', '.github']:
+            for name in ['scripts', 'tools/submission-package', 'templates', 'tests', '.github', 'config']:
                 (root / name).mkdir(parents=True, exist_ok=True)
             for name in ['build_release_candidate.py', 'build_submission_assembler.py']:
                 shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
@@ -26,6 +26,7 @@ class ReleaseCandidateTests(unittest.TestCase):
                 shutil.copyfile(ROOT / 'tools/submission-package' / name, root / 'tools/submission-package' / name)
             shutil.copyfile(ROOT / 'templates/review-package.md', root / 'templates/review-package.md')
             (root / 'tests/fixture.txt').write_text('Fictional test source\n')
+            (root / 'config/fixture.json').write_text('{"fictional": true}\n')
             (root / '.github/fixture.txt').write_text('Fictional workflow source\n')
             (root / '.gitignore').write_text('.local/\n__pycache__/\n')
             def git(*args):
@@ -46,6 +47,8 @@ class ReleaseCandidateTests(unittest.TestCase):
             self.assertFalse(receipt['nativeWrites']); self.assertFalse(receipt['publicLicenceGranted'])
             with zipfile.ZipFile(archive) as bundle:
                 self.assertEqual(bundle.read('PPG-submission-assembler.html'), (output / 'PPG-submission-assembler.html').read_bytes())
+                self.assertEqual(bundle.read('config/fixture.json'), (root / 'config/fixture.json').read_bytes())
+                self.assertEqual(bundle.read('NOTICE.md'), (root / 'NOTICE.md').read_bytes())
                 self.assertEqual(bundle.read('templates/review-package.md'), (root / 'templates/review-package.md').read_bytes())
                 self.assertFalse(any(name.startswith('.git/') for name in bundle.namelist()))
             self.assertNotEqual(run('one').returncode, 0)
