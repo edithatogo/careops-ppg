@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "module": "careops-ppg",
+  "sourceKind": "reusable-source",
+  "standards": "https://github.com/edithatogo/careops/blob/main/docs/development-and-delivery.md",
+  "integrationContract": "https://github.com/edithatogo/careops/blob/main/docs/standalone-module-contract.md",
+  "releasePolicy": "development-first-verified-promotion",
+  "localGuide": "conductor/suite-delivery.md",
+  "nativeQualification": "not-established-by-this-profile",
+  "nextTasks": [
+    {
+      "id": "source",
+      "status": "queued",
+      "lane": "existing implementation or platform lane",
+      "operation": "Port only reviewed reusable improvements from the private PPG working implementation.",
+      "tools": [
+        "local Python",
+        "Node"
+      ],
+      "success": "Portable content and source checks pass; no private history, tenant binding or policy text is copied."
+    },
+    {
+      "id": "runtime",
+      "status": "queued",
+      "lane": "existing implementation or platform lane",
+      "operation": "Test declared Python/Node runtimes and current authoring dependencies without changing the private scheduled runtime.",
+      "tools": [
+        "uv",
+        "Node",
+        "GitHub Actions"
+      ],
+      "success": "Portable fixtures build and replay on exact pins; actual native qualification remains separate."
+    },
+    {
+      "id": "templates",
+      "status": "queued",
+      "lane": "existing implementation or platform lane",
+      "operation": "Qualify a maintained structured-document template for one fictional policy/review package.",
+      "tools": [
+        "M365 CLI",
+        "Power Automate"
+      ],
+      "success": "Human edits, document identity, source/template revision and issued history survive regeneration."
+    }
+  ]
+}
