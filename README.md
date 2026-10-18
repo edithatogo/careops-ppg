@@ -77,5 +77,11 @@ Dependabot proposes weekly GitHub Actions updates. Shared-workflow changes must
 update the workflow reference and `policy-revision` together, then pass every
 current-head check. These tools have no third-party Python or Node package
 runtime dependencies, so there is no application dependency lock to regenerate.
-No package release, SBOM, attestation or development-canary qualification is
-claimed by this source-CI adoption.
+A separate weekly/manual development canary resolves a hash-locked preview CI
+tool candidate, runs the PPG tests and keeps exact-version receipts. It also freezes
+the official Python runtime manifest and tests a newer compatible preview when one
+exists. An unavailable preview is recorded as unavailable with tests skipped; a
+green discovery job does not qualify that runtime. Candidate results never modify
+the working runtime or promote an update. Propose exact-version changes in a PR
+and pass every current-head required check before promotion. No package release,
+SBOM or attestation is claimed.
