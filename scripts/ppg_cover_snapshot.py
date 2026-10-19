@@ -16,7 +16,7 @@ def compile_cover(raw, values):
     accepted_values(values)
     # Require the maintained, blank, genuinely bound cover; never human output.
     with zipfile.ZipFile(io.BytesIO(raw)) as z:
-        if z.testzip() or len(z.namelist()) != len(set(z.namelist())) or sum(x.file_size for x in z.infolist()) > 300000:
+        if len(z.infolist()) > 100 or sum(x.file_size for x in z.infolist()) > 300000 or len(z.namelist()) != len(set(z.namelist())) or z.testzip():
             raise ValueError('unsafe_template')
         root = ET.fromstring(z.read('word/document.xml'))
         seen = []
