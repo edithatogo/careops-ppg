@@ -49,4 +49,5 @@ jobs:
       - run: node tests/test_submission_assembler.cjs
       - run: node tests/test_metadata_prefill.cjs
       - run: node tests/test_cloud_package.cjs
+      - run: node tests/test_native_cover_request.cjs
       - run: python scripts/build_submission_assembler.py

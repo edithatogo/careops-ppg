@@ -6,8 +6,9 @@ assurance evidence and process measures.
 
 This repository contains reusable code and explicitly fictional examples. It has
 fresh Git history and no organisation-specific deployment records, policy texts,
-source-register extracts, tenant bindings or deployment claims. Native workbook
-and flow adapters, operational plans and status manifests are excluded. No native
+source-register extracts, tenant bindings or deployment claims. Tenant-bound workbook
+and flow adapters, operational plans and status manifests are excluded. The pure
+flow-definition builder contains no native bindings and makes no API calls. No native
 Microsoft deployment is configured or implied by the local checks.
 
 ## Run locally
@@ -18,6 +19,7 @@ Requires Python 3.11+ and Node.js 22+; the retained tools use their standard lib
 python3 -m unittest discover -s tests -p 'test_*.py'
 node tests/test_submission_assembler.cjs
 node tests/test_metadata_prefill.cjs
+node tests/test_native_cover_request.cjs
 python3 scripts/build_submission_assembler.py
 ```
 
@@ -113,3 +115,9 @@ DRAFT provenance. Its fictional tests run in source CI and in the unpacked sourc
 package; no tenant binding, document, native deployment or entitlement is included.
 SharePoint remains the preferred route to qualify first. Actual layout,
 editing/reopening, access and native retry/recovery require target-specific proof.
+
+The same toolkit now includes native request-to-job preparation and a pure
+manual-flow definition builder for a fixed cover plus an existing frozen pack,
+with optional separate PDF processing. Private target bindings and actual native
+qualification remain outside this repo. The source and unpacked-package CI run
+the native-request regression alongside existing Python/JavaScript checks.

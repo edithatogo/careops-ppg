@@ -61,6 +61,7 @@ jobs:
           node tests/test_submission_assembler.cjs
           node tests/test_metadata_prefill.cjs
           node tests/test_cloud_package.cjs
+          node tests/test_native_cover_request.cjs
           python scripts/build_submission_assembler.py
           "$RUNNER_TEMP/ppg-tool-canary/bin/ruff" check --select E9,F63,F7,F82 scripts tests
           "$RUNNER_TEMP/ppg-tool-canary/bin/python" -m pip_audit --disable-pip --no-deps -r .local/tool-canary/requirements.lock
