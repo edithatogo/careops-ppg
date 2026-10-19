@@ -96,8 +96,63 @@ schema to a shared library incidentally.
 ```sh
 python -m unittest discover -s tests -p 'test_*cover*.py'
 node tests/test_cloud_package.cjs
+node tests/test_native_cover_request.cjs
 ```
 
 The Node check uses built-in TypeScript stripping (Node 22.13+ or the repository's
 qualified current runtime). Python independently verifies ZIP bytes and CRCs.
 No third-party runtime packages, cloud calls or credentials are needed.
+
+## Native request-to-job preparation
+
+The same two-parameter script accepts an `m365-cover-request-v1` envelope. It
+consumes the seven recorded values, compiled template parts, original template
+bytes, an **existing frozen package**, its frozen job and completion receipt,
+and seven native file pins. Pin roles are `request`, `compiled-template`,
+`maintained-template`, `source-pack`, `source-job`, `source-receipt` and `engine`.
+`membersJson` supplies the exact `existing-pack.zip` and
+`maintained-template.docx` bytes. Real inputs and identifiers remain private.
+
+The script checks the source package's identity/version, job and byte hashes,
+case identity and template hash, then constructs the new frozen job, cover and
+ZIP in the selected M365 runtime. It returns `jobJson`, `claimJson` and a request
+fingerprint with the existing result. A matching saved claim preserves the first
+run's identity/time on retry. Changed input under that revision is refused.
+Evidence remains byte-identical; this historical selection does not establish
+that a live case or policy source is current. New revisions preserve old outputs.
+
+`scripts/ppg_native_package_flow.py` is a **pure definition builder**. It makes no
+network calls and accepts an existing flow plus separately qualified private
+bindings. It returns an Off candidate using the supplied SharePoint/Excel
+connection references, with an optional supplied OneDrive reference. No actual
+binding, credentials, deployment command or native output is distributed here.
+
+Before applying a candidate, independently verify the exact flow owner/run-only
+permissions, selected existing connections, connector prerequisites, library
+access, template/script identity and actual action contracts. The supplied
+embedded-connection route assumes a verified owner-only flow; do not apply it to
+a shared/run-only flow without qualifying that access boundary. A hash or item
+ID does not authenticate an operator. The builder does not grant permissions,
+provision fields, assign licences or establish native availability.
+
+The bounded graph uses a manual start, an optional text request-item ID (blank
+uses the supplied default), concurrency one, input rechecks, create-only claims,
+staging and non-overwriting moves, exact saved-byte readbacks and a completion
+receipt committed last. The request's seven existing library properties are a
+snapshot for that revision. Blank optional owner/date values become `Unresolved`;
+no business fact or approval is inferred. It has no source/case/schema writes.
+
+Optional PDF is downstream of the committed DOCX/ZIP. It uses the supplied
+OneDrive scratch folder and Convert file action with bounded availability retry,
+then stores/readbacks the actual PDF and a separate create-only success receipt.
+A matching saved PDF receipt reuses the saved file identity/version. An edited PDF
+is retained and reported. Conversion failure records a separate per-attempt
+failure file and visible `PDF_outcome`; the DOCX/ZIP remain usable. A same-job
+retry can recover the PDF. Interrupted attempts retain their scratch/staged files.
+
+Qualify the actual deployed graph and outputs before operating it: initial
+creation, unchanged replay, changed-input refusal, preservation of edited output,
+interruption before receipt, optional PDF failure/recovery, rendered PDF, and
+ordinary client edit/save/reopen. Source tests alone do not satisfy these checks.
+The route covers a fixed cover plus an unchanged existing package, not a combined
+Word document with repeating tables or conditional sections.

@@ -19,6 +19,7 @@ interface PackageResult {
   packageSHA256: string; packageBytes: number; memberCount: number; zipBase64: string;
   status: string; sourceWrites: boolean; sent: boolean; wordGenerationPerformed?: boolean;
   coverSHA256?: string; coverBytes?: number; coverBase64?: string; generationRoute?: string;
+  requestSHA256?: string; claimJson?: string; jobJson?: string;
 }
 const MAX_WIRE_BYTES = 4000000;
 const MAX_RAW_BYTES = 2000000;
@@ -28,7 +29,8 @@ function main(workbook: ExcelScript.Workbook, jobJson: string, membersJson: stri
   // The workbook exists only to host the authorised Run script action.
   const envelope: { kind?: string; jobJson: string; coverJson: string } = JSON.parse(jobJson);
   if (utf8(JSON.stringify({jobJson,membersJson})).length > MAX_WIRE_BYTES) throw Error('request_limit');
-  const result: PackageResult = JSON.parse(envelope.kind === 'standard-cover-input-v1' ?
+  const result: PackageResult = JSON.parse(envelope.kind === 'm365-cover-request-v1' ?
+    nativeCoverRequest(jobJson, membersJson) : envelope.kind === 'standard-cover-input-v1' ?
     packageCover(envelope.jobJson, membersJson, envelope.coverJson) : packageJob(jobJson, membersJson));
   return result;
 }
@@ -287,6 +289,89 @@ function packageCover(jobJson: string, membersJson: string, coverJson: string): 
   if (contents.length !== job.members.length - 1 || assembled.some(c => !c)) throw Error('cover_member_mismatch');
   const result: PackageResult = JSON.parse(packageJob(jobJson,JSON.stringify(assembled)));
   const response = JSON.stringify({...result,wordGenerationPerformed:true,coverSHA256:hash,coverBytes:bytes.length,coverBase64:encodeBase64(bytes),generationRoute:contract.route});
+  if (utf8(response).length > MAX_WIRE_BYTES) throw Error('response_limit');
+  return response;
+}
+
+interface NativeCoverRequest {
+  kind: string; requestItemId: number; createdAtUtc: string; generationRunId: string; existingClaimJson: string;
+  templateVersion: string; template: CoverInput; values: { [key: string]: string };
+  sourceJobJson: string; sourceReceiptJson: string;
+  sourcePin: { UniqueId: string; ETag: string; Length: string; ServerRelativeUrl: string };
+  pinsJson: string;
+}
+interface NativeClaim {
+  kind: string; jobId: string; requestSHA256: string; jobSHA256: string; createdAtUtc: string; generationRunId: string;
+}
+interface NativePin { role: string; UniqueId: string; ETag: string; Length: string; UIVersionLabel: string; ServerRelativeUrl: string; }
+function nativeCoverRequest(requestJson: string, membersJson: string): string {
+  // Per-job preparation occurs in the existing M365 script, from frozen native
+  // inputs. The locally compiled template is a maintained authoring asset only.
+  if (utf8(JSON.stringify({requestJson,membersJson})).length > MAX_WIRE_BYTES) throw Error('request_limit');
+  const req: NativeCoverRequest = JSON.parse(requestJson), contents: Content[] = JSON.parse(membersJson);
+  if (req.kind !== 'm365-cover-request-v1' || !/^[A-Za-z0-9_-]{1,100}$/.test(req.generationRunId || '') || !Number.isSafeInteger(req.requestItemId) || req.requestItemId < 1 ||
+      !req.values || !/^[a-z0-9][a-z0-9-]{0,39}$/.test(req.values.PPGCoverOutputRevision || '') ||
+      typeof req.templateVersion !== 'string' || !req.templateVersion.trim() ||
+      typeof req.pinsJson !== 'string' || utf8(req.pinsJson).length > 100000) throw Error('native_request_invalid');
+  const pins: NativePin[] = JSON.parse(req.pinsJson);
+  const roles = ['request','compiled-template','maintained-template','source-pack','source-job','source-receipt','engine'];
+  if (!Array.isArray(pins) || pins.length !== roles.length || new Set(pins.map(p => p.role)).size !== roles.length ||
+      pins.some(p => roles.indexOf(p.role) < 0 || [p.UniqueId,p.ETag,p.UIVersionLabel,p.ServerRelativeUrl].some(v => typeof v !== 'string' || !v.trim()) ||
+        typeof p.Length !== 'string' || !/^\d+$/.test(p.Length))) throw Error('native_pins_missing');
+  const sourceJob: Job = JSON.parse(req.sourceJobJson);
+  const receipt: { jobSHA256: string; package: { sha256: string; UniqueId: string; ETag: string; Length: string } } = JSON.parse(req.sourceReceiptJson);
+  if (!sourceJob || (sourceJob.schemaVersion !== 1 && sourceJob.schemaVersion !== 2) ||
+      sourceJob.CaseUID !== req.values.PPGCoverCaseUID || !Array.isArray(sourceJob.includedRecordIDs) ||
+      sha256(utf8(req.sourceJobJson)) !== receipt.jobSHA256 ||
+      !req.sourcePin || req.sourcePin.UniqueId.toLowerCase() !== receipt.package.UniqueId.toLowerCase() ||
+      req.sourcePin.ETag !== receipt.package.ETag || String(req.sourcePin.Length) !== String(receipt.package.Length) ||
+      typeof req.sourcePin.ServerRelativeUrl !== 'string' || !req.sourcePin.ServerRelativeUrl.startsWith('/')) throw Error('frozen_package_binding_mismatch');
+  if (!Array.isArray(contents) || contents.length !== 2 || contents[0].path !== 'existing-pack.zip' ||
+      contents[1].path !== 'maintained-template.docx') throw Error('native_source_members_invalid');
+  const source = decodeMember(contents[0].base64), originalTemplate = decodeMember(contents[1].base64);
+  if (source.length + originalTemplate.length > MAX_RAW_BYTES || source.length < 4 ||
+      source[0] !== 80 || source[1] !== 75 || source[2] !== 3 || source[3] !== 4 ||
+      source.length !== Number(req.sourcePin.Length) || sha256(source) !== receipt.package.sha256 ||
+      sha256(originalTemplate) !== req.template.templateSHA256) throw Error('native_source_hash_mismatch');
+  const coverJson = JSON.stringify({templateSHA256:req.template.templateSHA256,parts:req.template.parts,values:req.values});
+  const cover = coverBytes(coverJson), sourceSHA = sha256(source);
+  const frozen = JSON.stringify({requestItemId:req.requestItemId,templateVersion:req.templateVersion,
+    templateSHA256:req.template.templateSHA256,compiledPartsSHA256:sha256(utf8(JSON.stringify(req.template.parts))),
+    values:req.values,sourceJobSHA256:receipt.jobSHA256,sourcePackageSHA256:sourceSHA,
+    sourcePin:req.sourcePin,pinsJson:req.pinsJson,selectionKind:'existing-frozen-package'});
+  const requestSHA = sha256(utf8(frozen)), jobId = 'job-item'+req.requestItemId+'-'+req.values.PPGCoverOutputRevision;
+  let created = req.createdAtUtc, generationRunId = req.generationRunId;
+  let old: NativeClaim | undefined;
+  if (req.existingClaimJson) {
+    old = JSON.parse(req.existingClaimJson);
+    if (!old || old.kind !== 'PPG-native-package-claim-v1' || old.jobId !== jobId || old.requestSHA256 !== requestSHA)
+      throw Error('native_request_changed_requires_new_revision');
+    created = old.createdAtUtc; generationRunId = old.generationRunId;
+    if (!/^[A-Za-z0-9_-]{1,100}$/.test(generationRunId || '')) throw Error('native_claim_run_missing');
+  }
+  const sourceSelection = utf8(req.sourceJobJson), snapshot = utf8(frozen);
+  const job: Job & { coverSnapshot: CoverContract; selectionKind: string; parentJobSHA256: string; generationRunId: string } = {
+    schemaVersion:1,jobId,documentKind:'fixed-cover-and-existing-package',CaseUID:sourceJob.CaseUID,
+    sourceSnapshotRef:req.sourcePin.ServerRelativeUrl,sourceSHA256:sourceSHA,
+    templateVersion:req.templateVersion,templateSHA256:req.template.templateSHA256,
+    outputRevision:req.values.PPGCoverOutputRevision,includedRecordIDs:sourceJob.includedRecordIDs,
+    createdAtUtc:created,generationRunId,selectionKind:'existing-frozen-package',parentJobSHA256:receipt.jobSHA256,
+    coverSnapshot:{route:'standard-office-script-fixed-cover-v1',manifestSHA256:sha256(utf8(coverJson)),
+      templateSHA256:req.template.templateSHA256,path:'cover/PPG-cover-DRAFT.docx'},
+    members:[
+      {path:'cover/PPG-cover-DRAFT.docx',sha256:sha256(cover),size:cover.length,sourceReference:'maintained-cover-template',sourceVersionRef:req.templateVersion},
+      {path:'evidence/existing-pack.zip',sha256:sourceSHA,size:source.length,sourceReference:req.sourcePin.ServerRelativeUrl,sourceVersionRef:req.sourcePin.ETag},
+      {path:'selection/frozen-source-job.json',sha256:sha256(sourceSelection),size:sourceSelection.length,sourceReference:'existing-frozen-source-job',sourceVersionRef:receipt.jobSHA256},
+      {path:'generation/request-snapshot.json',sha256:sha256(snapshot),size:snapshot.length,sourceReference:'SharePoint request item '+req.requestItemId,sourceVersionRef:requestSHA}
+    ]};
+  const jobJson = JSON.stringify(job), hash = sha256(utf8(jobJson));
+  if (old && old.jobSHA256 !== hash) throw Error('native_claim_job_mismatch');
+  const claim: NativeClaim = {kind:'PPG-native-package-claim-v1',jobId,requestSHA256:requestSHA,jobSHA256:hash,createdAtUtc:created,generationRunId};
+  const members = [{path:'evidence/existing-pack.zip',base64:contents[0].base64},
+    {path:'selection/frozen-source-job.json',base64:encodeBase64(sourceSelection)},
+    {path:'generation/request-snapshot.json',base64:encodeBase64(snapshot)}];
+  const result: PackageResult = JSON.parse(packageCover(jobJson,JSON.stringify(members),coverJson));
+  const response = JSON.stringify({...result,requestSHA256:requestSHA,claimJson:JSON.stringify(claim),jobJson});
   if (utf8(response).length > MAX_WIRE_BYTES) throw Error('response_limit');
   return response;
 }
