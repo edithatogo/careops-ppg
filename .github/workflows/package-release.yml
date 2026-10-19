@@ -34,6 +34,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_*.py'
           node tests/test_submission_assembler.cjs
           node tests/test_metadata_prefill.cjs
+          node tests/test_cloud_package.cjs
           python scripts/build_submission_assembler.py --output rebuilt.html
           cmp PPG-submission-assembler.html rebuilt.html
       - name: Read immutable qualified inventory tooling

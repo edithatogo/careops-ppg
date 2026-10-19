@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "assemblyTemplateVersion": "ppg-existing-artifacts-v1",
+  "documentKind": "existing-case-artifact-package",
+  "provenanceMode": "existing-artifacts",
+  "archive": {
+    "format": "ZIP32 STORE",
+    "provenanceEntry": "package-provenance.json",
+    "requiredMemberRoles": [
+      "recorded-baseline",
+      "existing-manual-draft",
+      "selection-record"
+    ],
+    "preserveOriginalMemberBytes": true
+  },
+  "authoringProvenance": {
+    "status": "unknown",
+    "generationReceipt": null
+  },
+  "wordGenerationPerformed": false,
+  "status": "DRAFT / HUMAN CHECK REQUIRED",
+  "sourceWrites": false,
+  "caseWrites": false,
+  "sent": false,
+  "policyApproved": false
+}

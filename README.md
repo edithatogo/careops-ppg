@@ -103,3 +103,13 @@ hashes and wheels only, while PPG behaviour still runs on Python3.15.0 and
 Node26.12.0. Tool versions, lock digest and terminal qualification are retained;
 no missing or failed qualification is promoted. Existing minimum-runtime tests
 remain. Source packages and canaries do not establish operational acceptance.
+
+## Fixed cover and bounded package source
+
+The [fixed-cover toolkit](templates/unattended-package/README.md) adds independent
+saved-property/text inspection, a seven-field snapshot fallback and bounded
+Office Script ZIP assembly. It preserves template/evidence bytes and explicit
+DRAFT provenance. Its fictional tests run in source CI and in the unpacked source
+package; no tenant binding, document, native deployment or entitlement is included.
+SharePoint remains the preferred route to qualify first. Actual layout,
+editing/reopening, access and native retry/recovery require target-specific proof.
