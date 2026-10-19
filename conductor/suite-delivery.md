@@ -61,3 +61,20 @@ The portable package includes this guide, module profile, project entry and exac
 runtime files alongside its existing code, configuration, fixtures and assembler.
 Generated documents remain a fallback route; no native qualification, licence
 grant, content approval or private source/history transfer is implied.
+
+
+## Selective SharePoint library columns — 19 October 2026
+
+User-selected implementation direction: reuse library columns for artifact identity, provenance, filtering and routing where the output already belongs in SharePoint. Reuse existing columns/content types and exact internal names before adding fields. This extends the structured-document preference; it is not proof of automatic Word-body generation.
+
+Priority: next eligible reporting/package improvement, after the current owned operation.
+- Review/submission packages: retain DocumentUID, source version, review-case ID, template version, package revision and unresolved-items indicator, linked to the authoritative case.
+- Existing monthly Markdown/CSV outputs: expose report month, source snapshot/hash, generated time, last reconciliation and freshness status without opening files. Keep their current selection/calculations and schedule.
+- Responsibility projections: retain as-of date, source export/version and projection identity; never present a dated snapshot as live responsibility.
+Workbench owns package/monthly changes; the existing responsibility-projection owner owns its output. Reuse the current execution queue and evidence library; no duplicate flow or register.
+
+Acceptance: map each property to its existing authoritative source and verify its actual type/internal name; read back the affected saved values and file identity. Update only changed values, guard modification-trigger loops and retries, and retain a recoverable preimage. Preserve human edits, original/issued history and exact reviewed revisions. Add no duplicate register, notifications, approval workflow, permission change, licence or runtime. Avoid putting private/internal-only values into properties that may travel inside a downloaded Office file.
+
+Metadata readback and visible body rendering are separate checks. The Clinical trial stored a changed property while Word for the web still displayed the old body value. Do not claim scalar body refresh, narrative/repeating sections or generated Word/PDF fidelity from metadata success. Qualify those behaviours only for the selected document shape; retain working/manual outputs on a specific gap. Record one result in existing evidence, not another readiness pack.
+
+Reference: https://learn.microsoft.com/sharepoint/dev/business-apps/power-automate/sharepoint-connector-actions-triggers
