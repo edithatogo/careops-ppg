@@ -60,6 +60,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_*.py'
           node tests/test_submission_assembler.cjs
           node tests/test_metadata_prefill.cjs
+          node tests/test_cloud_package.cjs
           python scripts/build_submission_assembler.py
           "$RUNNER_TEMP/ppg-tool-canary/bin/ruff" check --select E9,F63,F7,F82 scripts tests
           "$RUNNER_TEMP/ppg-tool-canary/bin/python" -m pip_audit --disable-pip --no-deps -r .local/tool-canary/requirements.lock
@@ -169,6 +170,11 @@ jobs:
         with:
           python-version: ${{ steps.discover.outputs.version }}
           allow-prereleases: true
+      - name: Set up the qualified Node host for cross-runtime cover tests
+        if: steps.discover.outputs.available == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26.12.0'
       - name: Exercise PPG on the resolved Python preview
         id: runtime_tests
         if: steps.discover.outputs.available == 'true'

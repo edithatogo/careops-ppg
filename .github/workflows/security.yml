@@ -48,4 +48,5 @@ jobs:
       - run: python -m unittest discover -s tests -p 'test_*.py'
       - run: node tests/test_submission_assembler.cjs
       - run: node tests/test_metadata_prefill.cjs
+      - run: node tests/test_cloud_package.cjs
       - run: python scripts/build_submission_assembler.py
