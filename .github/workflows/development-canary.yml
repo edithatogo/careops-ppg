@@ -37,7 +37,7 @@ jobs:
       - id: node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26.12.0'
+          node-version: '26.12.1'
       - id: bootstrap
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
@@ -175,7 +175,7 @@ jobs:
         if: steps.discover.outputs.available == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26.12.0'
+          node-version: '26.12.1'
       - name: Exercise PPG on the resolved Python preview
         id: runtime_tests
         if: steps.discover.outputs.available == 'true'
