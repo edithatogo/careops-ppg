@@ -104,12 +104,14 @@ jobs:
                   runtimes[name] = path.read_text().strip() if path.exists() else ''
               if state == 'qualified-tool-candidate' and (not digest or candidate.get('lockSha256') != digest):
                   state = 'evidence-mismatch'
-              if state == 'qualified-tool-candidate' and not (runtimes['python-version'].startswith('Python 3.15.0 ') and runtimes['node-version'] == 'v26.12.0' and runtimes['tool-python-version'].startswith('Python 3.14.8 ')):
+              if state == 'qualified-tool-candidate' and not (runtimes['python-version'].startswith('Python ' + Path('.python-version').read_text().strip() + ' ') and runtimes['node-version'] == 'v' + Path('.node-version').read_text().strip() and runtimes['tool-python-version'].startswith('Python 3.14.8 ')):
                   state = 'runtime-mismatch'
           except (OSError, ValueError, TypeError):
               state = 'evidence-invalid'
           receipt = {'sourceCommit': os.environ['GITHUB_SHA'], 'stages': stages, 'failedStage': failed, 'runtimes': runtimes, 'lockSha256': digest, 'state': state, 'promoted': False, 'nativeWrites': False}
           (root / 'qualification.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          if state in {'evidence-mismatch', 'runtime-mismatch', 'evidence-invalid'}:
+              raise SystemExit('Canary evidence refused: ' + state)
           PYCODE
       - name: Retain candidate versions and lock without promotion
         if: always()

@@ -131,3 +131,18 @@ results and operational acceptance as separate evidence.
 
 See the [shared ALM evidence requirements](https://github.com/edithatogo/careops/blob/main/docs/development-and-delivery.md#power-platform-alm-evidence--20-october-2026)
 and Microsoft's [existing-flow solution guidance](https://learn.microsoft.com/en-us/power-automate/create-flow-solution).
+
+
+## Runtime receipt and selected-pin consistency — 22 October 2026
+
+Python3.15.1 and Node26.12.1 package jobs were qualified in PR18/16, but the
+local Python pin, main test matrix and canary receipt still selected older
+versions. Align the local pin and full test matrix with those qualified package
+runtimes; retain the Python3.11/Node22 minimum compatibility case. The actual
+canary receipt now reads the committed local runtime pins and exits nonzero for
+evidence mismatch, runtime mismatch or invalid evidence after saving its receipt.
+The isolated CI-tool interpreter remains3.14.8 for its hash-locked wheel support.
+This fixes a green-job/failed-receipt mismatch, not native tool promotion.
+Actual receipt tests cover successful evidence, every failed/cancelled/skipped
+stage, missing lock, wrong runtime and malformed evidence, including exit status.
+Native workflow authentication and document qualification remain with their owner.
