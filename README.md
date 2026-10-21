@@ -121,3 +121,11 @@ manual-flow definition builder for a fixed cover plus an existing frozen pack,
 with optional separate PDF processing. Private target bindings and actual native
 qualification remain outside this repo. The source and unpacked-package CI run
 the native-request regression alongside existing Python/JavaScript checks.
+
+
+## Solution packaging
+
+The [solution admission and recovery procedure](conductor/suite-delivery.md#solution-admission-and-recovery)
+reuses existing native objects, verifies connection-reference conversion and tests
+recovery on a reserved Stopped copy. Reuse retained target-specific evidence; this
+portable repository does not contain tenant exports or establish deployment.
