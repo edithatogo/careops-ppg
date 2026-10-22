@@ -1,0 +1,30 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "automerge": false,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github\\/workflows\\/(?:development-canary|dependency-candidate)\\.yml$/"
+      ],
+      "matchStrings": [
+        "(?:^|\\r?\\n)[ \\t]+UV_VERSION:[ \\t]*'(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?)'"
+      ],
+      "depNameTemplate": "astral-sh/uv",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "astral-sh/uv"
+      ],
+      "ignoreUnstable": false,
+      "automerge": false
+    }
+  ]
+}

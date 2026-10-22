@@ -156,6 +156,16 @@ interpreter now targets CPython 3.14.9; receipt tests reject the previous 3.14.8
 profile as well as an unrelated older minor. Current-head hosted qualification is
 required; neither a successful bootstrap nor discovery alone promotes the candidate.
 
-- [ ] Retain automated proposals for the direct installer's uv version, paired
-  with a newly reviewed release-asset digest; a version-only update must fail its
-  checksum check until the matching artifact is qualified.
+- [x] Retain automated proposals for the direct installer's uv version. The
+  scoped Renovate regex manager tracks UV_VERSION; merging remains disabled.
+  A version-only proposal must fail the pinned checksum until the corresponding
+  release artifact and replacement digest have been qualified.
+
+
+The direct uv release installer is tracked through the same Renovate application
+using a scoped custom regex manager. It matches only UV_VERSION in the two known
+candidate-workflow paths; existing dependency managers and presets are retained.
+Prerelease proposals are allowed, but automatic merging is disabled. The updater
+changes the proposed version, not UV_SHA256. Preserve the digest check before
+extraction/execution and qualify the matching official artifact before promotion.
+This adds source update discovery, not a new installer, native write or consent.
