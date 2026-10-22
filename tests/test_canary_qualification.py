@@ -42,10 +42,11 @@ class CanaryQualificationTests(unittest.TestCase):
             lock = b'fictional==1.0 --hash=sha256:fixture\n'
             (evidence / 'requirements.lock').write_bytes(lock)
             (evidence / 'candidate.json').write_text(json.dumps({'lockSha256': hashlib.sha256(lock).hexdigest()}))
-            for name, value in [('python-version', 'Python ' + (ROOT / '.python-version').read_text().strip() + ' (fixture)'), ('node-version', 'v' + (ROOT / '.node-version').read_text().strip()), ('tool-python-version', 'Python 3.14.8 (fixture)')]:
+            for name, value in [('python-version', 'Python ' + (ROOT / '.python-version').read_text().strip() + ' (fixture)'), ('node-version', 'v' + (ROOT / '.node-version').read_text().strip()), ('tool-python-version', 'Python 3.14.9 (fixture)')]:
                 (evidence / (name + '.txt')).write_text(value)
             self.assertEqual(execute({})['state'], 'qualified-tool-candidate')
-            (evidence / 'tool-python-version.txt').write_text('Python 3.13.0 (fixture)')
-            self.assertEqual(execute({}, expect_failure=True)['state'], 'runtime-mismatch')
+            for old_runtime in ['3.13.0', '3.14.8']:
+                (evidence / 'tool-python-version.txt').write_text('Python ' + old_runtime + ' (fixture)')
+                self.assertEqual(execute({}, expect_failure=True)['state'], 'runtime-mismatch')
             (evidence / 'candidate.json').write_text('{broken')
             self.assertEqual(execute({}, expect_failure=True)['state'], 'evidence-invalid')
