@@ -46,16 +46,16 @@ checks affected by the change, with broad checks at an integration milestone.
 
 ## Qualified source delivery baseline
 
-The current development pins are Python 3.15.0 and Node 26.12.0. CI retains its
+The current development pins are Python 3.15.1 and Node 26.12.1. CI retains its
 Python 3.11 / Node 22 minimum compatibility lane and the qualified current lane;
 these runtime files do not raise the supported minimum. Shared security, actual
 source packages and canaries use immutable CareOps policy f0e8db2.
 
-Existing weekly Dependabot covers GitHub Actions, the only declared dependency
-ecosystem in this runtime-dependency-free toolkit. Keep it as the sole updater;
-the old Renovate onboarding/alignment proposals must not add duplicate coverage
-or replace the qualified workflows. This reconciles the earlier source guidance
-with subsequently qualified delivery rather than replaying its older CI changes.
+Existing weekly Dependabot owns GitHub Actions in this runtime-dependency-free
+toolkit. Renovate is restricted to custom.regex for the direct uv installer;
+its default managers are disabled, so it cannot duplicate GitHub Actions or
+runtime-pin coverage. Keep this explicit division when adding a custom manager;
+old onboarding/alignment proposals must not replace the qualified workflows.
 
 The portable package includes this guide, module profile, project entry and exact
 runtime files alongside its existing code, configuration, fixtures and assembler.
@@ -169,3 +169,39 @@ Prerelease proposals are allowed, but automatic merging is disabled. The updater
 changes the proposed version, not UV_SHA256. Preserve the digest check before
 extraction/execution and qualify the matching official artifact before promotion.
 This adds source update discovery, not a new installer, native write or consent.
+
+
+## Managed configuration deployment and recovery
+
+Use an identified isolated downstream target through its qualified authentication
+route. Reconcile a timed-out operation by its existing handle before retrying.
+Do not import a managed package over the originating unmanaged solution, enable
+paid capabilities, or create a target solely from this source procedure.
+
+Freeze the managed package and hash, publisher/prefix, four-part version, typed
+membership, complete workflow definitions, declared references and source
+preimages. Record target suitability and lifecycle privately before import.
+Import without activation or forced overwrite; read back the actual managed
+version/layers, component identities, full graph and unbound/bound references.
+A successful import does not qualify connected execution or output.
+
+For a selected versioned change, stage and upgrade the managed package; verify
+the changed graph and removal of the holding solution. Recover with a higher
+version containing the prior complete graph, retaining both package hashes.
+This is forward recovery, not a downgrade. Test uninstall and frozen-package
+reimport only in an owned disposable target: verify absence of the selected
+components and preservation of unrelated solutions before reimport. Never use
+that shortcut on a maintained source or an environment containing business data.
+
+After recovery, compare the complete definition and declared reference mapping,
+final inactive service state, actual run history and unchanged source objects.
+Dataverse declarations and expanded Flow service references have different
+representations: compare explicit logical-reference/API/invoker mappings rather
+than discard arbitrary JSON differences. Recreated workflow-version identities
+may differ after uninstall; record them rather than claim identity preservation.
+
+Keep connection binding, fictional runtime/output/edit/retry verification,
+production suitability, native Git and deployment-pipeline qualification separate.
+A temporary Developer target does not become a durable production destination.
+Retain the working source runtime and immutable recovery packages. This portable
+procedure contains no tenant bindings or claim that a reader's target is qualified.
