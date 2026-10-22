@@ -141,8 +141,21 @@ versions. Align the local pin and full test matrix with those qualified package
 runtimes; retain the Python3.11/Node22 minimum compatibility case. The actual
 canary receipt now reads the committed local runtime pins and exits nonzero for
 evidence mismatch, runtime mismatch or invalid evidence after saving its receipt.
-The isolated CI-tool interpreter remains3.14.8 for its hash-locked wheel support.
+The initial isolated CI-tool interpreter selected 3.14.8 for its hash-locked wheel support; the current candidate below advances that patch version.
 This fixes a green-job/failed-receipt mismatch, not native tool promotion.
 Actual receipt tests cover successful evidence, every failed/cancelled/skipped
 stage, missing lock, wrong runtime and malformed evidence, including exit status.
 Native workflow authentication and document qualification remain with their owner.
+
+
+The current uv candidate uses the official checksum-pinned Linux x86_64 release
+asset because the default setup-uv mirror manifest omitted uv 0.13.5. Platform,
+archive digest and executable version are checked before use. The bootstrap step
+keeps its existing outcome identity and failure recording. Its isolated tool
+interpreter now targets CPython 3.14.9; receipt tests reject the previous 3.14.8
+profile as well as an unrelated older minor. Current-head hosted qualification is
+required; neither a successful bootstrap nor discovery alone promotes the candidate.
+
+- [ ] Retain automated proposals for the direct installer's uv version, paired
+  with a newly reviewed release-asset digest; a version-only update must fail its
+  checksum check until the matching artifact is qualified.

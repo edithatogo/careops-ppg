@@ -38,18 +38,28 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26.12.1'
-      - id: bootstrap
-        uses: astral-sh/setup-uv@18d369b23da25a81e9458561248e1aafff6a70fa # v10.3.1
-        with:
-          version: '0.13.4'
-          enable-cache: false
+      - name: Install exact uv from its verified official release asset
+        id: bootstrap
+        env:
+          UV_VERSION: '0.13.5'
+          UV_SHA256: f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f
+        run: |
+          test "$(uname -sm)" = 'Linux x86_64'
+          uv_archive="$RUNNER_TEMP/uv-$UV_VERSION.tar.gz"
+          uv_bin="$RUNNER_TEMP/uv-$UV_VERSION-bin"
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 "https://github.com/astral-sh/uv/releases/download/$UV_VERSION/uv-x86_64-unknown-linux-gnu.tar.gz" --output "$uv_archive"
+          printf '%s  %s\n' "$UV_SHA256" "$uv_archive" | sha256sum --check --strict
+          mkdir "$uv_bin"
+          tar --extract --gzip --file "$uv_archive" --directory "$uv_bin" --strip-components=1 uv-x86_64-unknown-linux-gnu/uv uv-x86_64-unknown-linux-gnu/uvx
+          test "$("$uv_bin/uv" --version | cut -d ' ' -f 1-2)" = "uv $UV_VERSION"
+          echo "$uv_bin" >> "$GITHUB_PATH"
       - name: Resolve a separate exact hash-locked CI tool candidate
         id: resolve
         run: |
           mkdir -p .local/tool-canary
           python .careops-ci-tools/portfolio-scripts/ci_delivery.py lock --root .careops-ci-tools --preview --output .careops-ci-tools/.local/canary/requirements.lock --receipt .local/tool-canary/candidate.json
           cp .careops-ci-tools/.local/canary/requirements.lock .local/tool-canary/requirements.lock
-          uv venv --python 3.14.8 "$RUNNER_TEMP/ppg-tool-canary"
+          uv venv --python 3.14.9 "$RUNNER_TEMP/ppg-tool-canary"
           uv pip install --python "$RUNNER_TEMP/ppg-tool-canary/bin/python" --require-hashes --only-binary=:all: -r .local/tool-canary/requirements.lock
           "$RUNNER_TEMP/ppg-tool-canary/bin/python" -VV > .local/tool-canary/tool-python-version.txt
           python -VV > .local/tool-canary/python-version.txt
@@ -104,7 +114,7 @@ jobs:
                   runtimes[name] = path.read_text().strip() if path.exists() else ''
               if state == 'qualified-tool-candidate' and (not digest or candidate.get('lockSha256') != digest):
                   state = 'evidence-mismatch'
-              if state == 'qualified-tool-candidate' and not (runtimes['python-version'].startswith('Python ' + Path('.python-version').read_text().strip() + ' ') and runtimes['node-version'] == 'v' + Path('.node-version').read_text().strip() and runtimes['tool-python-version'].startswith('Python 3.14.8 ')):
+              if state == 'qualified-tool-candidate' and not (runtimes['python-version'].startswith('Python ' + Path('.python-version').read_text().strip() + ' ') and runtimes['node-version'] == 'v' + Path('.node-version').read_text().strip() and runtimes['tool-python-version'].startswith('Python 3.14.9 ')):
                   state = 'runtime-mismatch'
           except (OSError, ValueError, TypeError):
               state = 'evidence-invalid'
