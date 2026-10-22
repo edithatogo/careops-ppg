@@ -26,5 +26,8 @@
       "ignoreUnstable": false,
       "automerge": false
     }
+  ],
+  "enabledManagers": [
+    "custom.regex"
   ]
 }
