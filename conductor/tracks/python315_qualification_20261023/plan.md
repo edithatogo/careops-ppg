@@ -15,7 +15,7 @@
 ## Phase 3 — Integration
 
 - [x] P3.1a Run affected structure/privacy checks and exact-head required checks.
-- [ ] P3.1b Integrate the eligible PR and verify the merged main state.
+- [x] P3.1b Integrate the eligible PR and verify the merged main state.
 - [x] P3.2 Audit every acceptance requirement and explicit external blocker.
 - [ ] P3.3 Record actual goal-tool result; close only when full evidence supports completion.
 
@@ -34,3 +34,9 @@ A track or prompt is not an armed goal or completed runtime migration. Shared ch
 - Template fallback evidence: the fictional three-row DOCX rendered in LibreOffice 26.8 to a three-page A4 PDF. Each comparison row remained together across page breaks, the source snapshot rendered as a clickable HTTPS link, and the empty optional section was omitted. Revision-preservation tests passed. Microsoft Word opened a separate copy and saved a fictional title edit. The edited copy's hash changed and its saved XML contains the new title, while the original generated DOCX hash remained unchanged.
 - Current native blocker: a fresh read-only license enumeration returned PBI Premium per User, Power BI Standard, Teams Audio Conferencing and SPE_E3; it returned no Copilot SKU. No license, tenant setting or site permission was changed. SharePoint structured-document generation remains unqualified.
 - External runtime blocker: both the pinned Global Medicines Atlas source and the current upstream `main` still declare `requires-python = ">=3.14,<3.15"` ([upstream project metadata](https://github.com/edithatogo/global-medicines-atlas/blob/main/pyproject.toml)); this repo's integration remains unqualified under the mandatory Python 3.15.1 runtime. P3.3 remains open until full-scope evidence and the actual goal-tool result support closure.
+
+## Integration checkpoint — 2026-10-24
+
+- PR #32 (`c959a39f1e4c43932007b9c62dad713f6c1b7da3`) passed its exact-head required checks and was clean/mergeable. Repository branch protection required zero approving reviews. The PR was marked ready and merged with a merge commit; GitHub reports merged state at `957943e3b3aaaea9575082a89a256ddc2da6ecb9`.
+- Readback confirmed `main` at `957943e3b3aaaea9575082a89a256ddc2da6ecb9`, matching the PR merge commit. The local tracking ref `origin/main` was fetched to the same SHA; the worktree was clean at verification.
+- P3.1b is complete. P3.3 remains open: Atlas integration is blocked by its Python `<3.15` metadata, and native SharePoint structured-document generation remains unqualified without the required Copilot entitlement. Do not report the broader qualification as complete.
