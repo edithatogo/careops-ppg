@@ -33,3 +33,30 @@ and intentional synthetic version tests. Do not replace a running environment.
 PyYAML6.0.3 currently has no Linux CPython3.15 wheel. CI tool qualification permits
 its hash-verified source distribution explicitly; other tool dependencies retain
 binary-only installation. Keep the Python3.15 interpreter and test actual builds.
+
+## Targeted test execution
+
+Follow the [shared targeted-testing policy](https://github.com/edithatogo/careops/blob/main/docs/targeted-testing.md).
+During edits, select exact affected files/nodes or native runner checks and reuse
+unchanged evidence. Use an explicitly selected repo-local Python3.15.1 via
+REPO_PYTHON where applicable. Do not rerun unchanged whole suites during each edit.
+Run broader tests for shared fixtures, schemas, dependencies or uncertain impact;
+retain full coverage/security/integration and release gates at coherent milestones.
+
+For pytest, preserve cacheprovider per worktree/environment: --lf together with
+--last-failed-no-failures=none never silently runs all tests; empty means no tests
+verified. --ff still runs all selected tests; --sw is local debugging only. Do not
+set selection flags globally or present partial coverage as full coverage.
+Default to no automatic retries. skip/skipif requires a real capability condition
+and reason; xfail needs a known issue/reason and strict=True. Neither is for speed.
+Never retry native mutations, sends or real external effects through test plugins.
+Difftest0.3.0 failed actual3.15.1 qualification (PyO3 maximum3.14); do not install
+it with a compatibility override or downgrade Python. Rerunfailures16.7 is opt-in
+for bounded, diagnosed fictional/read-only transient cases with first failure
+visible; it must not turn flaky outcomes into clean acceptance.
+
+Existing runner example (select the actual changed case, not this example blindly):
+
+```sh
+"$REPO_PYTHON" -m unittest discover -s tests -p test_consultation.py -v
+```
