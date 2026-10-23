@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Bounded unapproved editorial proposal sections; no clinical approval state",
+  "registers": [
+    {
+      "key": "sections",
+      "title": "PPG Review Section Proposals",
+      "description": "Versioned editorial draft sections linked to preserved source/template evidence. No clinical approval or source-register write.",
+      "fields": [
+        {
+          "name": "SectionKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SectionKey\" StaticName=\"SectionKey\" DisplayName=\"SectionKey\" Required=\"TRUE\" EnforceUniqueValues=\"TRUE\" Indexed=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"DocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ProposalRevision",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ProposalRevision\" StaticName=\"ProposalRevision\" DisplayName=\"ProposalRevision\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SectionId",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SectionId\" StaticName=\"SectionId\" DisplayName=\"SectionId\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "TemplateHeading",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"TemplateHeading\" StaticName=\"TemplateHeading\" DisplayName=\"TemplateHeading\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ModuleKind",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ModuleKind\" StaticName=\"ModuleKind\" DisplayName=\"ModuleKind\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ProposedText",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"ProposedText\" StaticName=\"ProposedText\" DisplayName=\"ProposedText\" Required=\"TRUE\" RichText=\"FALSE\" NumLines=\"8\"></Field>"
+        },
+        {
+          "name": "SectionJSON",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"SectionJSON\" StaticName=\"SectionJSON\" DisplayName=\"SectionJSON\" Required=\"TRUE\" RichText=\"FALSE\" NumLines=\"8\"></Field>"
+        }
+      ],
+      "view": [
+        "LinkTitle",
+        "ProposalRevision",
+        "SectionId",
+        "TemplateHeading",
+        "ModuleKind",
+        "ProposedText",
+        "_UIVersionString",
+        "Modified"
+      ]
+    }
+  ],
+  "owner": "Workbench integration; existing source and human draft owners unchanged",
+  "notificationsEnabled": false
+}

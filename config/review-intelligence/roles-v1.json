@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "1.0.0",
+  "status": "draft-for-pilot",
+  "responsibilityTypes": [
+    "executive_accountability",
+    "custodian",
+    "author",
+    "review_lead",
+    "contributor",
+    "subject_expert",
+    "consumer_representative",
+    "consultee",
+    "endorser",
+    "authorising_officer",
+    "document_controller",
+    "publisher",
+    "implementation_lead",
+    "assurance_reviewer"
+  ],
+  "recordContracts": {
+    "role": [
+      "roleId",
+      "title",
+      "scope",
+      "holderKind"
+    ],
+    "responsibilityAssignment": [
+      "assignmentId",
+      "documentUID",
+      "roleId",
+      "responsibilityType",
+      "effectiveFrom",
+      "effectiveUntil",
+      "status",
+      "evidenceRef"
+    ],
+    "appointment": [
+      "appointmentId",
+      "roleId",
+      "holderId",
+      "appointmentKind",
+      "effectiveFrom",
+      "effectiveUntil",
+      "status",
+      "evidenceRef"
+    ],
+    "portfolioTransfer": [
+      "transferId",
+      "documentUIDs",
+      "fromRoleId",
+      "toRoleId",
+      "effectiveFrom",
+      "status",
+      "evidenceRef"
+    ],
+    "historicalDecision": [
+      "decisionId",
+      "documentUID",
+      "documentVersion",
+      "actorId",
+      "roleId",
+      "appointmentId",
+      "decidedAt",
+      "decision",
+      "evidenceRef"
+    ]
+  },
+  "intervalConvention": "inclusive start, exclusive end; ISO date; no implicit acting precedence",
+  "appointmentKinds": [
+    "substantive",
+    "acting",
+    "delegated",
+    "vacant"
+  ],
+  "holderKinds": [
+    "person",
+    "group",
+    "committee"
+  ],
+  "assignmentStates": [
+    "proposed",
+    "accepted",
+    "declined",
+    "ended",
+    "superseded"
+  ],
+  "rules": [
+    "Preserve source role assertions separately",
+    "Explicit evidence is required for accepted assignments and transfers",
+    "Delegation requires recorded scope and authority evidence",
+    "Ambiguous dates/overlap produce an exception, never automatic selection",
+    "Role resolution grants neither access nor clinical authority",
+    "Historical decisions retain original actor and role binding"
+  ]
+}

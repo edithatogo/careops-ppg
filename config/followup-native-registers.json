@@ -1,0 +1,631 @@
+{
+  "schemaVersion": 1,
+  "owner": "Workbench integration",
+  "registers": [
+    {
+      "key": "contexts",
+      "title": "PPG Follow-up Contexts",
+      "description": "Integration-owned manual/on-demand follow-up. No assignment, clinical decision or notification.",
+      "enableVersioning": true,
+      "fields": [
+        {
+          "name": "CaseUID",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CaseUID\" StaticName=\"CaseUID\" DisplayName=\"CaseUID\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>",
+          "displayName": "Case UID"
+        },
+        {
+          "name": "DocumentReference",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentReference\" StaticName=\"DocumentReference\" DisplayName=\"DocumentReference\" Required=\"TRUE\"></Field>",
+          "displayName": "Document Reference"
+        },
+        {
+          "name": "ReviewedVersionRef",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ReviewedVersionRef\" StaticName=\"ReviewedVersionRef\" DisplayName=\"ReviewedVersionRef\" Required=\"TRUE\"></Field>",
+          "displayName": "Reviewed Version Ref"
+        },
+        {
+          "name": "DocumentSHA256",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentSHA256\" StaticName=\"DocumentSHA256\" DisplayName=\"DocumentSHA256\" Required=\"TRUE\"></Field>",
+          "displayName": "DocumentSHA256"
+        },
+        {
+          "name": "SourceAsOf",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceAsOf\" StaticName=\"SourceAsOf\" DisplayName=\"SourceAsOf\" Required=\"TRUE\"></Field>",
+          "displayName": "Source As Of"
+        },
+        {
+          "name": "SourceCheckedAt",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceCheckedAt\" StaticName=\"SourceCheckedAt\" DisplayName=\"SourceCheckedAt\" Required=\"TRUE\"></Field>",
+          "displayName": "Source Checked At"
+        },
+        {
+          "name": "SourceDueDate",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceDueDate\" StaticName=\"SourceDueDate\" DisplayName=\"SourceDueDate\" Required=\"FALSE\"></Field>",
+          "displayName": "Source Due Date"
+        },
+        {
+          "name": "RecipientRole",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RecipientRole\" StaticName=\"RecipientRole\" DisplayName=\"RecipientRole\" Required=\"FALSE\"></Field>",
+          "displayName": "Recipient Role"
+        },
+        {
+          "name": "RecipientAddress",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RecipientAddress\" StaticName=\"RecipientAddress\" DisplayName=\"RecipientAddress\" Required=\"FALSE\"></Field>",
+          "displayName": "Recipient Address"
+        },
+        {
+          "name": "RecipientEvidence",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RecipientEvidence\" StaticName=\"RecipientEvidence\" DisplayName=\"RecipientEvidence\" Required=\"FALSE\"></Field>",
+          "displayName": "Recipient Evidence"
+        },
+        {
+          "name": "SourceFreshness",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"SourceFreshness\" StaticName=\"SourceFreshness\" DisplayName=\"SourceFreshness\" Required=\"TRUE\"><CHOICES><CHOICE>Unknown</CHOICE><CHOICE>Current</CHOICE><CHOICE>Stale</CHOICE></CHOICES></Field>",
+          "displayName": "Source Freshness"
+        },
+        {
+          "name": "RecipientEligibility",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"RecipientEligibility\" StaticName=\"RecipientEligibility\" DisplayName=\"RecipientEligibility\" Required=\"TRUE\"><CHOICES><CHOICE>Unknown</CHOICE><CHOICE>Verified</CHOICE><CHOICE>Unresolved</CHOICE></CHOICES></Field>",
+          "displayName": "Recipient Eligibility"
+        },
+        {
+          "name": "SourceEvidence",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"SourceEvidence\" StaticName=\"SourceEvidence\" DisplayName=\"SourceEvidence\" Required=\"TRUE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Source Evidence"
+        }
+      ],
+      "view": [
+        "LinkTitle",
+        "CaseUID",
+        "ReviewedVersionRef",
+        "SourceFreshness",
+        "SourceCheckedAt",
+        "RecipientEligibility",
+        "_UIVersionString"
+      ]
+    },
+    {
+      "key": "requests",
+      "title": "PPG Follow-up Requests",
+      "description": "Integration-owned manual/on-demand follow-up. No assignment, clinical decision or notification.",
+      "enableVersioning": true,
+      "fields": [
+        {
+          "name": "RequestKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RequestKey\" StaticName=\"RequestKey\" DisplayName=\"RequestKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>",
+          "displayName": "Request Key"
+        },
+        {
+          "name": "CaseUID",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CaseUID\" StaticName=\"CaseUID\" DisplayName=\"CaseUID\" Required=\"FALSE\"></Field>",
+          "displayName": "Case UID"
+        },
+        {
+          "name": "ContextVersion",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ContextVersion\" StaticName=\"ContextVersion\" DisplayName=\"ContextVersion\" Required=\"FALSE\"></Field>",
+          "displayName": "Context Version"
+        },
+        {
+          "name": "EventUID",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"EventUID\" StaticName=\"EventUID\" DisplayName=\"EventUID\" Required=\"FALSE\"></Field>",
+          "displayName": "Event UID"
+        },
+        {
+          "name": "PreviousEventUID",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"PreviousEventUID\" StaticName=\"PreviousEventUID\" DisplayName=\"PreviousEventUID\" Required=\"FALSE\"></Field>",
+          "displayName": "Previous Event UID"
+        },
+        {
+          "name": "Stage",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"Stage\" StaticName=\"Stage\" DisplayName=\"Stage\" Required=\"FALSE\"></Field>",
+          "displayName": "Stage"
+        },
+        {
+          "name": "OccurredOn",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"OccurredOn\" StaticName=\"OccurredOn\" DisplayName=\"OccurredOn\" Required=\"FALSE\"></Field>",
+          "displayName": "Occurred On"
+        },
+        {
+          "name": "AsOf",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AsOf\" StaticName=\"AsOf\" DisplayName=\"AsOf\" Required=\"TRUE\"></Field>",
+          "displayName": "As Of"
+        },
+        {
+          "name": "Priority",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"Priority\" StaticName=\"Priority\" DisplayName=\"Priority\" Required=\"FALSE\"></Field>",
+          "displayName": "Priority"
+        },
+        {
+          "name": "AgreedTargetDate",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AgreedTargetDate\" StaticName=\"AgreedTargetDate\" DisplayName=\"AgreedTargetDate\" Required=\"FALSE\"></Field>",
+          "displayName": "Agreed Target Date"
+        },
+        {
+          "name": "TargetAgreementEvidence",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"TargetAgreementEvidence\" StaticName=\"TargetAgreementEvidence\" DisplayName=\"TargetAgreementEvidence\" Required=\"FALSE\"></Field>",
+          "displayName": "Target Agreement Evidence"
+        },
+        {
+          "name": "PreviousPreviewKey",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"PreviousPreviewKey\" StaticName=\"PreviousPreviewKey\" DisplayName=\"PreviousPreviewKey\" Required=\"FALSE\"></Field>",
+          "displayName": "Previous Preview Key"
+        },
+        {
+          "name": "Operation",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"Operation\" StaticName=\"Operation\" DisplayName=\"Operation\" Required=\"TRUE\"><CHOICES><CHOICE>Record follow-up</CHOICE><CHOICE>Preview digest</CHOICE></CHOICES></Field>",
+          "displayName": "Operation"
+        },
+        {
+          "name": "FollowupState",
+          "type": "Choice",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"FollowupState\" StaticName=\"FollowupState\" DisplayName=\"FollowupState\" Required=\"FALSE\"><CHOICES><CHOICE>Open</CHOICE><CHOICE>Completed</CHOICE><CHOICE>Declined</CHOICE><CHOICE>Superseded</CHOICE></CHOICES></Field>",
+          "displayName": "Followup State"
+        },
+        {
+          "name": "Rationale",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Rationale\" StaticName=\"Rationale\" DisplayName=\"Rationale\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Rationale"
+        },
+        {
+          "name": "NextAction",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"NextAction\" StaticName=\"NextAction\" DisplayName=\"NextAction\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Next Action"
+        },
+        {
+          "name": "WaitingReason",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"WaitingReason\" StaticName=\"WaitingReason\" DisplayName=\"WaitingReason\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Waiting Reason"
+        }
+      ],
+      "view": [
+        "LinkTitle",
+        "RequestKey",
+        "Operation",
+        "CaseUID",
+        "AsOf",
+        "Created"
+      ]
+    },
+    {
+      "key": "events",
+      "title": "PPG Follow-up History",
+      "description": "Integration-owned manual/on-demand follow-up. No assignment, clinical decision or notification.",
+      "enableVersioning": true,
+      "fields": [
+        {
+          "name": "EventUID",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"EventUID\" StaticName=\"EventUID\" DisplayName=\"EventUID\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>",
+          "displayName": "Event UID"
+        },
+        {
+          "name": "PredecessorKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"PredecessorKey\" StaticName=\"PredecessorKey\" DisplayName=\"PredecessorKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>",
+          "displayName": "Predecessor Key"
+        },
+        {
+          "name": "CaseUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CaseUID\" StaticName=\"CaseUID\" DisplayName=\"CaseUID\" Required=\"TRUE\"></Field>",
+          "displayName": "Case UID"
+        },
+        {
+          "name": "Stage",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"Stage\" StaticName=\"Stage\" DisplayName=\"Stage\" Required=\"TRUE\"></Field>",
+          "displayName": "Stage"
+        },
+        {
+          "name": "FollowupState",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"FollowupState\" StaticName=\"FollowupState\" DisplayName=\"FollowupState\" Required=\"TRUE\"></Field>",
+          "displayName": "Followup State"
+        },
+        {
+          "name": "OccurredOn",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"OccurredOn\" StaticName=\"OccurredOn\" DisplayName=\"OccurredOn\" Required=\"TRUE\"></Field>",
+          "displayName": "Occurred On"
+        },
+        {
+          "name": "RequestKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RequestKey\" StaticName=\"RequestKey\" DisplayName=\"RequestKey\" Required=\"TRUE\"></Field>",
+          "displayName": "Request Key"
+        },
+        {
+          "name": "EventJSON",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"EventJSON\" StaticName=\"EventJSON\" DisplayName=\"EventJSON\" Required=\"TRUE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "EventJSON"
+        },
+        {
+          "name": "DocumentReference",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentReference\" StaticName=\"DocumentReference\" DisplayName=\"DocumentReference\" Required=\"FALSE\"></Field>",
+          "displayName": "Document Reference"
+        },
+        {
+          "name": "ReviewedVersionRef",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ReviewedVersionRef\" StaticName=\"ReviewedVersionRef\" DisplayName=\"ReviewedVersionRef\" Required=\"FALSE\"></Field>",
+          "displayName": "Reviewed Version Ref"
+        },
+        {
+          "name": "DocumentSHA256",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentSHA256\" StaticName=\"DocumentSHA256\" DisplayName=\"DocumentSHA256\" Required=\"FALSE\"></Field>",
+          "displayName": "DocumentSHA256"
+        },
+        {
+          "name": "Priority",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"Priority\" StaticName=\"Priority\" DisplayName=\"Priority\" Required=\"FALSE\"></Field>",
+          "displayName": "Priority"
+        },
+        {
+          "name": "NextAction",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"NextAction\" StaticName=\"NextAction\" DisplayName=\"NextAction\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Next Action"
+        },
+        {
+          "name": "WaitingReason",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"WaitingReason\" StaticName=\"WaitingReason\" DisplayName=\"WaitingReason\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Waiting Reason"
+        },
+        {
+          "name": "SourceDueDate",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceDueDate\" StaticName=\"SourceDueDate\" DisplayName=\"SourceDueDate\" Required=\"FALSE\"></Field>",
+          "displayName": "Source Due Date"
+        },
+        {
+          "name": "AgreedTargetDate",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AgreedTargetDate\" StaticName=\"AgreedTargetDate\" DisplayName=\"AgreedTargetDate\" Required=\"FALSE\"></Field>",
+          "displayName": "Agreed Target Date"
+        },
+        {
+          "name": "TargetAgreementEvidence",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"TargetAgreementEvidence\" StaticName=\"TargetAgreementEvidence\" DisplayName=\"TargetAgreementEvidence\" Required=\"FALSE\"></Field>",
+          "displayName": "Target Agreement Evidence"
+        },
+        {
+          "name": "Rationale",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Rationale\" StaticName=\"Rationale\" DisplayName=\"Rationale\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Rationale"
+        },
+        {
+          "name": "Actor",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"Actor\" StaticName=\"Actor\" DisplayName=\"Actor\" Required=\"FALSE\"></Field>",
+          "displayName": "Recorded actor"
+        }
+      ],
+      "view": [
+        "LinkTitle",
+        "CaseUID",
+        "Stage",
+        "FollowupState",
+        "OccurredOn",
+        "Actor",
+        "Rationale",
+        "NextAction",
+        "WaitingReason",
+        "SourceDueDate",
+        "AgreedTargetDate",
+        "EventUID"
+      ]
+    },
+    {
+      "key": "digests",
+      "title": "PPG Follow-up Digest Previews",
+      "description": "Integration-owned manual/on-demand follow-up. No assignment, clinical decision or notification.",
+      "enableVersioning": true,
+      "fields": [
+        {
+          "name": "SnapshotKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SnapshotKey\" StaticName=\"SnapshotKey\" DisplayName=\"SnapshotKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>",
+          "displayName": "Snapshot Key"
+        },
+        {
+          "name": "RunKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RunKey\" StaticName=\"RunKey\" DisplayName=\"RunKey\" Required=\"TRUE\"></Field>",
+          "displayName": "Run Key"
+        },
+        {
+          "name": "CaseUID",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CaseUID\" StaticName=\"CaseUID\" DisplayName=\"CaseUID\" Required=\"FALSE\"></Field>",
+          "displayName": "Case UID"
+        },
+        {
+          "name": "Stage",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"Stage\" StaticName=\"Stage\" DisplayName=\"Stage\" Required=\"FALSE\"></Field>",
+          "displayName": "Stage"
+        },
+        {
+          "name": "AcceptedRole",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AcceptedRole\" StaticName=\"AcceptedRole\" DisplayName=\"AcceptedRole\" Required=\"FALSE\"></Field>",
+          "displayName": "Accepted Role"
+        },
+        {
+          "name": "AgreedTargetDate",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AgreedTargetDate\" StaticName=\"AgreedTargetDate\" DisplayName=\"AgreedTargetDate\" Required=\"FALSE\"></Field>",
+          "displayName": "Agreed Target Date"
+        },
+        {
+          "name": "SourceDueDate",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceDueDate\" StaticName=\"SourceDueDate\" DisplayName=\"SourceDueDate\" Required=\"FALSE\"></Field>",
+          "displayName": "Source Due Date"
+        },
+        {
+          "name": "SourceAsOf",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceAsOf\" StaticName=\"SourceAsOf\" DisplayName=\"SourceAsOf\" Required=\"FALSE\"></Field>",
+          "displayName": "Source As Of"
+        },
+        {
+          "name": "SourceCheckedAt",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceCheckedAt\" StaticName=\"SourceCheckedAt\" DisplayName=\"SourceCheckedAt\" Required=\"FALSE\"></Field>",
+          "displayName": "Source Checked At"
+        },
+        {
+          "name": "CandidateCount",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CandidateCount\" StaticName=\"CandidateCount\" DisplayName=\"CandidateCount\" Required=\"FALSE\"></Field>",
+          "displayName": "Candidate Count"
+        },
+        {
+          "name": "ExceptionCount",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ExceptionCount\" StaticName=\"ExceptionCount\" DisplayName=\"ExceptionCount\" Required=\"FALSE\"></Field>",
+          "displayName": "Exception Count"
+        },
+        {
+          "name": "SuppressedCount",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SuppressedCount\" StaticName=\"SuppressedCount\" DisplayName=\"SuppressedCount\" Required=\"FALSE\"></Field>",
+          "displayName": "Suppressed Count"
+        },
+        {
+          "name": "RowKind",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"RowKind\" StaticName=\"RowKind\" DisplayName=\"RowKind\" Required=\"TRUE\"><CHOICES><CHOICE>Candidate</CHOICE><CHOICE>Exception</CHOICE><CHOICE>Suppressed</CHOICE><CHOICE>Completed preview</CHOICE></CHOICES></Field>",
+          "displayName": "Row Kind"
+        },
+        {
+          "name": "NextAction",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"NextAction\" StaticName=\"NextAction\" DisplayName=\"NextAction\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Next Action"
+        },
+        {
+          "name": "WaitingReason",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"WaitingReason\" StaticName=\"WaitingReason\" DisplayName=\"WaitingReason\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Waiting Reason"
+        },
+        {
+          "name": "Reason",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Reason\" StaticName=\"Reason\" DisplayName=\"Reason\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "Reason"
+        },
+        {
+          "name": "PayloadJSON",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"PayloadJSON\" StaticName=\"PayloadJSON\" DisplayName=\"PayloadJSON\" Required=\"TRUE\" RichText=\"FALSE\" NumLines=\"5\"></Field>",
+          "displayName": "PayloadJSON"
+        },
+        {
+          "name": "StageEnteredOn",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"StageEnteredOn\" StaticName=\"StageEnteredOn\" DisplayName=\"Stage Entered On\" Required=\"FALSE\"></Field>",
+          "displayName": "Stage Entered On"
+        },
+        {
+          "name": "Priority",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"Priority\" StaticName=\"Priority\" DisplayName=\"Human Priority\" Required=\"FALSE\"></Field>",
+          "displayName": "Human Priority"
+        }
+      ],
+      "view": [
+        "LinkTitle",
+        "RunKey",
+        "RowKind",
+        "CaseUID",
+        "Stage",
+        "AcceptedRole",
+        "NextAction",
+        "Reason",
+        "AgreedTargetDate",
+        "StageEnteredOn",
+        "Priority"
+      ]
+    }
+  ],
+  "notificationsEnabled": false,
+  "sourceWrites": false,
+  "caseWrites": false,
+  "manualContext": "Version-bound operator source/freshness/recipient assertion; accepted ownership is resolved from existing handoff records at execution, not created here.",
+  "limits": "Native form captures requests. Only completed on-demand runs commit validated history/preview; direct history edits are detected and held, not prevented by new permissions."
+}

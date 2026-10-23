@@ -18,7 +18,7 @@ class ReleaseCandidateTests(unittest.TestCase):
             root = Path(temporary)
             for name in ['README.md', 'NOTICE.md', 'AGENTS.md']:
                 (root / name).write_text('Fictional source fixture. No public licence is granted.\n')
-            for name in ['scripts', 'tools/submission-package', 'templates', 'tests', '.github', 'config']:
+            for name in ['scripts', 'tools/submission-package', 'templates', 'tests', '.github', 'config', 'docs']:
                 (root / name).mkdir(parents=True, exist_ok=True)
             for name in ['build_release_candidate.py', 'build_submission_assembler.py']:
                 shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
@@ -32,6 +32,8 @@ class ReleaseCandidateTests(unittest.TestCase):
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / name, path)
+            shutil.copyfile(ROOT / '.gitattributes', root / '.gitattributes')
+            (root / 'docs/fixture.md').write_text('Fictional portable instructions')
             (root / '.gitignore').write_text('.local/\n__pycache__/\n')
             def git(*args):
                 return subprocess.check_output(['git', '-C', str(root), *args])

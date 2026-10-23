@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "owner": "Workbench and integration",
+  "executionMode": "native-interactive-with-labelled-manual-preparation",
+  "tasks": [
+    {
+      "key": "find-policy",
+      "label": "Find a policy",
+      "resource": "guidedPolicyView",
+      "input": "DocumentUID or source title",
+      "action": "Search source catalogue; inspect captured edition/currency separately",
+      "result": "Source identity and dated provenance; authority may remain unconfirmed"
+    },
+    {
+      "key": "open-case",
+      "label": "Open a case",
+      "resource": "guidedCaseView",
+      "input": "CaseUID; confirm linked DocumentUIDs",
+      "action": "Open the existing case or native New form; retain existing identity rules",
+      "result": "Case context, action and source/draft links; no assignment inferred"
+    },
+    {
+      "key": "prepare-package",
+      "label": "Prepare a package \u2014 download/manual",
+      "resource": "submissionAssemblerDownload",
+      "input": "Recorded case/version/baseline and actual files",
+      "action": "Download HTML assembler; open locally and create a new DRAFT ZIP",
+      "result": "Completeness report and new DRAFT output; no submission"
+    },
+    {
+      "key": "record-review",
+      "label": "Record a review",
+      "resource": "readinessEvents",
+      "input": "Actual finding, exact CaseUID/document/version/hash and evidence",
+      "action": "Use native readiness/assurance records; leave unassessed values pending",
+      "result": "Version-specific human finding, not policy approval"
+    },
+    {
+      "key": "resolve-exception",
+      "label": "Resolve an exception \u2014 guided operator steps",
+      "resource": "identityTriageGuide",
+      "input": "Held identity evidence or missing action/evidence",
+      "action": "Use existing resolution tool and sole importer; inspect focused views",
+      "result": "Explicit resolution or visible hold, never an invented identity"
+    }
+  ],
+  "views": [
+    {
+      "key": "case-workspace",
+      "title": "Case workspace",
+      "query": "<OrderBy><FieldRef Name=\"Created\" Ascending=\"TRUE\" /></OrderBy>"
+    },
+    {
+      "key": "missing-inputs",
+      "title": "Missing action or evidence",
+      "query": "<Where><Or><IsNull><FieldRef Name=\"nextAction\" /></IsNull><Or><IsNull><FieldRef Name=\"evidenceDraftLink\" /></IsNull><IsNull><FieldRef Name=\"sourceBaselineRef\" /></IsNull></Or></Or></Where><OrderBy><FieldRef Name=\"Created\" Ascending=\"TRUE\" /></OrderBy>"
+    },
+    {
+      "key": "target-checks",
+      "title": "Targets and follow-up checks",
+      "query": "<OrderBy><FieldRef Name=\"Created\" Ascending=\"TRUE\" /></OrderBy>"
+    }
+  ],
+  "datePolicy": "Strict real YYYY-MM-DD dates only; past is relative to Australia/Brisbane. ISO text alone never proves agreement; conditions/pending/invalid values are not overdue.",
+  "sourceLinkPolicy": "Clickable recorded source/draft links restricted to the bound workspace site; other references remain visible text for manual verification.",
+  "preserve": [
+    "case/source values",
+    "column types and requiredness",
+    "default and existing views",
+    "unrelated page controls",
+    "permissions",
+    "history",
+    "original files"
+  ],
+  "newTabs": 0,
+  "notifications": false,
+  "catalogueView": {
+    "title": "Policy identity and source",
+    "fields": [
+      "LinkTitle",
+      "DocumentUID",
+      "sourceDocumentId",
+      "sourceTitle",
+      "sourceSnapshotRef",
+      "sourceAsOfUtc",
+      "sourceStatus"
+    ]
+  }
+}

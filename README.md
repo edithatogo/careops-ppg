@@ -6,21 +6,26 @@ assurance evidence and process measures.
 
 This repository contains reusable code and explicitly fictional examples. It has
 fresh Git history and no organisation-specific deployment records, policy texts,
-source-register extracts, tenant bindings or deployment claims. Tenant-bound workbook
-and flow adapters, operational plans and status manifests are excluded. The pure
-flow-definition builder contains no native bindings and makes no API calls. No native
+source-register extracts, tenant bindings or deployment claims. Parameterised workbook and native adapter source is included with fictional inputs;
+real deployment bindings, operational plans and status manifests are excluded.
+Pure flow-definition builders make no API calls. Native adapters require explicit
+configuration and separate permission/output/recovery qualification. No native
 Microsoft deployment is configured or implied by the local checks.
 
 ## Run locally
 
-Requires Python 3.11+ and Node.js 22+; the retained tools use their standard libraries.
+Requires explicitly selected repo-local Python 3.15.1 and Node.js 22 or 26.12.1.
+The document qualification suite additionally requires the pinned .NET 10.0.402 SDK.
+Restore its locked dependencies from `tools/native-document-template` before running
+`.venv/bin/python scripts/run_portable_tests.py`. Operating a selected Python/Node
+module does not require the optional document-authoring utility.
 
 ```sh
-python3 -m unittest discover -s tests -p 'test_*.py'
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
 node tests/test_submission_assembler.cjs
 node tests/test_metadata_prefill.cjs
 node tests/test_native_cover_request.cjs
-python3 scripts/build_submission_assembler.py
+.venv/bin/python scripts/build_submission_assembler.py
 ```
 
 Open `.local/submission-package/PPG-submission-assembler.html` to prepare a draft
@@ -53,7 +58,7 @@ Install Gitleaks 8.30.1, then enable the repository's local commit hook:
 ```sh
 git config core.hooksPath .githooks
 gitleaks git --redact --log-opts=--all .
-python3 scripts/check_portable_content.py
+.venv/bin/python scripts/check_portable_content.py
 ```
 
 The hook scans staged changes for secrets and checks staged content before commit.
@@ -129,3 +134,9 @@ The [solution admission and recovery procedure](conductor/suite-delivery.md#solu
 reuses existing native objects, verifies connection-reference conversion and tests
 recovery on a reserved Stopped copy. Reuse retained target-specific evidence; this
 portable repository does not contain tenant exports or establish deployment.
+
+## Canonical source and consolidation
+
+See [consolidation](docs/consolidation.md), the [guided CLI](docs/guided-cli.md)
+and [technical assurance report](docs/cli-assurance-report.md). Native evidence,
+source policy texts and historical delivery records remain outside this toolkit.

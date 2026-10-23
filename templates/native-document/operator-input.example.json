@@ -1,0 +1,47 @@
+{
+  "case_title": "FICTIONAL native Word qualification",
+  "CaseUID": "FICTIONAL-NATIVE-WORD-CASE",
+  "source_snapshot": "fictional-snapshot-v1",
+  "version": "fictional-v1",
+  "intended_result": "FICTIONAL — not assessed",
+  "source_manifest": "FICTIONAL — not assessed",
+  "comparison_rows": [
+    {
+      "ComparisonSource": "FICTIONAL source 1",
+      "ComparisonGoverningSource": "FICTIONAL reference — not operative",
+      "ComparisonControl": "FICTIONAL control",
+      "ComparisonChange": "Line one\nLine two — Māori; Aboriginal and Torres Strait Islander peoples",
+      "ComparisonGap": "Not assessed"
+    }
+  ],
+  "draft_links_and_changes": "FICTIONAL — not assessed",
+  "ownership_and_implementation": "FICTIONAL — not assessed",
+  "decision_route": "FICTIONAL — not assessed",
+  "consultation_rows": [
+    {
+      "ConsultationRole": "Fictional role — unassigned",
+      "ConsultationQuestion": "FICTIONAL question",
+      "ConsultationVersion": "fictional-v1",
+      "ConsultationResponse": "Not received"
+    }
+  ],
+  "candidate_reference": "FICTIONAL — not assessed",
+  "reviewer_response": "FICTIONAL — not assessed",
+  "operative_confirmation": "FICTIONAL — not assessed",
+  "role_acceptance": "FICTIONAL — not assessed",
+  "review_findings": "FICTIONAL — not assessed",
+  "decision_evidence": "FICTIONAL — not assessed",
+  "next_action": "FICTIONAL — not assessed",
+  "measures": "FICTIONAL — not assessed",
+  "documentKind": "review-package",
+  "sourceSHA256": "7a1ac8bc70970b03bd3e45783671d97ea2c8f5fad84bb107232c6a1363a92f77",
+  "templateVersion": "PPG-native-word-candidate-v2",
+  "outputRevision": "operator-v3-single",
+  "includedRecordIDs": [
+    "fictional-doc-1",
+    "fictional-doc-2"
+  ],
+  "OptionalContent": "FICTIONAL optional note — not reviewed",
+  "templateSHA256": "a95a459f3180539f71a305c1dc65078e22d432230289dbdf67f425ad51c50a1a",
+  "occurrenceID": "fictional-native-word-qualification"
+}

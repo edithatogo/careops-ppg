@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "registers": [
+    {
+      "title": "PPG Responsibility Snapshots",
+      "description": "Dated derived joins from role records. Not live assignments, access or clinical authority. Refresh on demand; preserve prior runs.",
+      "fields": [
+        {
+          "name": "SnapshotKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SnapshotKey\" StaticName=\"SnapshotKey\" DisplayName=\"SnapshotKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RunKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RunKey\" StaticName=\"RunKey\" DisplayName=\"RunKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "AsOfDate",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AsOfDate\" StaticName=\"AsOfDate\" DisplayName=\"AsOfDate\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SourceSHA256",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceSHA256\" StaticName=\"SourceSHA256\" DisplayName=\"SourceSHA256\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"DocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "AssignmentKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AssignmentKey\" StaticName=\"AssignmentKey\" DisplayName=\"AssignmentKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RoleKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RoleKey\" StaticName=\"RoleKey\" DisplayName=\"RoleKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ResponsibilityType",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ResponsibilityType\" StaticName=\"ResponsibilityType\" DisplayName=\"ResponsibilityType\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "HolderKey",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"HolderKey\" StaticName=\"HolderKey\" DisplayName=\"HolderKey\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "ResolutionState",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ResolutionState\" StaticName=\"ResolutionState\" DisplayName=\"ResolutionState\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "Projection",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Projection\" StaticName=\"Projection\" DisplayName=\"Projection\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "SourceManifest",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"SourceManifest\" StaticName=\"SourceManifest\" DisplayName=\"SourceManifest\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        }
+      ]
+    }
+  ]
+}

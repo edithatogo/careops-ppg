@@ -46,5 +46,55 @@ class NativeFlowTests(unittest.TestCase):
  def test_unsafe_binding_refused(self):
   old,b=self.fixture();b['folder']='/sites/fictional/../escape'
   with self.assertRaises(ValueError):build_flow(old,b)
+ def test_full_route_keeps_legacy_engine_and_pin_fingerprint(self):
+  import copy
+  old,b=self.fixture();legacy=build_flow(old,b)['properties']['definition']['actions'];fullpin=copy.deepcopy(b['enginePin']);fullpin['UniqueId']='33333333-3333-4333-8333-333333333333'
+  b['fullReview']={'enginePin':fullpin,'scriptGraphId':'fictional-full-script'}
+  x=build_flow(old,b);a=x['properties']['definition']['actions']
+  self.assertEqual(a['Pin_sets']['inputs']['legacy'],legacy['Input_pins']['inputs'])
+  self.assertEqual(a['Receipt_shapes']['inputs']['legacy'],legacy['Expected_receipt']['inputs'])
+  self.assertEqual(len(a['Pin_sets']['inputs']['full']),8)
+  self.assertEqual('fictional-full-script',a['Select_document_script']['actions']['Run_full_review_script']['inputs']['parameters']['scriptId'])
+  self.assertEqual('fictional-script',a['Select_document_script']['else']['actions']['Run_existing_cover_script']['inputs']['parameters']['scriptId'])
+  for suffix in ['','_before_write','_before_receipt']:
+   self.assertIn(fullpin['UniqueId'],a['Read_engine_pin'+suffix]['inputs']['parameters']['parameters/uri'])
+   self.assertIn('Read_full_input_pin'+suffix,a)
+  # Every top-level dependency resolves; no cycle was introduced by insertion.
+  visited=set()
+  def visit(name,stack):
+   self.assertNotIn(name,stack);self.assertIn(name,a)
+   if name in visited:return
+   for prev in a[name].get('runAfter',{}):visit(prev,stack+[name])
+   visited.add(name)
+  for name in a:visit(name,[])
+  self.assertEqual(a['Request_ID'],legacy['Request_ID'])
+  self.assertEqual(a['Ensure_cover'],legacy['Ensure_cover'])
+  self.assertEqual(a['Require_unchanged_outputs'],legacy['Require_unchanged_outputs'])
+
+ def test_case_intake_is_explicit_read_only_and_rechecked_before_writers(self):
+  import copy
+  old,b=self.fixture();b['fullReview']={'enginePin':copy.deepcopy(b['enginePin']),'scriptGraphId':'full'}
+  before=build_flow(old,b)['properties']['definition']['actions']
+  b['caseIntake']={'enginePin':copy.deepcopy(b['enginePin']),'scriptGraphId':'intake','reviewQueueListId':'33333333-3333-4333-8333-333333333333','catalogueListId':'44444444-4444-4444-8444-444444444444'}
+  a=build_flow(old,b)['properties']['definition']['actions']
+  for key in ['Request_ID','Ensure_cover','Ensure_pack','Require_unchanged_outputs','Require_saved_bytes']:
+   self.assertEqual(a[key],before[key])
+  for suffix in ['','_before_write','_before_receipt']:
+   sets=a['Intake_pin_sets'+suffix]['inputs'];self.assertEqual(len(sets['extra']),2)
+   self.assertEqual(a['Pin_sets'+suffix]['inputs'],before['Pin_sets'+suffix]['inputs'])
+  for suffix in ['_before_write','_before_receipt']:
+   self.assertIn('Intake_unchanged'+suffix,a['Recheck_case_intake'+suffix]['actions'])
+  for name,action in self.actions(a['Read_case_intake']['actions']):
+   if action.get('type')=='OpenApiConnection':
+    p=action['inputs']['parameters']
+    self.assertIn(action['inputs']['host']['operationId'],['HttpRequest','GetFileContentByPath'])
+    if 'parameters/method'in p:self.assertEqual(p['parameters/method'],'GET')
+  visited=set()
+  def visit(name,stack):
+   self.assertNotIn(name,stack);self.assertIn(name,a)
+   if name in visited:return
+   for prev in a[name].get('runAfter',{}):visit(prev,stack+[name])
+   visited.add(name)
+  for name in a:visit(name,[])
 
 if __name__=='__main__':unittest.main()

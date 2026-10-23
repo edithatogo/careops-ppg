@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "fields": ["ID", "Title", "CaseUID", "caseStatus", "nextAction", "accountableRole", "targetDate", "linkedDocumentUIDs", "sourceBaselineRef", "evidenceDraftLink", "Created"],
+  "query": "<OrderBy><FieldRef Name=\"Created\" Ascending=\"TRUE\" /><FieldRef Name=\"ID\" Ascending=\"TRUE\" /></OrderBy>",
+  "views": [
+    {"title": "Next actions and preparation gaps", "focus": "action", "guidance": "All cases. Check the recorded action and missing source or draft references before preparation."},
+    {"title": "Ownership and handoff checks", "focus": "ownership", "guidance": "All cases. A recorded content-review role does not establish accepted ownership. Check the consultation and handoff history from the case form."},
+    {"title": "Date exceptions and agreement checks", "focus": "date", "guidance": "All cases, including missing and conditional targets. Date labels are checks; confirm agreement before treating a past date as overdue."}
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "fictionalOnly": true,
+  "cases": [
+    {
+      "caseId": "AF01",
+      "file": "AF01.csv",
+      "sha256": "bd884b5b528b16cc752569d81c5e0393ed4937a0b21aa9a967809a1b09b963fa",
+      "expectedDocumentKind": "Policy",
+      "expectedTopicMeaning": "equipment checks",
+      "expectedPurposeMeaning": "recording equipment checks",
+      "actualRun": "not-run",
+      "humanReview": "not-performed"
+    },
+    {
+      "caseId": "AF02",
+      "file": "AF02.csv",
+      "sha256": "f717d58d8c67750ce869373a6dcc383ccc2b16c31cc245f4112bd1aa810a0103",
+      "expectedDocumentKind": "Procedure",
+      "expectedTopicMeaning": "meeting rooms",
+      "expectedPurposeMeaning": "preparing meeting rooms",
+      "actualRun": "not-run",
+      "humanReview": "not-performed"
+    },
+    {
+      "caseId": "AF03",
+      "file": "AF03.csv",
+      "sha256": "a1716f7c07772d2b454813fb57715a3c861ee8d0b7f0e14f51b1a89b3e73bc0b",
+      "expectedDocumentKind": "Guideline",
+      "expectedTopicMeaning": "training materials",
+      "expectedPurposeMeaning": "organizing training materials",
+      "actualRun": "not-run",
+      "humanReview": "not-performed"
+    },
+    {
+      "caseId": "AF04",
+      "file": "AF04.csv",
+      "sha256": "3dd0a594c7aad48a1bbd5a2d8eaba3a7d39e732cafd802a740a1875860143ec2",
+      "expectedDocumentKind": "Unknown",
+      "expectedTopicMeaning": "Unknown",
+      "expectedPurposeMeaning": "Unknown",
+      "actualRun": "not-run",
+      "humanReview": "not-performed"
+    },
+    {
+      "caseId": "AF05",
+      "file": "AF05.csv",
+      "sha256": "dc7940e7c18e6854201de05a03fa91344c68dbe347a5e57db53c7dd6f855e4b2",
+      "expectedDocumentKind": "Other",
+      "expectedTopicMeaning": "stationery",
+      "expectedPurposeMeaning": "organizing stationery",
+      "actualRun": "not-run",
+      "humanReview": "not-performed"
+    },
+    {
+      "caseId": "AF06",
+      "file": "AF06.csv",
+      "sha256": "dd972a9aa021113a3baa4938979bccc40410c021cd3335d78625b78f10f303d8",
+      "expectedDocumentKind": "Procedure",
+      "expectedTopicMeaning": "equipment checks",
+      "expectedPurposeMeaning": "recording equipment checks",
+      "actualRun": "not-run",
+      "humanReview": "not-performed"
+    }
+  ],
+  "negativeOperations": [
+    "encrypted/unreadable file must remain unprocessed/unknown with native state recorded",
+    "correct a suggestion then retry: preserve correction/history or stop unsafe reprocessing",
+    "new fictional upload: observe scope/automatic processing",
+    "repeat processing: no canonical-field or source-content changes"
+  ]
+}

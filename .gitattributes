@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+# Binding templates preserve exact bytes through Git recovery.
+*.in -text

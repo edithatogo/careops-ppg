@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "promptSetVersion": "1.0.0",
+  "requiredRunFields": [
+    "runId",
+    "documentUID",
+    "documentVersion",
+    "documentSha256",
+    "templateVersion",
+    "templateSha256",
+    "criteriaVersion",
+    "promptId",
+    "promptVersion",
+    "promptSha256",
+    "evidenceSnapshots",
+    "coverageManifestRef",
+    "runtimeIdentity",
+    "startedAt",
+    "completedAt",
+    "status",
+    "findings",
+    "limitations",
+    "humanDisposition",
+    "policyApproved",
+    "publicationAuthorised",
+    "notificationsEnabled"
+  ],
+  "runStates": [
+    "prepared",
+    "running",
+    "completed",
+    "failed",
+    "held_missing_evidence"
+  ],
+  "runtimeIdentityFields": [
+    "executionMode",
+    "provider",
+    "model",
+    "modelVersion",
+    "versionAvailability"
+  ],
+  "findingFields": [
+    "findingId",
+    "criterionId",
+    "claimType",
+    "statement",
+    "sourceCitations",
+    "affectedSections",
+    "suggestedAction",
+    "benefit",
+    "effort",
+    "dependencies",
+    "uncertainty"
+  ],
+  "claimTypes": [
+    "evidence",
+    "inference",
+    "unknown"
+  ],
+  "citationFields": [
+    "sourceId",
+    "sourceVersion",
+    "sourceSha256",
+    "locator"
+  ],
+  "humanDisposition": "Not performed by default; decision/evidence/actor/time recorded separately",
+  "defaults": {
+    "policyApproved": false,
+    "publicationAuthorised": false,
+    "notificationsEnabled": false
+  },
+  "rules": [
+    "Unavailable model/build identities are explicit unknowns, not invented values",
+    "Completed technical execution does not mean accepted findings",
+    "Original inputs/prompts/outputs are retained; changed runs use new run identity",
+    "One failed module does not erase successful independent modules",
+    "Manual execution is allowed; preserve actual prompts and outputs if AI is used"
+  ]
+}

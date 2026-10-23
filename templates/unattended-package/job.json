@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "jobId": "job-fictional-1",
+  "metadata": {
+    "caseUID": "fictional-case",
+    "title": "Fictional unattended assembly",
+    "version": "DRAFT-1",
+    "sourceBaseline": "fictional frozen snapshot",
+    "documentType": "Procedure",
+    "documentScope": "fictional",
+    "custodianRole": "Proposed example role; not accepted",
+    "decisionRoute": "Proposed route; not confirmed",
+    "nextAction": "Human content and evidence check"
+  },
+  "attachments": [
+    {
+      "path": "draft.md",
+      "role": "draft",
+      "sha256": "a0f800ce5cdab93fd21a4d5eebfbf06396d3ac850e9bb1a3ebf869cd7733c150",
+      "sourceReference": "fictional selected input"
+    }
+  ]
+}

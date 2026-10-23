@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "blankCurrencyMeans": "Unconfirmed",
+  "fields": [
+    {"name":"PPGDocumentUID","title":"Policy document identity","type":"Text","description":"Established stable DocumentUID shared by editions of the same policy. Leave blank until identity is evidenced; do not infer from title or filename."},
+    {"name":"PPGPolicyEdition","title":"Policy edition (source stated)","type":"Text","description":"Edition/version printed in the source document. Distinct from SharePoint file Version; blank means not yet recorded."},
+    {"name":"PPGCurrency","title":"Policy currency","type":"Choice","choices":["Unconfirmed","Verified current","Verified superseded","Verified withdrawn"],"description":"Blank means Unconfirmed. A newer capture/upload is not proof of current authority. Verified states require the supporting check and evidence."},
+    {"name":"PPGReplacesEdition","title":"Replaces edition","type":"URL","description":"Link to the preserved earlier edition this document demonstrably replaces. Leave unresolved relationships blank."},
+    {"name":"PPGAuthorityLink","title":"Authoritative source","type":"URL","description":"Canonical source used to verify this policy edition; a captured copy alone does not establish authority."},
+    {"name":"PPGCurrencyChecked","title":"Currency checked on","type":"DateTime","description":"Date of the actual human currency verification, not the capture/upload date."},
+    {"name":"PPGCurrencyEvidence","title":"Currency verification evidence","type":"Note","description":"Who checked, what version/source was checked, findings and evidence reference. Preserve earlier findings in native version history; do not infer approval."}
+  ]
+}

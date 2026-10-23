@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "fields": [
+    {
+      "name": "PPGCaptureSHA256",
+      "title": "Capture SHA-256",
+      "type": "Text",
+      "description": "Exact original file-content SHA-256; distinct bytes remain distinct captures."
+    },
+    {
+      "name": "PPGCaptureSourceURL",
+      "title": "Captured source URL",
+      "type": "Note",
+      "description": "Exact captured URL; this is provenance, not a currency or authority finding."
+    },
+    {
+      "name": "PPGCaptureDate",
+      "title": "Captured at",
+      "type": "DateTime",
+      "description": "Recorded capture timestamp, stored in UTC and displayed using SharePoint regional settings; unknown stays blank. Archive dates are retained separately in source occurrences."
+    },
+    {
+      "name": "PPGOriginalFilename",
+      "title": "Original captured filename",
+      "type": "Text",
+      "description": "Source filename before safe hosted naming; original bytes are preserved."
+    },
+    {
+      "name": "PPGCaptureOrigins",
+      "title": "Archive source occurrences",
+      "type": "Note",
+      "description": "JSON source occurrences including archive/member, capture date and original URL. Repeated bytes retain every known occurrence."
+    },
+    {
+      "name": "PPGSourceURLKey",
+      "title": "Source URL key",
+      "type": "Text",
+      "description": "SHA-256 of exact source URL for grouping captures at that locator. This is not policy DocumentUID or proof that different URLs represent different policies."
+    },
+    {
+      "name": "PPGCaptureKind",
+      "title": "Capture kind",
+      "type": "Choice",
+      "description": "Document or supporting source page; not a policy approval or currency classification.",
+      "choices": [
+        "Document",
+        "Supporting source page"
+      ]
+    },
+    {
+      "name": "PPGCaptureEditionEvidence",
+      "title": "Edition linkage evidence",
+      "type": "Note",
+      "description": "Exact source-header and existing catalogue-alias evidence for recorded policy identity/edition. Does not establish current authority or approval."
+    }
+  ]
+}

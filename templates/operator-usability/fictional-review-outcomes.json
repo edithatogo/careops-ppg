@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "datasetKind": "fictional",
+  "judgments": [
+    {
+      "reviewRunId": "fictional-run",
+      "documentUID": "fictional-document",
+      "documentSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "findingRef": "fictional-finding",
+      "usefulAccepted": true,
+      "falsePositive": false,
+      "judgedAt": "2026-10-20T10:00:00+10:00",
+      "decisionRef": "fictional://judgment"
+    },
+    {
+      "reviewRunId": "fictional-run",
+      "documentUID": "fictional-document",
+      "documentSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "findingRef": "fictional-unknown",
+      "usefulAccepted": null,
+      "falsePositive": null
+    },
+    {
+      "reviewRunId": "fictional-run",
+      "documentUID": "fictional-document",
+      "documentSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "findingRef": "fictional-false-positive",
+      "usefulAccepted": false,
+      "falsePositive": true,
+      "judgedAt": "2026-10-20T10:00:00+10:00",
+      "decisionRef": "fictional://judgment"
+    }
+  ],
+  "decisions": [
+    {
+      "reviewRunId": "fictional-run",
+      "documentUID": "fictional-document",
+      "documentSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "startedAt": "2026-10-20T09:00:00+10:00",
+      "decidedAt": "2026-10-20T10:00:00+10:00",
+      "decisionRef": "fictional://decision"
+    }
+  ]
+}

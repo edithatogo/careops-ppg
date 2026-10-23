@@ -31,3 +31,7 @@ node_modules/
 *.log
 .gitleaks-report*
 coverage/
+
+# Local template authoring build outputs.
+tools/native-document-template/bin/
+tools/native-document-template/obj/

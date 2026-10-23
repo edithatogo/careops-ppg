@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "registers": [
+    {
+      "title": "PPG Structured Content",
+      "description": "Source-element capture with separate reviewer text; historical drafts are not issued policy.",
+      "fields": [
+        {
+          "name": "ContentKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ContentKey\" StaticName=\"ContentKey\" DisplayName=\"ContentKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"DocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SourceEditionKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceEditionKey\" StaticName=\"SourceEditionKey\" DisplayName=\"SourceEditionKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SourceElementId",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceElementId\" StaticName=\"SourceElementId\" DisplayName=\"SourceElementId\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SourceOrdinal",
+          "type": "Number",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Number\" Name=\"SourceOrdinal\" StaticName=\"SourceOrdinal\" DisplayName=\"SourceOrdinal\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SourceText",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"SourceText\" StaticName=\"SourceText\" DisplayName=\"SourceText\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "ProposedModule",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ProposedModule\" StaticName=\"ProposedModule\" DisplayName=\"ProposedModule\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SourceProvenance",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"SourceProvenance\" StaticName=\"SourceProvenance\" DisplayName=\"SourceProvenance\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "ReviewText",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"ReviewText\" StaticName=\"ReviewText\" DisplayName=\"ReviewText\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "ReviewedModule",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ReviewedModule\" StaticName=\"ReviewedModule\" DisplayName=\"ReviewedModule\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "StableSectionId",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"StableSectionId\" StaticName=\"StableSectionId\" DisplayName=\"StableSectionId\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "BlockReviewState",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"BlockReviewState\" StaticName=\"BlockReviewState\" DisplayName=\"BlockReviewState\" Required=\"TRUE\"><CHOICES><CHOICE>Unreviewed</CHOICE><CHOICE>Needs reconciliation</CHOICE><CHOICE>Reviewed</CHOICE></CHOICES><Default>Unreviewed</Default></Field>"
+        },
+        {
+          "name": "OptionalModifiers",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"OptionalModifiers\" StaticName=\"OptionalModifiers\" DisplayName=\"OptionalModifiers\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        }
+      ]
+    }
+  ]
+}

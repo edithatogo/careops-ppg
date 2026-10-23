@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "fictionalOnly": true,
+  "publication": {
+    "mode": "fictional-qualification",
+    "observedAtUtc": "2026-10-17T08:00:00Z",
+    "edition": {
+      "FictionalTest": true,
+      "PPGDocumentUID": "fictional-policy-a",
+      "PPGPolicyEdition": "1.1",
+      "PPGCurrency": "Unconfirmed"
+    },
+    "authorised": {
+      "FictionalTest": true,
+      "DocumentUID": "fictional-policy-a",
+      "policyEdition": "1.1",
+      "resourceReference": "https://example.invalid/draft",
+      "nativeVersionRef": "4.0",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "published": {
+      "FictionalTest": true,
+      "DocumentUID": "fictional-policy-a",
+      "policyEdition": "1.1",
+      "resourceReference": "https://example.invalid/published",
+      "nativeVersionRef": "1.0",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "downloadedSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "receiptReference": "fictional-native-receipt",
+      "readbackAtUtc": "2026-10-17T07:00:00Z"
+    },
+    "route": {
+      "FictionalTest": true,
+      "reference": "fictional-route",
+      "revision": "fixture-1",
+      "sourceSHA256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "category": "fictional-policy",
+      "requiredRole": "fictional-authoriser",
+      "currentAuthorityConfirmed": false
+    },
+    "decision": {
+      "FictionalTest": true,
+      "EventUID": "fictional-decision",
+      "DocumentReference": "https://example.invalid/draft",
+      "ReviewedVersionRef": "4.0",
+      "DocumentSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "publication": {
+      "FictionalTest": true,
+      "EventUID": "fictional-publication",
+      "ParentEventUID": "fictional-decision",
+      "PublicationURL": "https://example.invalid/published",
+      "PublishedVersionRef": "1.0"
+    },
+    "actorEvidence": {
+      "FictionalTest": true,
+      "role": "fictional-authoriser",
+      "decisionEventUID": "fictional-decision",
+      "responderIdentity": "fictional-responder",
+      "signatureEvidenceReference": "fictional-signature",
+      "roleEvidenceReference": "fictional-role-evidence"
+    },
+    "replacements": []
+  }
+}

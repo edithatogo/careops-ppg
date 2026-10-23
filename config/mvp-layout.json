@@ -1,0 +1,49 @@
+{
+  "status": "provisioned_native_readback_verified",
+  "visibleLists": [
+    {
+      "name": "PPG Catalogue",
+      "owner": "importer",
+      "fields": [
+        "DocumentUID",
+        "sourceDocumentId",
+        "sourceTitle",
+        "sourceCustodian",
+        "sourceNextReviewDateRaw",
+        "sourceNextReviewMonth",
+        "sourceStatus",
+        "sourceRisk",
+        "sourceSnapshotRef",
+        "sourceAsOfUtc",
+        "sourceRowNumber",
+        "rawSourceRecordRef",
+        "sourceIdentityDecisionRef"
+      ]
+    },
+    {
+      "name": "PPG Review Queue",
+      "owner": "CMO_team",
+      "fields": [
+        "CaseUID",
+        "linkedDocumentUIDs",
+        "sourceBaselineRef",
+        "accountableRole",
+        "proposedOutcome",
+        "nextAction",
+        "targetDate",
+        "caseStatus",
+        "evidenceDraftLink"
+      ]
+    }
+  ],
+  "library": {
+    "name": "PPG Review Evidence",
+    "note": "Use separate libraries/permissions for differing access needs; never put source and drafts into one unrestricted clinical publication surface."
+  },
+  "extraSyncRecords": "Add only when QW3 needs persistent checkpoint/alias handling.",
+  "fullSourcePreservation": "All 25 fields and raw values remain in the snapshot/envelope even if initial views expose fewer.",
+  "sourceDateDisplay": "Next review month is qualified YYYY-MM; raw serial retained separately.",
+  "fieldOwnershipBoundary": "Logical importer/local ownership in separate Lists; inherited site access retained; not a claim of SharePoint column-level security.",
+  "caseRolePresentation": "Content-review role; proposed content custody, acceptance/capacity and executive accountability are separate.",
+  "identityContractHandling": "Original ledger is immutable bootstrap; accepted amendments and active ledger are committed with the successful importer checkpoint. New identities require separately evidenced operator-supplied UUIDs; sourceIdentityDecisionRef is creation-only importer provenance."
+}

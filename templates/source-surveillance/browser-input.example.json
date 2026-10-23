@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {
+      "sourceKey": "fictional-policy",
+      "canonicalUrl": "https://example.invalid/policy",
+      "expectedIdentifier": "FICTIONAL-POLICY-1",
+      "expectedTitle": "Fictional policy"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "capabilityKey": "evidence-navigation",
+  "heading": "Find evidence",
+  "tasks": [
+    {"key":"captured-policy","label":"Find a captured policy","resourceRef":"capturedPoliciesAllView","authority":"Captured reference copies — current authority unconfirmed"},
+    {"key":"example-package","label":"Open the fictional example package — DRAFT","resourceRef":"submissionExample","authority":"Example package; missing evidence and human checks remain"},
+    {"key":"review-template","label":"Download the reusable review template — DRAFT","resourceRef":"reviewTemplate","authority":"Preparation template; local/manual use"},
+    {"key":"source-sync-evidence","label":"Inspect source-sync evidence","resourceRef":"sourceSyncEvidenceView","authority":"Technical receipts; not policy approval evidence"}
+  ],
+  "supportingResources": ["capturedPoliciesCmoView","capturedArchiveIndex","policyEditionsView"],
+  "searchFallback": "Search the downloaded archive index by originalFileName, hostedFileName or sourceUrl; follow canonicalUrl. Absence from SharePoint search is not absence from the archive.",
+  "archivePreservation": "No changes to original bytes, names, source URLs, capture dates or hashes. CMO relevance remains navigation only.",
+  "notifications": false
+}

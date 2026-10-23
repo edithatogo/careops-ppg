@@ -1,0 +1,296 @@
+{
+  "schemaVersion": 1,
+  "registers": [
+    {
+      "title": "PPG Framework Editions",
+      "description": "Versioned external frameworks; draft editions do not establish current obligations.",
+      "fields": [
+        {
+          "name": "FrameworkKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"FrameworkKey\" StaticName=\"FrameworkKey\" DisplayName=\"FrameworkKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "Issuer",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"Issuer\" StaticName=\"Issuer\" DisplayName=\"Issuer\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "EditionLabel",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"EditionLabel\" StaticName=\"EditionLabel\" DisplayName=\"EditionLabel\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "EditionStatus",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"EditionStatus\" StaticName=\"EditionStatus\" DisplayName=\"EditionStatus\" Required=\"TRUE\"><CHOICES><CHOICE>Published</CHOICE><CHOICE>Draft</CHOICE><CHOICE>Superseded</CHOICE><CHOICE>Withdrawn</CHOICE></CHOICES><Default>Draft</Default></Field>"
+        },
+        {
+          "name": "SourceURL",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceURL\" StaticName=\"SourceURL\" DisplayName=\"SourceURL\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "Applicability",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Applicability\" StaticName=\"Applicability\" DisplayName=\"Applicability\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "SourceCheckedOn",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceCheckedOn\" StaticName=\"SourceCheckedOn\" DisplayName=\"SourceCheckedOn\" Required=\"FALSE\"></Field>"
+        }
+      ]
+    },
+    {
+      "title": "PPG Standard Requirements",
+      "description": "Standard, criterion and action hierarchy within one framework edition.",
+      "fields": [
+        {
+          "name": "RequirementKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RequirementKey\" StaticName=\"RequirementKey\" DisplayName=\"RequirementKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "FrameworkKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"FrameworkKey\" StaticName=\"FrameworkKey\" DisplayName=\"FrameworkKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RequirementCode",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RequirementCode\" StaticName=\"RequirementCode\" DisplayName=\"RequirementCode\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RequirementKind",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"RequirementKind\" StaticName=\"RequirementKind\" DisplayName=\"RequirementKind\" Required=\"TRUE\"><CHOICES><CHOICE>Standard</CHOICE><CHOICE>Criterion</CHOICE><CHOICE>Action</CHOICE></CHOICES><Default>Standard</Default></Field>"
+        },
+        {
+          "name": "ParentRequirementKey",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ParentRequirementKey\" StaticName=\"ParentRequirementKey\" DisplayName=\"ParentRequirementKey\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "SourceLocator",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"SourceLocator\" StaticName=\"SourceLocator\" DisplayName=\"SourceLocator\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "RequirementText",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"RequirementText\" StaticName=\"RequirementText\" DisplayName=\"RequirementText\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        }
+      ]
+    },
+    {
+      "title": "PPG Standards Mappings",
+      "description": "Evidence-backed proposed or reviewed document-to-requirement links; not compliance certification.",
+      "fields": [
+        {
+          "name": "MappingKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"MappingKey\" StaticName=\"MappingKey\" DisplayName=\"MappingKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"DocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DocumentVersion",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentVersion\" StaticName=\"DocumentVersion\" DisplayName=\"DocumentVersion\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RequirementKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RequirementKey\" StaticName=\"RequirementKey\" DisplayName=\"RequirementKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "MappingState",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"MappingState\" StaticName=\"MappingState\" DisplayName=\"MappingState\" Required=\"TRUE\"><CHOICES><CHOICE>Proposed</CHOICE><CHOICE>Reviewed</CHOICE><CHOICE>Rejected</CHOICE><CHOICE>Superseded</CHOICE></CHOICES><Default>Proposed</Default></Field>"
+        },
+        {
+          "name": "Rationale",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Rationale\" StaticName=\"Rationale\" DisplayName=\"Rationale\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "EvidenceRef",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"EvidenceRef\" StaticName=\"EvidenceRef\" DisplayName=\"EvidenceRef\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        }
+      ]
+    },
+    {
+      "title": "PPG Requirement Crosswalks",
+      "description": "Version-specific correspondence; partial and uncertain mappings remain explicit.",
+      "fields": [
+        {
+          "name": "CrosswalkKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CrosswalkKey\" StaticName=\"CrosswalkKey\" DisplayName=\"CrosswalkKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "FromRequirementKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"FromRequirementKey\" StaticName=\"FromRequirementKey\" DisplayName=\"FromRequirementKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ToRequirementKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ToRequirementKey\" StaticName=\"ToRequirementKey\" DisplayName=\"ToRequirementKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "Correspondence",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"Correspondence\" StaticName=\"Correspondence\" DisplayName=\"Correspondence\" Required=\"TRUE\"><CHOICES><CHOICE>Equivalent</CHOICE><CHOICE>Partial</CHOICE><CHOICE>Related</CHOICE><CHOICE>Uncertain</CHOICE></CHOICES><Default>Uncertain</Default></Field>"
+        },
+        {
+          "name": "ReviewState",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"ReviewState\" StaticName=\"ReviewState\" DisplayName=\"ReviewState\" Required=\"TRUE\"><CHOICES><CHOICE>Proposed</CHOICE><CHOICE>Reviewed</CHOICE><CHOICE>Rejected</CHOICE><CHOICE>Superseded</CHOICE></CHOICES><Default>Proposed</Default></Field>"
+        },
+        {
+          "name": "Rationale",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Rationale\" StaticName=\"Rationale\" DisplayName=\"Rationale\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "EvidenceRef",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"EvidenceRef\" StaticName=\"EvidenceRef\" DisplayName=\"EvidenceRef\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        }
+      ]
+    },
+    {
+      "title": "PPG Document Relationships",
+      "description": "Typed document links; proposed links are not authority or retirement decisions.",
+      "fields": [
+        {
+          "name": "RelationshipKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RelationshipKey\" StaticName=\"RelationshipKey\" DisplayName=\"RelationshipKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "FromDocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"FromDocumentUID\" StaticName=\"FromDocumentUID\" DisplayName=\"FromDocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ToDocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ToDocumentUID\" StaticName=\"ToDocumentUID\" DisplayName=\"ToDocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "FromVersion",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"FromVersion\" StaticName=\"FromVersion\" DisplayName=\"FromVersion\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ToVersion",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ToVersion\" StaticName=\"ToVersion\" DisplayName=\"ToVersion\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RelationshipType",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"RelationshipType\" StaticName=\"RelationshipType\" DisplayName=\"RelationshipType\" Required=\"TRUE\"><CHOICES><CHOICE>implements</CHOICE><CHOICE>governed_by</CHOICE><CHOICE>local_variation_of</CHOICE><CHOICE>supplements</CHOICE><CHOICE>references</CHOICE><CHOICE>supersedes</CHOICE><CHOICE>proposed_consolidation_with</CHOICE></CHOICES><Default>implements</Default></Field>"
+        },
+        {
+          "name": "ReviewState",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"ReviewState\" StaticName=\"ReviewState\" DisplayName=\"ReviewState\" Required=\"TRUE\"><CHOICES><CHOICE>Proposed</CHOICE><CHOICE>Accepted</CHOICE><CHOICE>Rejected</CHOICE><CHOICE>Superseded</CHOICE></CHOICES><Default>Proposed</Default></Field>"
+        },
+        {
+          "name": "Rationale",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Rationale\" StaticName=\"Rationale\" DisplayName=\"Rationale\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "EvidenceRef",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"EvidenceRef\" StaticName=\"EvidenceRef\" DisplayName=\"EvidenceRef\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        }
+      ]
+    }
+  ],
+  "references": "Stable keys are explicit cross-register identifiers; manual entries require reference validation before review acceptance.",
+  "notificationsEnabled": false
+}

@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "mappingVersion": "1.2.0",
+  "implementationState": "native-view-page-verified",
+  "scope": "US-01–US-05 existing status view/page; no row/flow writes",
+  "nativeResourceRef": "statusList",
+  "timePolicy": {
+    "storageTimeZone": "UTC",
+    "displayTimeZone": "Australia/Brisbane",
+    "displaySuffix": "AEST (UTC+10)",
+    "projectionIntervalMinutes": 15,
+    "staleAfterMinutes": 30,
+    "sourceOverdueAfterMinutes": 90,
+    "invalidOrFutureTime": "unknown",
+    "missingTimeLabel": "Unavailable — timestamp not recorded",
+    "staleComparison": "strictly older than 30 minutes",
+    "noBaselineFreshening": "Never substitute latestCheck or projectedAt for lastSuccessfulReconciliation"
+  },
+  "fields": [
+    {
+      "nativeField": "LatestCheck",
+      "nativeType": "DateTime",
+      "label": "Last source check",
+      "source": "qw3-source-state.json",
+      "sourceProperty": "checkedUtc",
+      "meaning": "When the source was inspected; this is not a successful import."
+    },
+    {
+      "nativeField": "LatestAttemptOutcome",
+      "nativeType": "Text",
+      "label": "Latest reconciliation attempt",
+      "source": "latest qw3-run-*.json",
+      "sourceProperty": "status",
+      "meaning": "The latest attempt outcome; a metadata poll is not reconciliation."
+    },
+    {
+      "nativeField": "LastSuccessfulReconciliation",
+      "nativeType": "DateTime",
+      "label": "Last verified reconciliation",
+      "source": "qw3-last-successful.json",
+      "sourceProperty": "asOfUtc",
+      "meaning": "Last completed reconciliation with readback; retain this date during holds/failures."
+    },
+    {
+      "nativeField": "CommittedCount",
+      "nativeType": "Number",
+      "label": "Records in verified baseline",
+      "source": "qw3-last-successful.json",
+      "sourceProperty": "readbackCount",
+      "meaning": "Count at the last verified reconciliation; not the current source row count."
+    },
+    {
+      "nativeField": "ObservedVersion",
+      "nativeType": "Text",
+      "label": "Source version observed",
+      "source": "qw3-source-state.json",
+      "sourceProperty": "sourceETag",
+      "meaning": "Observed source identity; compare with committed version, never expose as policy authority."
+    },
+    {
+      "nativeField": "CommittedVersion",
+      "nativeType": "Text",
+      "label": "Source version reconciled",
+      "source": "qw3-last-successful.json",
+      "sourceProperty": "centralSourceETag",
+      "meaning": "Identity of the source used by the verified baseline."
+    },
+    {
+      "nativeField": "ProjectedAt",
+      "nativeType": "DateTime",
+      "label": "Status display updated",
+      "source": "existing status projection",
+      "sourceProperty": "utcNow()",
+      "meaning": "When this presentation row was refreshed; it does not make its baseline current."
+    },
+    {
+      "nativeField": "Health",
+      "nativeType": "Text",
+      "label": "Reconciliation state",
+      "source": "existing status projection",
+      "sourceProperty": "Health",
+      "meaning": "Keep healthy/held/failed/unknown semantics; display freshness separately."
+    },
+    {
+      "nativeField": "Reason",
+      "nativeType": "Note",
+      "label": "Why this state is shown",
+      "source": "existing status projection",
+      "sourceProperty": "Reason",
+      "meaning": "Retain underlying hold/failure detail even when the display is stale."
+    },
+    {
+      "nativeField": "NextAction",
+      "nativeType": "Note",
+      "label": "What to do next",
+      "source": "existing status projection",
+      "sourceProperty": "NextAction",
+      "meaning": "An operator action, never an inferred identity decision or approval."
+    },
+    {
+      "nativeField": "EvidenceLink",
+      "nativeType": "Text",
+      "label": "View attempt evidence",
+      "source": "latest qw3-run-*.json",
+      "sourceProperty": "canonical file link",
+      "meaning": "Render a qualified existing resource link; this native field is Text, not Hyperlink."
+    }
+  ],
+  "healthLabels": {
+    "healthy": {
+      "label": "Source matches the last verified reconciliation",
+      "actionResourceRef": "sourceSyncEvidenceView"
+    },
+    "held": {
+      "label": "Source change detected—reconciliation held",
+      "explanation": "Keep the last verified baseline. A successful poll does not resolve identity exceptions.",
+      "actionResourceRef": "identityTriageGuide"
+    },
+    "failed": {
+      "label": "Latest reconciliation failed or remains unverified",
+      "explanation": "Keep the last verified baseline; inspect the attempt before retrying.",
+      "actionResourceRef": "sourceSyncEvidenceView"
+    },
+    "unknown": {
+      "label": "Reconciliation state cannot be confirmed",
+      "explanation": "Evidence is missing, invalid, inconsistent, unavailable or overdue; do not infer healthy.",
+      "actionResourceRef": "sourceSyncEvidenceView"
+    }
+  },
+  "freshnessLabels": {
+    "fresh": "Status display recently updated",
+    "stale": "Status display is stale—last known state shown",
+    "unknown": "Status display freshness cannot be confirmed"
+  },
+  "displayRules": [
+    "Validate required evidence/timestamp presence, UTC offset and calendar validity before presenting healthy. Missing, future or inconsistent timestamps produce unknown.",
+    "Display projection freshness separately from Health; stale never hides the retained underlying held/failed reason.",
+    "Use the existing Health value and source/checkpoint/attempt evidence; do not create another monitor or identity decision path.",
+    "ObservedVersion differing from CommittedVersion, or an unresolved recorded hold, cannot be cleared by a successful metadata check.",
+    "A source check older than 90 minutes prevents a healthy claim; retain explicit held/failed evidence and show source-check overdue separately.",
+    "Missing/invalid projection time is unknown; projection older than 30 minutes is stale. Never invent a last-success date or count."
+  ],
+  "executionModeLabels": {
+    "native-scheduled": {
+      "label": "Scheduled native automation",
+      "meaning": "Timing and enabled state need current runtime evidence; the manifest alone does not prove it is running."
+    },
+    "native-interactive": {
+      "label": "Native interactive tool",
+      "meaning": "Requires an operator action in the native product; not a scheduled service."
+    },
+    "local-manual": {
+      "label": "Manual operator tool",
+      "meaning": "Requires the documented local/CLI workflow; a download is not a Teams execution button."
+    }
+  },
+  "capabilityStateLabels": {
+    "planned": "Planned — not implemented",
+    "pilot": "Pilot — limited qualification; not production adoption",
+    "live": "Delivered — execution mode and current runtime state shown separately",
+    "retired": "Retired — use the documented replacement",
+    "off": "Off — not executing automatically",
+    "conditional": "Conditional — prerequisite evidence still required",
+    "unavailable": "Unavailable on the checked route",
+    "unknown": "Current runtime availability not verified"
+  },
+  "capabilityStateRules": [
+    "Technical lifecycle, executionMode and enabled/Off state are separate dimensions.",
+    "Display Off only from explicit configuration/native state evidence; never infer Off merely from pilot.",
+    "A completed pilot is not a production-live service. Existing manifest facts and dated runtime receipts must support each label.",
+    "Keep content approval, authority/currency and human role acceptance separate from technical capability status."
+  ],
+  "examples": [
+    {
+      "key": "source-sync-held",
+      "fictional": true,
+      "lifecycle": "live",
+      "executionMode": "native-scheduled",
+      "health": "held",
+      "runtimeAvailability": "unknown",
+      "expected": "Source change detected—reconciliation held; schedule mode shown separately."
+    },
+    {
+      "key": "manual-comparison",
+      "fictional": true,
+      "lifecycle": "live",
+      "executionMode": "local-manual",
+      "expected": "Delivered manual operator tool; refresh requires operator action."
+    },
+    {
+      "key": "off-pilot",
+      "fictional": true,
+      "lifecycle": "pilot",
+      "executionMode": "native-interactive",
+      "explicitStateEvidence": "Off",
+      "expected": "Pilot / Off; do not offer a production-run button."
+    },
+    {
+      "key": "unavailable-route",
+      "fictional": true,
+      "checkedRouteEvidence": "access unavailable",
+      "expected": "Unavailable on the checked route; no tenant-wide availability conclusion."
+    }
+  ],
+  "preservation": {
+    "sourceWrites": false,
+    "caseDecisionWrites": false,
+    "newFlow": false,
+    "cadenceChange": false,
+    "notifications": false,
+    "newStatusRows": false,
+    "permissionChanges": false
+  },
+  "nativeRendering": {
+    "clockStrategy": "shallow UTC-epoch arithmetic with fixed UTC+10; no local-time getters",
+    "nestedLoopCandidate": "Did not render on checked native route; replaced",
+    "viewFieldsAdded": [
+      "ObservedVersion",
+      "CommittedVersion"
+    ],
+    "newStatusRows": 0,
+    "flowModified": false
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "title": "PPG Review Annotations",
+  "description": "Suggestions for later PPG review. Version-bound evidence, not policy approval. Retain discussion and decision history.",
+  "enableVersioning": true,
+  "fields": [
+    {
+      "name": "AnnotationKey",
+      "type": "Text",
+      "required": false,
+      "schemaXml": "<Field Type=\"Text\" Name=\"AnnotationKey\" StaticName=\"AnnotationKey\" DisplayName=\"Annotation key\" Required=\"FALSE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+    },
+    {
+      "name": "DocumentUID",
+      "type": "Text",
+      "required": true,
+      "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"Document UID\" Required=\"TRUE\"></Field>"
+    },
+    {
+      "name": "DocumentVersion",
+      "type": "Text",
+      "required": true,
+      "schemaXml": "<Field Type=\"Text\" Name=\"DocumentVersion\" StaticName=\"DocumentVersion\" DisplayName=\"Document version\" Required=\"TRUE\"></Field>"
+    },
+    {
+      "name": "SectionId",
+      "type": "Text",
+      "required": false,
+      "schemaXml": "<Field Type=\"Text\" Name=\"SectionId\" StaticName=\"SectionId\" DisplayName=\"Section identifier\" Required=\"FALSE\"></Field>"
+    },
+    {
+      "name": "OriginalSuggestion",
+      "type": "Note",
+      "required": true,
+      "schemaXml": "<Field Type=\"Note\" Name=\"OriginalSuggestion\" StaticName=\"OriginalSuggestion\" DisplayName=\"Suggestion and additions\" Required=\"TRUE\" RichText=\"FALSE\" AppendOnly=\"TRUE\"></Field>"
+    },
+    {
+      "name": "EvidenceRef",
+      "type": "Note",
+      "required": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"EvidenceRef\" StaticName=\"EvidenceRef\" DisplayName=\"Evidence links\" Required=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"TRUE\"></Field>"
+    },
+    {
+      "name": "ReviewState",
+      "type": "Choice",
+      "required": true,
+      "schemaXml": "<Field Type=\"Choice\" Name=\"ReviewState\" StaticName=\"ReviewState\" DisplayName=\"Review state\" Required=\"TRUE\"><CHOICES><CHOICE>Received</CHOICE><CHOICE>Triaged</CHOICE><CHOICE>Deferred</CHOICE><CHOICE>Accepted</CHOICE><CHOICE>Rejected</CHOICE><CHOICE>Incorporated</CHOICE><CHOICE>Superseded</CHOICE></CHOICES><Default>Received</Default></Field>"
+    },
+    {
+      "name": "DecisionRationale",
+      "type": "Note",
+      "required": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"DecisionRationale\" StaticName=\"DecisionRationale\" DisplayName=\"Decision rationale\" Required=\"FALSE\" RichText=\"FALSE\" AppendOnly=\"TRUE\"></Field>"
+    },
+    {
+      "name": "IncorporatedVersion",
+      "type": "Text",
+      "required": false,
+      "schemaXml": "<Field Type=\"Text\" Name=\"IncorporatedVersion\" StaticName=\"IncorporatedVersion\" DisplayName=\"Incorporated in version\" Required=\"FALSE\"></Field>"
+    }
+  ],
+  "identity": "Native list item ID; optional unique AnnotationKey for idempotent integrations",
+  "history": "Version history and append-only note fields preserve prior contributions; not a security boundary against administrators",
+  "nativeContributorFields": [
+    "Author",
+    "Editor",
+    "Created",
+    "Modified"
+  ],
+  "notificationsEnabled": false,
+  "formInstructions": "Use the catalogue DocumentUID and the exact document version. Title is a short summary. Add evidence links. A suggested change does not change policy authority."
+}

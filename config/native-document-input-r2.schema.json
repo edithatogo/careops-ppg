@@ -1,0 +1,196 @@
+{
+  "type": "object",
+  "properties": {
+    "case_title": {
+      "type": "string"
+    },
+    "CaseUID": {
+      "type": "string",
+      "enum": [
+        "FICTIONAL-NATIVE-WORD-CASE"
+      ]
+    },
+    "source_snapshot": {
+      "type": "string",
+      "minLength": 1,
+      "enum": [
+        "fictional-snapshot-v1"
+      ]
+    },
+    "version": {
+      "type": "string"
+    },
+    "intended_result": {
+      "type": "string"
+    },
+    "source_manifest": {
+      "type": "string"
+    },
+    "comparison_rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ComparisonSource": {
+            "type": "string"
+          },
+          "ComparisonGoverningSource": {
+            "type": "string"
+          },
+          "ComparisonControl": {
+            "type": "string"
+          },
+          "ComparisonChange": {
+            "type": "string"
+          },
+          "ComparisonGap": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ComparisonSource",
+          "ComparisonGoverningSource",
+          "ComparisonControl",
+          "ComparisonChange",
+          "ComparisonGap"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "draft_links_and_changes": {
+      "type": "string"
+    },
+    "ownership_and_implementation": {
+      "type": "string"
+    },
+    "decision_route": {
+      "type": "string"
+    },
+    "consultation_rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ConsultationRole": {
+            "type": "string"
+          },
+          "ConsultationQuestion": {
+            "type": "string"
+          },
+          "ConsultationVersion": {
+            "type": "string"
+          },
+          "ConsultationResponse": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ConsultationRole",
+          "ConsultationQuestion",
+          "ConsultationVersion",
+          "ConsultationResponse"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "candidate_reference": {
+      "type": "string"
+    },
+    "reviewer_response": {
+      "type": "string"
+    },
+    "operative_confirmation": {
+      "type": "string"
+    },
+    "role_acceptance": {
+      "type": "string"
+    },
+    "review_findings": {
+      "type": "string"
+    },
+    "decision_evidence": {
+      "type": "string"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "measures": {
+      "type": "string"
+    },
+    "documentKind": {
+      "type": "string",
+      "enum": [
+        "review-package"
+      ]
+    },
+    "sourceSHA256": {
+      "type": "string",
+      "enum": [
+        "7a1ac8bc70970b03bd3e45783671d97ea2c8f5fad84bb107232c6a1363a92f77"
+      ]
+    },
+    "templateVersion": {
+      "type": "string",
+      "enum": [
+        "PPG-native-word-candidate-v2-binding-r2"
+      ]
+    },
+    "outputRevision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "includedRecordIDs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "OptionalContent": {
+      "type": "string"
+    },
+    "templateSHA256": {
+      "type": "string",
+      "enum": [
+        "682eea0021f9b34aa14ed4aa43d8ea2da00645aaf595e2b524e41e852cfb1920"
+      ]
+    },
+    "occurrenceID": {
+      "type": "string",
+      "enum": [
+        "fictional-native-word-qualification"
+      ]
+    }
+  },
+  "required": [
+    "case_title",
+    "CaseUID",
+    "source_snapshot",
+    "version",
+    "intended_result",
+    "source_manifest",
+    "comparison_rows",
+    "draft_links_and_changes",
+    "ownership_and_implementation",
+    "decision_route",
+    "consultation_rows",
+    "candidate_reference",
+    "reviewer_response",
+    "operative_confirmation",
+    "role_acceptance",
+    "review_findings",
+    "decision_evidence",
+    "next_action",
+    "measures",
+    "documentKind",
+    "sourceSHA256",
+    "templateVersion",
+    "outputRevision",
+    "includedRecordIDs",
+    "OptionalContent",
+    "templateSHA256",
+    "occurrenceID"
+  ],
+  "additionalProperties": false
+}

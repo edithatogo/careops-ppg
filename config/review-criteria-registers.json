@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "registers": [
+    {
+      "title": "PPG Review Criteria",
+      "description": "Versioned advisory review questions; local mandatory authority remains unverified.",
+      "fields": [
+        {
+          "name": "CriterionKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CriterionKey\" StaticName=\"CriterionKey\" DisplayName=\"CriterionKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "CriterionId",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CriterionId\" StaticName=\"CriterionId\" DisplayName=\"CriterionId\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "CriteriaVersion",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"CriteriaVersion\" StaticName=\"CriteriaVersion\" DisplayName=\"CriteriaVersion\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "Question",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Question\" StaticName=\"Question\" DisplayName=\"Question\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "Applicability",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Applicability\" StaticName=\"Applicability\" DisplayName=\"Applicability\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "EvidenceRequired",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"EvidenceRequired\" StaticName=\"EvidenceRequired\" DisplayName=\"EvidenceRequired\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "AuthorityBasis",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"AuthorityBasis\" StaticName=\"AuthorityBasis\" DisplayName=\"AuthorityBasis\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "DefinitionStatus",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DefinitionStatus\" StaticName=\"DefinitionStatus\" DisplayName=\"DefinitionStatus\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RuleAuthority",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RuleAuthority\" StaticName=\"RuleAuthority\" DisplayName=\"RuleAuthority\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ResponseOptions",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"ResponseOptions\" StaticName=\"ResponseOptions\" DisplayName=\"ResponseOptions\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "DefinitionSHA256",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DefinitionSHA256\" StaticName=\"DefinitionSHA256\" DisplayName=\"DefinitionSHA256\" Required=\"TRUE\"></Field>"
+        }
+      ]
+    },
+    {
+      "title": "PPG Review Decision Options",
+      "description": "Versioned suggested disposition vocabulary. These records are options, not human decisions or approvals.",
+      "fields": [
+        {
+          "name": "DecisionKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DecisionKey\" StaticName=\"DecisionKey\" DisplayName=\"DecisionKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DecisionCode",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DecisionCode\" StaticName=\"DecisionCode\" DisplayName=\"DecisionCode\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "VocabularyVersion",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"VocabularyVersion\" StaticName=\"VocabularyVersion\" DisplayName=\"VocabularyVersion\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DefinitionStatus",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DefinitionStatus\" StaticName=\"DefinitionStatus\" DisplayName=\"DefinitionStatus\" Required=\"TRUE\"></Field>"
+        }
+      ]
+    }
+  ]
+}

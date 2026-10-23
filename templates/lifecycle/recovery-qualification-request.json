@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "requestId": "LC02-RECOVERY-20261018-01",
+  "operation": "fictional-next-action-qualification",
+  "CaseUID": "LC-FICTIONAL-20261017-01",
+  "caseItemId": "${PRIVATE_CASE_ITEM_ID}",
+  "occurrence": "fictional://ppg-lifecycle/20261017/occurrence-01",
+  "expectedCaseETag": "${PRIVATE_EXACT_CASE_ETAG}",
+  "before": {
+    "CaseUID": "LC-FICTIONAL-20261017-01",
+    "linkedDocumentUIDs": "[\"FICTIONAL-DOC-LC-20261017-01\"]",
+    "sourceBaselineRef": "fictional://ppg-lifecycle/20261017/occurrence-01",
+    "accountableRole": "FICTIONAL owner role \u2014 simulation only",
+    "proposedOutcome": "FICTIONAL workflow qualification; no real policy outcome",
+    "nextAction": "Prepare fictional revision for consultation; no policy approval",
+    "targetDate": "2026-10-31",
+    "caseStatus": "Ownership accepted \u2014 FICTIONAL"
+  },
+  "desiredNextAction": "Prepare fictional revision for consultation; LC02 recovery occurrence 01",
+  "sourceUniqueId": "${PRIVATE_SOURCE_UNIQUE_ID}",
+  "sourceETag": "${PRIVATE_EXACT_SOURCE_ETAG}",
+  "sourceSHA256": "${PRIVATE_SOURCE_SHA256}"
+}
