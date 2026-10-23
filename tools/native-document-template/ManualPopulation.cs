@@ -117,7 +117,8 @@ internal static class ManualPopulation
             }
             var sourceRelation = doc.MainDocumentPart!.AddHyperlinkRelationship(sourceSnapshotUri!, true);
             var sourceLink = new Hyperlink(new Run(new RunProperties(new Color { Val = "0563C1" },
-                new Underline { Val = UnderlineValues.Single }), new Text("Open source snapshot")))
+                new Underline { Val = UnderlineValues.Single }),
+                new Text(" Open source snapshot") { Space = SpaceProcessingModeValues.Preserve }))
                 { Id = sourceRelation.Id };
             controls.Single(x => Name(x) == "source_snapshot").InsertAfterSelf(sourceLink);
             filled.Add(new { field = "source_snapshot_link", value = sourceSnapshotUri!.ToString() });

@@ -94,7 +94,7 @@ class ManualPopulationTests(unittest.TestCase):
         document = ET.fromstring(package.read('word/document.xml'))
         links = document.findall('.//w:hyperlink', NS)
         self.assertEqual(len(links), 1)
-        self.assertEqual(''.join(links[0].itertext()), 'Open source snapshot')
+        self.assertEqual(''.join(links[0].itertext()).strip(), 'Open source snapshot')
         relation_id = links[0].get('{' + R_NS + '}id')
         relationships = ET.fromstring(package.read('word/_rels/document.xml.rels'))
         matches = [relationship for relationship in relationships.findall('pkg:Relationship',
