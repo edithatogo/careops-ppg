@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "tasks": [
+    "find-evidence",
+    "find-case",
+    "prepare-package",
+    "record-review",
+    "find-previous-version"
+  ],
+  "methods": [
+    "baseline",
+    "workbench",
+    "unclassified"
+  ],
+  "outcomes": [
+    "completed",
+    "held",
+    "failed",
+    "not-observed"
+  ],
+  "pairedIdentity": [
+    "inputRef",
+    "sourcePeriod",
+    "sourceVersion",
+    "taskVariant"
+  ],
+  "baselineMethod": "Observe the old/manual method on the same frozen task inputs used for the workbench attempt; record actual hands-on time rather than reconstructing it from case age or estimates.",
+  "timing": "Completed tasks with known observed durationSeconds only; blank is unknown, zero is valid. Report sample count and missing/excluded counts. Never call the sum full-workflow time.",
+  "waits": "Optional directly observed stageWaitSeconds, separately summarised for completed tasks. Linked case-event calendar intervals remain defined only by config/process-measures.json; never derive either from Created or hands-on duration.",
+  "help": "Yes / attempted tasks with known yes or no; unknown reported separately.",
+  "counts": "Missing inputs/corrections summed over attempted tasks with known counts; task denominator reported. Repeated inputs may recur across tasks.",
+  "comparison": "One baseline and one workbench row per pairId/task with matching nonblank source/input/period/version/variant, completed outcomes and known times. Report signed baseline minus workbench seconds per task, sample counts and exclusions. No pooled cross-task saving, causal claim or access/clinical acceptance inferred.",
+  "privacy": "Use opaque walkthrough/pair/input references. Keep actual observations and outputs in approved private storage. No participant names, patient data or policy narrative required.",
+  "taskDefinitions": {
+    "find-evidence": "Locate the specified reference and verify its identity/provenance link; no policy-currency judgement.",
+    "find-case": "Locate the specified CaseUID and check the correct case opens; no assignment or state change.",
+    "prepare-package": "Prepare the same unapproved package shape/required inputs; content review and approval excluded.",
+    "record-review": "Record a supplied authorised/fictional assertion using required fields; do not invent clinical findings.",
+    "find-previous-version": "Locate the specified preserved edition/version evidence; do not restore or overwrite an original."
+  }
+}

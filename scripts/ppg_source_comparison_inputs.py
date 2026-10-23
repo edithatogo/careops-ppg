@@ -11,7 +11,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from ppg_source_sync import digest, prepare
+from ppg_source_sync import digest, prepare, retention_contract
 from ppg_source_comparison import compare, render
 
 
@@ -44,7 +44,7 @@ def extract(envelope, mapping):
     return hashlib.sha256(binary).hexdigest(), records
 
 
-def qualify(baseline, baseline_raw, observed_raw, checkpoint, state, ledger, cases, mapping, observed_ref=''):
+def qualify(baseline, baseline_raw, observed_raw, checkpoint, state, ledger, cases, mapping, observed_ref='', catalogue=None):
     old_hash, old_records = extract(baseline_raw, mapping)
     new_hash, new_records = extract(observed_raw, mapping)
     if (checkpoint['status'] != 'completed' or
@@ -59,10 +59,13 @@ def qualify(baseline, baseline_raw, observed_raw, checkpoint, state, ledger, cas
     if (observed_raw['metadata']['ETag'] != state['sourceETag'] or
             observed_raw['metadata']['UniqueId'] != baseline_raw['metadata']['UniqueId']):
         raise ValueError('observed source binding mismatch')
-    aliases = [{'source': ledger['sourceSystemId'], 'alias': a['sourceDocumentId'],
-                'DocumentUID': a['documentUID']} for a in ledger['aliases']]
+    aliases = [{'source': ledger['sourceSystemId'], 'alias': a.get('sourceDocumentId', a.get('alias')),
+                'DocumentUID': a.get('documentUID', a.get('DocumentUID'))} for a in ledger['aliases']]
     if digest(aliases) != baseline['contractHash']:
         raise ValueError('identity contract changed; explicit qualification required')
+    retention_contract(baseline, checkpoint, catalogue)
+    if checkpoint.get('identityLedger') and digest(ledger) != digest(checkpoint['identityLedger']):
+        raise ValueError('identity ledger differs from committed checkpoint')
     candidate = prepare({'sourceSha256': new_hash, 'records': new_records,
                          'sourceSheet': 'Master Document Register'}, ledger['sourceSystemId'],
                         aliases, {'sourceDocumentId'})
@@ -70,7 +73,9 @@ def qualify(baseline, baseline_raw, observed_raw, checkpoint, state, ledger, cas
                                    'rawSnapshotRef': observed_ref,
                                    'sourceETag': observed_raw['metadata']['ETag'],
                                    'extractionMode': 'read-only cached XLSB values; native baseline parity verified'})
-    report = compare(baseline, candidate, cases)
+    if new_hash == checkpoint['sourceSha256']:
+        candidate['acknowledgedMissingUIDs'] = list(baseline.get('acknowledgedMissingUIDs', []))
+    report = compare(baseline, candidate, cases, checkpoint, catalogue)
     report['qualification'] = {'nativeBaselineParityCells': len(old_records) * len(mapping),
                                'baselineReadbackCount': checkpoint['readbackCount'],
                                'observedRecordCount': len(new_records),
@@ -86,13 +91,14 @@ def main():
     for name in ('baseline', 'baseline-raw', 'observed-raw', 'checkpoint', 'state', 'ledger', 'cases'):
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--mapping', type=Path, default=Path(__file__).resolve().parents[1] / 'config/source-field-map.csv')
+    parser.add_argument('--catalogue', type=Path, help='Complete catalogue export; required for retained absences')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--observed-ref', required=True, help='Canonical retained raw acquisition URL')
     args = parser.parse_args()
     with args.mapping.open(newline='') as stream:
         mapping = list(csv.DictReader(stream))
     candidate, report = qualify(*(json.loads(getattr(args, name).read_text()) for name in
-                                ('baseline', 'baseline_raw', 'observed_raw', 'checkpoint', 'state', 'ledger', 'cases')), mapping, args.observed_ref)
+                                ('baseline', 'baseline_raw', 'observed_raw', 'checkpoint', 'state', 'ledger', 'cases')), mapping, args.observed_ref, json.loads(args.catalogue.read_text()) if args.catalogue else None)
     args.output.mkdir(parents=True, exist_ok=False)
     for filename, value in [('candidate.json', candidate), ('comparison.json', report)]:
         (args.output / filename).write_text(json.dumps(value, ensure_ascii=False, indent=2))

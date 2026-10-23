@@ -38,13 +38,25 @@ def normalise_inputs(snapshot: dict, ledger: dict) -> tuple[dict, dict]:
             aliases.append(copy.deepcopy(alias))
         else:
             raise ValueError('unsupported_identity_ledger_shape')
-    return copy.deepcopy(snapshot), {'sourceSystemId': source, 'aliases': aliases}
+    normalised = {'sourceSystemId': source, 'aliases': aliases}
+    if 'sourceAbsenceAcknowledgements' in ledger:
+        normalised['sourceAbsenceAcknowledgements'] = copy.deepcopy(ledger['sourceAbsenceAcknowledgements'])
+    return copy.deepcopy(snapshot), normalised
 
 
 def inspect(snapshot: dict, source: str, ledger: dict, allowed: set[str]) -> dict:
     if ledger['sourceSystemId'] != source:
         raise ValueError('source_namespace_mismatch')
     plan = prepare(snapshot, source, ledger['aliases'], allowed)
+    acknowledgements = ledger.get('sourceAbsenceAcknowledgements', [])
+    acknowledged = [ack.get('DocumentUID') for ack in acknowledgements
+                    if ack.get('DocumentUID') in plan['missingUIDs']
+                    and ack.get('sourceSha256') == plan['sourceSha256']
+                    and ack.get('effect') == 'retain_unchanged'
+                    and all(isinstance(ack.get(k), str) and ack[k].strip()
+                            for k in ('actor', 'evidenceReference', 'decisionEvidence'))]
+    # Duplicate acknowledgements cannot make an ambiguous contract look settled.
+    acknowledged = sorted(set(acknowledged)) if len(set(acknowledged)) == len(acknowledged) else []
     by_row = {r['sourceRow']: r for r in snapshot['records']}
     cases = []
     for exception in plan['exceptions']:
@@ -63,6 +75,8 @@ def inspect(snapshot: dict, source: str, ledger: dict, allowed: set[str]) -> dic
             'sourceSha256': plan['sourceSha256'], 'contractHash': plan['contractHash'],
             'inputCount': plan['inputCount'], 'matchedCount': len(plan['operations']),
             'exceptions': cases, 'missingUIDs': plan['missingUIDs'],
+            'acknowledgedMissingUIDs': acknowledged,
+            'unacknowledgedMissingUIDs': sorted(set(plan['missingUIDs']) - set(acknowledged)),
             'matchedUIDs': [op['DocumentUID'] for op in plan['operations']],
             'sourceProvenance': plan['provenance'],
             'writesPermitted': False, 'applyAvailable': False}
@@ -214,7 +228,7 @@ def render(report: dict) -> str:
             '</code></p><p>Row (navigation only): '+esc(item['sourceRowForNavigation'])+
             '</p><p>Alias: '+esc(item['sourceAlias'])+'</p><pre>'+esc(json.dumps(item['sourceFields'], indent=2, ensure_ascii=False))+
             '</pre><p>Candidate UIDs: '+esc(item['candidateUIDs'])+'</p><p>'+esc(item['nextAction'])+'</p></section>')
-    return '<!doctype html><html lang="en"><meta charset="utf-8"><title>Identity resolution — unresolved</title><h1>Identity resolution</h1><p>Read-only preparation. This report grants no write authority. No identity decision, ledger change or reconciliation has occurred.</p><p>Source hash: <code>'+esc(report['sourceSha256'])+'</code></p><p>Contract hash: <code>'+esc(report['contractHash'])+'</code></p><p>Source rows: '+esc(report['inputCount'])+'; matched: '+esc(report['matchedCount'])+'.</p><p>Missing source-qualified UIDs: '+esc(report['missingUIDs'])+'. Investigate missing records; never retire them automatically.</p>'+''.join(cards)+'<p>Export a proposal with the guided command, record evidence and explicit acceptance, then hand it to the existing contract/importer owner. New UID requests need a separately evidenced operator-supplied UID before application.</p></html>'
+    return '<!doctype html><html lang="en"><meta charset="utf-8"><title>Identity resolution — source accounting</title><h1>Identity resolution</h1><p>Read-only preparation. This report grants no write authority and does not itself record decisions, apply changes or verify reconciliation.</p><p>Source hash: <code>'+esc(report['sourceSha256'])+'</code></p><p>Contract hash: <code>'+esc(report['contractHash'])+'</code></p><p>Source rows: '+esc(report['inputCount'])+'; matched: '+esc(report['matchedCount'])+'.</p><p>Missing source-qualified UIDs: '+esc(report['missingUIDs'])+'. Investigate missing records without valid acknowledgements; never retire them automatically.</p><p>Acknowledged retained absences for these source bytes: '+esc(report.get('acknowledgedMissingUIDs', []))+'. Still requiring investigation: '+esc(report.get('unacknowledgedMissingUIDs', report['missingUIDs']))+'. An acknowledgement is not clinical retirement.</p>'+''.join(cards)+'<p>Export a proposal with the guided command, record evidence and explicit acceptance, then hand it to the existing contract/importer owner. New UID requests need a separately evidenced operator-supplied UID before application.</p></html>'
 
 
 def main():

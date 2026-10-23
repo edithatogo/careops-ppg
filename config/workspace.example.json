@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "principles": [
+    "fictional-example-no-deployment"
+  ],
+  "capabilities": [
+    {
+      "key": "catalogue",
+      "purpose": "Fictional catalogue",
+      "responsibleRole": "Example operator",
+      "lifecycle": "planned",
+      "executionMode": "local-manual",
+      "resources": [
+        "hub"
+      ],
+      "dependencies": [],
+      "acceptanceCriteria": [
+        "Explicit target qualification"
+      ]
+    }
+  ],
+  "artefacts": [
+    {
+      "key": "hub",
+      "capabilityKey": "catalogue",
+      "type": "page",
+      "resourceRef": "fictional-hub",
+      "provenanceRef": "fictional://source",
+      "contentStatus": "DRAFT",
+      "location": "local-only"
+    }
+  ],
+  "surfaces": [
+    {
+      "key": "home",
+      "label": "Example",
+      "type": "page",
+      "resourceRef": "hub",
+      "placement": 1,
+      "accessBoundary": "Existing target permissions required"
+    }
+  ],
+  "statusPolicy": {
+    "intervalMinutes": 15,
+    "staleAfterMinutes": 30,
+    "sourceOverdueAfterMinutes": 90,
+    "notifications": false,
+    "sourceOfTruth": "Supplied evidence only"
+  }
+}

@@ -1,0 +1,6 @@
+datasetKind,asOf,walkthroughId,task,outcome,durationSeconds,missingInputCount,helpRequired,correctionCount,exclusionReason
+fictional,2026-10-17T09:00:00+10:00,fictional-example,find-evidence,completed,30,0,no,0,
+fictional,2026-10-17T09:00:00+10:00,fictional-example,find-case,completed,60,0,yes,0,
+fictional,2026-10-17T09:00:00+10:00,fictional-example,prepare-package,held,,2,yes,0,Illustrative missing inputs; duration excluded
+fictional,2026-10-17T09:00:00+10:00,fictional-example,record-review,completed,90,0,no,1,
+fictional,2026-10-17T09:00:00+10:00,fictional-example,find-previous-version,completed,20,0,no,0,

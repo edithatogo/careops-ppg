@@ -202,6 +202,71 @@
         "sourceOfTruth"
       ],
       "additionalProperties": false
+    },
+    "management": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "capabilityKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maintainerLane": {
+            "type": "string",
+            "minLength": 1
+          },
+          "environmentAlias": {
+            "type": "string",
+            "minLength": 1
+          },
+          "deploymentMethod": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recoverySection": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runtimeState": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourcePaths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "receiptRoots": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "connectionDependencies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "capabilityKey",
+          "maintainerLane",
+          "environmentAlias",
+          "deploymentMethod",
+          "recoverySection",
+          "runtimeState",
+          "sourcePaths",
+          "receiptRoots",
+          "connectionDependencies"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [

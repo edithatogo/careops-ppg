@@ -13,9 +13,10 @@ from ppg_source_sync import digest, prepare, SyncError
 
 
 def compile_application(snapshot: dict, ledger: dict, allowed: set[str],
-                        proposals: list[dict], new_identity_authorisations: list[dict]) -> dict:
+                        proposals: list[dict], new_identity_authorisations: list[dict],
+                        absence_acknowledgements: list[dict] | None = None) -> dict:
     report = inspect(snapshot, ledger['sourceSystemId'], ledger, allowed)
-    if not proposals:
+    if not proposals and not absence_acknowledgements:
         raise SyncError('accepted_proposals_required')
     auths = {}
     for authorisation in new_identity_authorisations:
@@ -78,9 +79,22 @@ def compile_application(snapshot: dict, ledger: dict, allowed: set[str],
     if consumed_auths != set(auths):
         raise SyncError('unused_new_identity_authorisation')
     plan = prepare(snapshot, report['source'], revised['aliases'], allowed)
-    if plan['exceptions'] or plan['missingUIDs']:
+    acknowledgements = copy.deepcopy(absence_acknowledgements or [])
+    retained = []
+    for ack in acknowledgements:
+        uid = ack.get('DocumentUID')
+        if uid not in current_uids or uid in retained or uid not in plan['missingUIDs']:
+            raise SyncError('invalid_absence_identity')
+        if (ack.get('sourceSha256') != report['sourceSha256']
+                or ack.get('baseContractHash') != report['contractHash']
+                or ack.get('effect') != 'retain_unchanged'
+                or any(not isinstance(ack.get(k), str) or not ack[k].strip()
+                       for k in ('actor', 'evidenceReference', 'decisionEvidence'))):
+            raise SyncError('explicit_source_bound_absence_acknowledgement_required')
+        retained.append(uid)
+    if plan['exceptions'] or sorted(plan['missingUIDs']) != sorted(retained):
         raise SyncError('amendment_leaves_identity_exceptions')
-    expected_uids = sorted({op['DocumentUID'] for op in plan['operations']})
+    expected_uids = sorted({op['DocumentUID'] for op in plan['operations']} | set(retained))
     if len(expected_uids) != len(current_uids) + len(seen_new_uids):
         raise SyncError('unauthorised_identity_count_change')
     package = {'schemaVersion': 1, 'source': report['source'],
@@ -91,6 +105,11 @@ def compile_application(snapshot: dict, ledger: dict, allowed: set[str],
                'amendments': amendments, 'acceptedProposals': copy.deepcopy(proposals),
                'newIdentityAuthorisations': copy.deepcopy(new_identity_authorisations),
                'resultLedger': revised, 'status': 'accepted-awaiting-importer'}
+    if acknowledgements:
+        revised['sourceAbsenceAcknowledgements'] = acknowledgements
+        package.update(schemaVersion=2, absenceAcknowledgements=acknowledgements,
+                       retainedAbsentUIDs=sorted(retained),
+                       activeUIDs=sorted(op['DocumentUID'] for op in plan['operations']))
     package['packageHash'] = digest(package)
     return package
 
@@ -98,10 +117,14 @@ def compile_application(snapshot: dict, ledger: dict, allowed: set[str],
 def verify_application(package: dict, snapshot: dict, ledger: dict, allowed: set[str]) -> dict:
     """Rebuild from current authoritative inputs; never trust staged ledger/counts."""
     expected = compile_application(snapshot, ledger, allowed, package['acceptedProposals'],
-                                   package['newIdentityAuthorisations'])
+                                   package['newIdentityAuthorisations'],
+                                   package.get('absenceAcknowledgements'))
     if package != expected:
         raise SyncError('application_package_changed')
-    return prepare(snapshot, ledger['sourceSystemId'], expected['resultLedger']['aliases'], allowed)
+    plan = prepare(snapshot, ledger['sourceSystemId'], expected['resultLedger']['aliases'], allowed)
+    if expected['schemaVersion'] == 2:
+        plan['acknowledgedMissingUIDs'] = expected['retainedAbsentUIDs']
+    return plan
 
 
 def inspect_outcome(package: dict, receipt: dict, checkpoint: dict) -> dict:
@@ -128,6 +151,12 @@ def inspect_outcome(package: dict, receipt: dict, checkpoint: dict) -> dict:
                     and evidence.get('identityContractHash') == package['resultContractHash']
                     and digest(ledger['aliases']) == package['resultContractHash']
                     and evidence.get('readbackCount') == package['inputCount']
+                    and (package['schemaVersion'] == 1 or (
+                        evidence.get('retainedAbsentUIDs') == package['retainedAbsentUIDs']
+                        and evidence.get('retainedAbsentReadbackCount') == len(package['retainedAbsentUIDs'])
+                        and evidence.get('retainedAbsentUnchanged') is True
+                        and evidence.get('catalogueReadbackCount') == len(package['expectedUIDs'])
+                        and ledger.get('sourceAbsenceAcknowledgements') == package['absenceAcknowledgements']))
                     and bool(evidence.get('runId')))
         except (KeyError, TypeError, ValueError):
             return False
@@ -150,6 +179,8 @@ def main():
         parser.add_argument('--'+name, type=Path, required=name == 'output')
     parser.add_argument('--proposals', type=Path, help='JSON array of accepted proposals')
     parser.add_argument('--new-authorisations', type=Path, help='JSON array; empty for alias-only changes')
+    parser.add_argument('--absence-acknowledgements', type=Path,
+                        help='Explicit source-bound decisions to retain absent identities unchanged')
     parser.add_argument('--verify-package', type=Path)
     parser.add_argument('--verify-outcome', type=Path, help='Application package; requires native receipt and its checkpoint')
     parser.add_argument('--receipt', type=Path)
@@ -179,7 +210,8 @@ def main():
         proposed = read(args.proposals)
         proposals = proposed if isinstance(proposed, list) else [proposed]
         result = compile_application(snapshot, ledger, allowed, proposals,
-                                     read(args.new_authorisations))
+                                     read(args.new_authorisations),
+                                     read(args.absence_acknowledgements) if args.absence_acknowledgements else None)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with open(args.output, 'x', encoding='utf-8', opener=lambda p,f:os.open(p,f,0o600)) as stream:
         json.dump(result, stream, indent=2, ensure_ascii=False, allow_nan=False)
