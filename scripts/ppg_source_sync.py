@@ -211,6 +211,85 @@ def prepare(snapshot: dict, source: str, aliases: list[dict], allowed: set[str])
                            "rawSnapshotRef", "mainRecordsRef") if k in snapshot}}
 
 
+def retention_contract(plan: dict, checkpoint: dict, catalogue: list[dict] | None = None) -> dict:
+    """Validate committed active/retained accounting; never authorise new absence.
+
+    Native callers must obtain the checkpoint through their qualified reader.
+    Local exports are checked for consistency, not authenticated by this function.
+    """
+    import copy
+    for record, keys in ((plan, ('inputCount',)), (checkpoint, ('readbackCount', 'catalogueReadbackCount', 'retainedAbsentReadbackCount'))):
+        for key in keys:
+            if key in record and (type(record[key]) is not int or record[key] < 0):
+                raise SyncError('invalid_retention_count')
+    if (checkpoint.get('status') != 'completed' or plan.get('exceptions')
+            or plan.get('sourceSha256') != checkpoint.get('sourceSha256')
+            or plan.get('contractHash') != checkpoint.get('identityContractHash')
+            or plan.get('inputCount') != checkpoint.get('readbackCount')):
+        raise SyncError('committed_retention_baseline_mismatch')
+    def identities(values):
+        if not isinstance(values, list) or any(not isinstance(u, str) or str(UUID(u)) != u for u in values):
+            raise SyncError('invalid_retention_identity')
+        if len(values) != len(set(values)):
+            raise SyncError('duplicate_retention_identity')
+        return set(values)
+    active = identities([op['DocumentUID'] for op in plan['operations']])
+    if len(active) != plan['inputCount']:
+        raise SyncError('active_identity_accounting_mismatch')
+    missing = identities(plan.get('missingUIDs', []))
+    acknowledged = identities(plan.get('acknowledgedMissingUIDs', []))
+    retained = identities(checkpoint.get('retainedAbsentUIDs', []))
+    if missing != acknowledged or missing != retained or active & retained:
+        raise SyncError('unacknowledged_or_conflicting_source_absence')
+    ledger = checkpoint.get('identityLedger')
+    all_ids = active | retained
+    acknowledgements = []
+    if ledger:
+        if ledger.get('sourceSystemId') != plan.get('source'):
+            raise SyncError('retention_source_namespace_mismatch')
+        aliases = []
+        seen_aliases = set()
+        for a in ledger['aliases']:
+            uid = a.get('documentUID', a.get('DocumentUID'))
+            alias = a.get('sourceDocumentId', a.get('alias'))
+            if (not isinstance(alias, str) or not alias or alias in seen_aliases
+                    or a.get('source', ledger['sourceSystemId']) != ledger['sourceSystemId']):
+                raise SyncError('invalid_retention_alias')
+            identities([uid]);seen_aliases.add(alias)
+            aliases.append({'source': ledger['sourceSystemId'], 'alias': alias, 'DocumentUID': uid})
+        if digest(aliases) != plan['contractHash'] or {a['DocumentUID'] for a in aliases} != all_ids:
+            raise SyncError('retention_contract_or_uid_set_mismatch')
+        seen_ack = set()
+        for ack in ledger.get('sourceAbsenceAcknowledgements', []):
+            uid = ack.get('DocumentUID')
+            if uid not in all_ids or uid in seen_ack:
+                raise SyncError('unknown_or_duplicate_absence_acknowledgement')
+            seen_ack.add(uid)
+            # Returned identities keep history; they consume no current absence authority.
+            if uid not in retained:
+                continue
+            if (ack.get('sourceSha256') != plan['sourceSha256']
+                    or ack.get('effect') != 'retain_unchanged'
+                    or any(not isinstance(ack.get(k), str) or not ack[k].strip()
+                           for k in ('actor', 'evidenceReference', 'decisionEvidence', 'baseContractHash'))):
+                raise SyncError('stale_or_invalid_absence_acknowledgement')
+            acknowledgements.append(copy.deepcopy(ack))
+        if {a['DocumentUID'] for a in acknowledgements} != retained:
+            raise SyncError('explicit_absence_acknowledgement_missing')
+    elif retained:
+        raise SyncError('committed_retention_ledger_required')
+    if retained and (not checkpoint.get('runId') or not checkpoint.get('lastIdentityApplicationHash')
+            or checkpoint.get('retainedAbsentUnchanged') is not True
+            or checkpoint.get('retainedAbsentReadbackCount') != len(retained)):
+        raise SyncError('complete_native_retention_readback_required')
+    if checkpoint.get('catalogueReadbackCount', checkpoint['readbackCount']) != len(all_ids):
+        raise SyncError('complete_catalogue_accounting_required')
+    if catalogue is not None and identities([r['DocumentUID'] for r in catalogue]) != all_ids:
+        raise SyncError('catalogue_retention_uid_set_mismatch')
+    return {'activeUIDs': sorted(active), 'retainedUIDs': sorted(retained),
+            'catalogueUIDs': sorted(all_ids), 'acknowledgements': acknowledgements}
+
+
 def reconcile(plan: dict, target: Target, state: Path) -> dict:
     """One serial worker; receipt survives partial failure, checkpoint stays last-good.
 

@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from uuid import UUID
 
-from ppg_source_sync import digest
+from ppg_source_sync import digest, retention_contract
 
 
 def index(plan):
@@ -33,12 +33,34 @@ def index(plan):
     return result
 
 
-def compare(baseline, candidate, cases):
+def compare(baseline, candidate, cases, checkpoint=None, catalogue=None):
     if baseline['source'] != candidate['source']:
         raise ValueError('different source namespaces')
-    if baseline['exceptions'] or baseline['missingUIDs']:
+    if baseline['exceptions']:
         raise ValueError('baseline must be a complete reconciled plan')
+    retained, retained_rows = set(), []
+    if checkpoint is not None:
+        contract = retention_contract(baseline, checkpoint, catalogue)
+        retained = set(contract['retainedUIDs'])
+        if retained and catalogue is None:
+            raise ValueError('retained catalogue fields required')
+        retained_rows = [{'DocumentUID': row['DocumentUID'],
+                          'recordedSourceFields': {k:v for k,v in row.items() if k.startswith('source') or k == 'rawSourceRecordRef'},
+                          'acknowledgement': next(a for a in contract['acknowledgements'] if a['DocumentUID'] == row['DocumentUID']),
+                          'meaning': 'Evidenced source absence; history retained unchanged; current clinical status unresolved'}
+                         for row in (catalogue or []) if row['DocumentUID'] in retained]
+    elif baseline['missingUIDs']:
+        raise ValueError('baseline must be a complete reconciled plan')
+    candidate_retained = set()
+    if retained:
+        try:
+            candidate_retained = set(retention_contract(candidate, checkpoint, catalogue)['retainedUIDs'])
+        except ValueError:
+            pass  # New or stale source absence has no committed authority.
+
     before, after = index(baseline), index(candidate)
+    for row in retained_rows:
+        row['observedPresence'] = 'present-active-candidate' if row['DocumentUID'] in after else 'absent-from-active-candidate'
     changes = []
     for uid in sorted(before.keys() | after.keys()):
         if uid not in after:
@@ -74,14 +96,18 @@ def compare(baseline, candidate, cases):
         except (ValueError, TypeError, AttributeError):
             unresolved.append({'CaseUID': key, 'reason': 'document-links-unqualified'})
             continue
-        unknown = sorted(set(links) - (before.keys() | after.keys()))
+        retained_links = sorted(set(links) & (retained - after.keys()))
+        if retained_links:
+            unresolved.append({'CaseUID': key, 'reason': 'retained-source-absence', 'DocumentUIDs': retained_links})
+        unknown = sorted(set(links) - (before.keys() | after.keys() | retained))
         if unknown:
             unresolved.append({'CaseUID': key, 'reason': 'linked-identity-not-in-comparison', 'DocumentUIDs': unknown})
         hits = sorted(set(links) & affected)
         if hits:
             case_rows.append({'CaseUID': key, 'DocumentUIDs': hits,
                               'action': 'Check changed source evidence; existing case decisions retained'})
-    held = bool(candidate['exceptions'] or candidate['missingUIDs'] or before.keys() - after.keys())
+    held = bool(candidate['exceptions'] or set(candidate['missingUIDs']) - candidate_retained
+                or before.keys() - after.keys() or retained - after.keys() - candidate_retained)
     return {'schemaVersion': 1, 'mode': 'local-manual-read-only',
             'status': 'Source change detected—reconciliation held' if held else 'comparison-only',
             'authority': 'Source metadata comparison; document content and current approval not assessed',
@@ -92,7 +118,11 @@ def compare(baseline, candidate, cases):
                        'candidateProvenance': candidate.get('provenance', {})},
             'changes': changes, 'affectedCases': sorted(case_rows, key=lambda c: c['CaseUID']),
             'unresolvedCases': sorted(unresolved, key=lambda c: c['CaseUID']), 'identityExceptions': candidate['exceptions'],
-            'missingUIDs': candidate['missingUIDs'], 'coverage': 'partial' if held or unresolved else 'complete',
+            'missingUIDs': sorted(set(candidate['missingUIDs']) - candidate_retained),
+            'retainedAbsences': sorted(retained_rows, key=lambda r:r['DocumentUID']),
+            'identityAccounting': {'baselineActive': len(before), 'candidateActive': len(after),
+                                   'retained': len(retained), 'baselineCatalogue': len(before.keys() | retained)},
+            'coverage': 'partial' if held or unresolved else 'complete',
             'caseWrites': 0, 'catalogueWrites': 0, 'checkpointAdvanced': False}
 
 
@@ -114,7 +144,7 @@ def render(report):
             html.escape(report['authority']) + '</p><table><tr><th>DocumentUID</th>'
             '<th>Change</th><th>Before / after</th></tr>' + rows + '</table><h2>Cases and exceptions</h2><pre>' +
             html.escape(json.dumps({k: report[k] for k in ('affectedCases', 'unresolvedCases',
-                               'identityExceptions', 'coverage', 'inputs')}, ensure_ascii=False, indent=2)) +
+                               'identityExceptions', 'retainedAbsences', 'identityAccounting', 'coverage', 'inputs')}, ensure_ascii=False, indent=2)) +
             '</pre><h2>Qualification</h2><pre>' + html.escape(json.dumps(report.get('qualification', {}), indent=2)) + '</pre>')
 
 
@@ -122,8 +152,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('baseline', 'candidate', 'cases', 'output'):
         parser.add_argument('--' + name, required=True, type=Path)
+    parser.add_argument('--checkpoint', type=Path)
+    parser.add_argument('--catalogue', type=Path)
     args = parser.parse_args()
-    report = compare(*(json.loads(getattr(args, name).read_text()) for name in ('baseline', 'candidate', 'cases')))
+    report = compare(*(json.loads(getattr(args, name).read_text()) for name in ('baseline', 'candidate', 'cases')),
+                     checkpoint=json.loads(args.checkpoint.read_text()) if args.checkpoint else None,
+                     catalogue=json.loads(args.catalogue.read_text()) if args.catalogue else None)
     args.output.mkdir(parents=True, exist_ok=False)
     (args.output / 'comparison.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     (args.output / 'comparison.html').write_text(render(report))

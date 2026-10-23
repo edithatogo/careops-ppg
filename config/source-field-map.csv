@@ -1,0 +1,29 @@
+source_column,source_header,mirror_field,write_owner,rule
+1,"Document Type
+",sourceDocumentType,Importer,Import as source assertion; do not overwrite a pilot decision.
+2,"Document ID
+",sourceDocumentId,Importer,Exact current alias only; contains version/review components and may change.
+3,ID#,sourceIdNumber,Importer,Not globally unique: do not use alone as an upsert key.
+4,First Ever Date ,sourceFirstEverDateRaw,Importer,Retain raw typed value. Normalize only with verified date system/format and record precision; no invented day/month.
+5,Last Reviewed ,sourceLastReviewedRaw,Importer,Retain raw typed value. Normalize only with verified date system/format and record precision; no invented day/month.
+6,Next Review Date,sourceNextReviewDateRaw,Importer,Retain raw typed value. Normalize only with verified date system/format and record precision; no invented day/month.
+7,Title ,sourceTitle,Importer,Import as source assertion; do not overwrite a pilot decision.
+8,Custodian,sourceCustodian,Importer,Import as source assertion; do not overwrite a pilot decision.
+9,Service Index,sourceServiceIndex,Importer,Import as source assertion; do not overwrite a pilot decision.
+10,Status,sourceStatus,Importer,Import as source assertion; do not overwrite a pilot decision.
+11,Status Category,sourceStatusCategory,Importer,Import as source assertion; do not overwrite a pilot decision.
+12,Published,sourcePublishedRaw,Importer,Retain raw typed value. Normalize only with verified date system/format and record precision; no invented day/month.
+13,Standard,sourceStandard,Importer,Import as source assertion; do not overwrite a pilot decision.
+14,Priority,sourcePriority,Importer,Import as source assertion; do not overwrite a pilot decision.
+15,RISK,sourceRisk,Importer,Import as source assertion; do not overwrite a pilot decision.
+16,Comments ,sourceComments,Importer,Import as source assertion; do not overwrite a pilot decision.
+17,HRA 2019 Compatible,sourceHRACompatibility,Importer,Import as source assertion; do not overwrite a pilot decision.
+18,Authorising Officer,sourceAuthorisingOfficer,Importer,Import as source assertion; do not overwrite a pilot decision.
+19,Executive Officer Operational Heirachy,sourceExecutiveHierarchy,Importer,Import as source assertion; do not overwrite a pilot decision.
+20,Service Director,sourceServiceDirector,Importer,Import as source assertion; do not overwrite a pilot decision.
+21,Clinical/Corp,sourceClinicalCorporate,Importer,Import as source assertion; do not overwrite a pilot decision.
+22,Audit Approach,sourceAuditApproach1,Importer,Duplicate display header disambiguated by original ordinal; preserve both fields.
+23,Audit Approach,sourceAuditApproach2,Importer,Duplicate display header disambiguated by original ordinal; preserve both fields.
+24,"QH overarching P/P or guideline / duplication
+NOTES",sourceOverarchingAuthorityNotes,Importer,Import as source assertion; do not overwrite a pilot decision.
+25,Asset #,sourceAssetNumber,Importer,Import as source assertion; do not overwrite a pilot decision.

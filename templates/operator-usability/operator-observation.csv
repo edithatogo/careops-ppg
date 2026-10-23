@@ -1,0 +1,6 @@
+datasetKind,asOf,walkthroughId,task,outcome,durationSeconds,missingInputCount,helpRequired,correctionCount,exclusionReason,method,pairId,inputRef,sourcePeriod,sourceVersion,taskVariant,stageWaitSeconds
+,,,find-evidence,not-observed,,,,,Not yet observed,,,,,,,
+,,,find-case,not-observed,,,,,Not yet observed,,,,,,,
+,,,prepare-package,not-observed,,,,,Not yet observed,,,,,,,
+,,,record-review,not-observed,,,,,Not yet observed,,,,,,,
+,,,find-previous-version,not-observed,,,,,Not yet observed,,,,,,,

@@ -138,7 +138,12 @@ def project_status(source, checkpoint, attempt, now=None):
 def display_status(status, now=None):
     now = now or datetime.now(timezone.utc)
     try:
-        if (now - parse_time(status['projectedAt'])).total_seconds() > 1800:
+        if not isinstance(status['projectedAt'], str):
+            return 'unknown'
+        age = (now - parse_time(status['projectedAt'])).total_seconds()
+        if age < 0:
+            return 'unknown'
+        if age > 1800:
             return 'stale'
     except (KeyError, ValueError, TypeError):
         return 'unknown'
