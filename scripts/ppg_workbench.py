@@ -92,7 +92,7 @@ def _open_state(path, plan, plan_hash, resume):
     if not resume:
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, 'wb') as receipt:
-            receipt.write(_json_line({'schemaVersion': 1, 'planSHA256': plan_hash, 'cwd': str(Path.cwd()), 'event': 'created', 'utc': datetime.now(timezone.utc).isoformat()}))
+            receipt.write(_json_line({'schemaVersion': 1, 'planSHA256': plan_hash, 'totalSteps': len(plan['steps']), 'cwd': str(Path.cwd()), 'event': 'created', 'utc': datetime.now(timezone.utc).isoformat()}))
             receipt.flush()
             os.fsync(receipt.fileno())
         return path, 0
@@ -131,7 +131,8 @@ def run_plan(plan_path, state_path, resume=False):
     plan, plan_hash = _load_plan(plan_path)
     state_path, start = _open_state(state_path, plan, plan_hash, resume)
     total = len(plan['steps'])
-    print(f'Plan: {plan_path}\nRun receipt: {state_path}\nResume point: stage {start + 1} of {total}', file=sys.stderr)
+    position = f'stage {start + 1} of {total}' if start < total else f'all {total} stages already complete; outputs verified'
+    print(f'Plan: {plan_path}\nRun receipt: {state_path}\nResume point: {position}', file=sys.stderr)
     for index in range(start, total):
         item = plan['steps'][index]
         outputs = [Path(p) for p in item['outputs']]
