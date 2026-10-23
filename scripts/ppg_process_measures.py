@@ -225,9 +225,21 @@ def csv_report(report):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input', type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--input', type=Path)
+    source.add_argument('--observations', type=Path, help='Existing operator observation CSV; no native source access.')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    if args.observations:
+        from ppg_observation_measures import observation_report, observation_csv
+        import hashlib
+        raw = args.observations.read_bytes()
+        report = observation_report(raw.decode('utf-8-sig'))
+        report['inputSHA256'] = hashlib.sha256(raw).hexdigest()
+        args.output.mkdir(parents=True, exist_ok=False)
+        (args.output / 'observations.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
+        (args.output / 'observations.csv').write_text(observation_csv(report))
+        return
     report = measure(json.loads(args.input.read_text()))
     args.output.mkdir(parents=True, exist_ok=False)
     for name, value in [('measures.json', json.dumps(report, ensure_ascii=False, indent=2)),

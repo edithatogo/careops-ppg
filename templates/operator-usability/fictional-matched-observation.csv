@@ -1,0 +1,7 @@
+datasetKind,asOf,walkthroughId,task,outcome,durationSeconds,missingInputCount,helpRequired,correctionCount,exclusionReason,method,pairId,inputRef,sourcePeriod,sourceVersion,taskVariant,stageWaitSeconds
+fictional,2026-10-18T09:00:00+10:00,old-a,find-evidence,completed,90,0,no,0,,baseline,pair-a,fictional-input-a,2026-10,fictional-v1,one-reference,20
+fictional,2026-10-18T09:10:00+10:00,new-a,find-evidence,completed,30,0,no,0,,workbench,pair-a,fictional-input-a,2026-10,fictional-v1,one-reference,5
+fictional,2026-10-18T09:20:00+10:00,old-a,find-case,completed,60,0,yes,1,,baseline,pair-b,fictional-input-b,2026-10,fictional-v1,one-case,0
+fictional,2026-10-18T09:30:00+10:00,new-a,find-case,completed,40,0,no,0,,workbench,pair-b,fictional-input-b,2026-10,fictional-v1,one-case,0
+fictional,2026-10-18T09:40:00+10:00,old-a,prepare-package,held,,2,yes,0,Fictional missing inputs,baseline,pair-c,fictional-input-c,2026-10,fictional-v1,one-package,
+fictional,2026-10-18T09:50:00+10:00,new-a,prepare-package,completed,100,0,,0,,workbench,pair-c,fictional-input-c,2026-10,fictional-v1,one-package,
