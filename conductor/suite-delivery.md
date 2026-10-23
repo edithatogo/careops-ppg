@@ -88,6 +88,19 @@ file and metadata operations through existing qualified connections. Verify
 entitlement and action-specific requirements; a Standard connector label does not
 qualify separately licensed document-generation actions.
 
+Do not add columns to a shared evidence/issued-document library merely to bind
+a template: Office metadata propagation can change stored document bytes, and
+a folder does not isolate the library schema. Reuse existing fields. Qualify a
+dedicated generation library with a stable schema before pinning outputs if new
+fields are required; preserve the current library and its retained history.
+
+Where scalar property refresh fails, reuse the existing Standard Office Script
+fixed-cover snapshot/packaging route at its qualified shape. It uses the existing
+Excel Online runtime and SharePoint storage; OneDrive conversion remains
+separately qualified. It does not establish general narrative, repeating-table
+or conditional-section generation. Keep review status in its existing authority
+and do not infer it from policy currency or source capture classification.
+
 The implementation alternatives exclude Copilot document-generation forms,
 Premium Word Online (Business) template/PDF actions, paid content assembly/Syntex
 and third-party paid generators. Keep manual template entry for unsupported body

@@ -49,7 +49,7 @@ separate task; neither that pin nor its runtime evidence changes in this plan PR
 ## Phase 4 — Library columns and document templates without additional premium subscriptions
 
 - [x] P4.1 Record the selected alternatives and exclude routes requiring additional premium subscriptions or usage billing.
-- [ ] P4.2 Inventory the selected library's existing columns, content types, templates and standard connector access. Map exact internal names/types to authoritative inputs; reuse existing fields before proposing additions. Record ownership and recoverable preimages in existing evidence.
+- [x] P4.2 Inventory the selected library's existing columns, content types, templates and existing flow connector references. Map exact internal names/types to authoritative inputs; reuse existing fields before proposing additions. Record ownership and recoverable preimages in existing evidence. This read-only inventory does not replace the execution/entitlement checks in P4.4.
 - [ ] P4.3 Qualify one fictional policy/review package with a maintained Word library/content-type template. Where supported, link simple document properties to visible fields using document-property controls/Quick Parts. Verify actual property values and body rendering separately in the selected desktop and browser clients, including Mac where used; retain manual entry on a documented refresh or editing gap.
 - [ ] P4.4 Qualify only the necessary standard SharePoint Power Automate actions for copying the template, creating files and updating metadata. Confirm existing entitlement, connections and policy access first; use serial conditional writes/readback and guard modification-trigger loops. The connector's Standard classification does not make its separately licensed generation actions eligible.
 - [ ] P4.5 Verify saved file identity, links, metadata, editing and recovery for the selected package. Preserve earlier outputs, human edits, issued history and source/template revisions. Record a failed or interrupted operation before retrying; verify retries do not create duplicate revisions. Do not close native acceptance from source CI alone.
@@ -59,6 +59,7 @@ separate task; neither that pin nor its runtime evidence changes in this plan PR
 1. **Library columns and content types — first choice:** store structured metadata, required fields and document-kind templates; support filtering, grouping and routing without relying on Word-body generation.
 2. **Maintained Word library/content-type templates:** create documents from an approved layout; link supported scalar document properties where verified, and keep manual content entry for narrative, conditional sections and variable-length tables until their behavior is qualified.
 3. **Power Automate with standard SharePoint actions:** copy/create files and update library properties using existing qualified connections and entitlement. No automatic Word-body merge is implied by a successful metadata update.
+4. **Existing Standard Office Script fixed-cover route:** reuse the maintained snapshot compiler and packaging runtime for its qualified scalar-cover shape. Standard Excel Online (Business) executes the existing script; Standard SharePoint stores the files/metadata, with Standard OneDrive conversion only where separately qualified. This is a bounded fallback after property-refresh failure, not a new generator or proof of arbitrary narrative, repeating-table or conditional-section support.
 
 Exclude Copilot document-generation forms, Word Online (Business) template-population/PDF actions classified as Premium in Power Automate, paid content assembly/Syntex, and third-party paid generators from this implementation route. No additional subscription, usage billing, consent, connection or tenant setting is authorised by this plan.
 
@@ -70,11 +71,43 @@ SharePoint file-history version. Retain distinguishable copies of different
 source editions; file history records edits to each copy. Preserve the existing
 register as the source of identity and status rather than creating another register.
 
+### Inventory outcome and implementation constraints
+
+The read-only schema/template and current flow-definition inventory is complete;
+exact bindings, field mappings and raw responses remain in private evidence.
+Reuse existing identity, edition, capture-provenance and scalar-cover fields.
+Do not substitute a capture classification for document kind or policy currency
+for review status. Keep unmatched semantics in the existing authoritative
+catalogue, review queue or paired generation receipt rather than inventing a
+matching library column or duplicating status authority.
+
+Shared-library schema changes can propagate Office custom XML into existing
+documents and change their bytes independently of visible version labels.
+**Do not add columns to the shared evidence/issued-document library.** A folder
+does not isolate schema. If the selected template needs new fields, qualify a
+dedicated generation library with its schema established before pinning files;
+reuse the current fixed-cover/manual fallback while that remains unqualified.
+
+Metadata persistence is not proof of Word-body refresh. Reuse the recorded
+property-refresh failure and the existing snapshot fallback rather than
+repeating the unchanged failing route. Current readback of the retained
+fictional cover/package confirms their recorded byte hashes and identities,
+stable reads, ZIP integrity and member hashes; it is preservation evidence,
+not a new generation, rendering or edit/recovery trial. P4.3–P4.5 remain open for
+their complete selected-shape requirements. The current flow graph and connection
+reference snapshot differ from the older output's qualification snapshot; inspect
+the current owned operation and its runtime evidence before reusing that proof
+for P4.4. Do not overwrite or rerun an in-flight implementation to reproduce old
+evidence. No cloud schema, files, flow settings
+or connection state changed during the inventory.
+
 References: [SharePoint column types](https://support.microsoft.com/en-us/sharepoint/lists/data-and-lists/list-and-library-column-types-and-options),
 [library templates](https://support.microsoft.com/en-us/sharepoint/documents-and-library/set-a-custom-template-for-a-sharepoint-library),
 [Office document properties](https://support.microsoft.com/en-us/office/collab-files/view-or-change-the-properties-for-an-office-file),
 [Quick Parts](https://support.microsoft.com/en-us/word/quick-parts),
 [SharePoint connector classification and actions](https://learn.microsoft.com/en-us/connectors/sharepointonline/),
 [Word connector classification](https://learn.microsoft.com/en-us/connectors/wordonlinebusiness/),
+[Excel Online connector classification](https://learn.microsoft.com/en-us/connectors/excelonlinebusiness/),
+[OneDrive connector classification](https://learn.microsoft.com/en-us/connectors/onedriveforbusinessconnector/),
 [content assembly billing](https://learn.microsoft.com/en-us/microsoft-365/documentprocessing/content-assembly),
 [Atlas Python migration](https://github.com/edithatogo/global-medicines-atlas/pull/1295).
