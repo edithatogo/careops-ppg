@@ -14,7 +14,8 @@
 
 ## Phase 3 — Integration
 
-- [ ] P3.1 Run affected structure/privacy checks and exact-head required checks; merge eligible work and verify main.
+- [x] P3.1a Run affected structure/privacy checks and exact-head required checks.
+- [ ] P3.1b Integrate the eligible PR and verify the merged main state.
 - [x] P3.2 Audit every acceptance requirement and explicit external blocker.
 - [ ] P3.3 Record actual goal-tool result; close only when full evidence supports completion.
 
@@ -29,4 +30,7 @@ A track or prompt is not an armed goal or completed runtime migration. Shared ch
 - Focused local checks passed for the XLSB parser, runtime guard, canary qualification, release-candidate packaging and DOCX revision preservation. `actionlint` and the staged portable-content check passed. Exact-head hosted canary, package, security, content and Python 3.15.1/Node 22 and 26.12.1 checks passed on `fdab652`.
 - External runtime blocker: the pinned Global Medicines Atlas source declares `requires-python = ">=3.14,<3.15"`; its integration helper is now restricted to PPG's required Python 3.15.1 and will fail closed rather than use `ATLAS/.venv`. No compatible Atlas source/runtime is available in this checkout. This repository's Atlas integration remains unqualified.
 - Native template blocker: read-only Microsoft 365 license enumeration for the connected user showed PBI Premium per User, Power BI Standard, Teams Audio Conferencing and SPE E3, with no Copilot SKU. SharePoint structured-document generation remains unqualified; no license or tenant setting was changed.
-- At the prior checkpoint, PR #32 was open and draft at `fdab652`; required checks passed and branch protection requires zero approving reviews, but draft status prevents merge. This checkpoint adds the Atlas runtime guard and declares the upstream compatibility limit; exact-head checks must run before integration. P3.1 and P3.3 remain open until the PR is made ready, merged, and the merged main state is verified. No merge or post-merge evidence is claimed.
+- Current head: PR #32 remains open and draft at `4497a065b94ee1683ab36f9cee36c01826aebeee`. Exact-head portable content, Python 3.15.1 with Node 22 and 26.12.1, compatibility canary, package candidate and shared-source security checks passed; package attestation was skipped by its configured condition. The tracked-content check and Gitleaks passed before push. P3.1a is complete; P3.1b remains open because the draft PR has not been integrated. No merged-main evidence is claimed.
+- Template fallback evidence: the fictional three-row DOCX rendered in LibreOffice 26.8 to a three-page A4 PDF. Each comparison row remained together across page breaks, the source snapshot rendered as a clickable HTTPS link, and the empty optional section was omitted. Revision-preservation tests passed. Microsoft Word opened a separate copy and reported three pages; an actual Word edit/save round trip and native SharePoint generation remain unqualified.
+- Current native blocker: a fresh read-only license enumeration returned PBI Premium per User, Power BI Standard, Teams Audio Conferencing and SPE_E3; it returned no Copilot SKU. No license, tenant setting or site permission was changed. SharePoint structured-document generation remains unqualified.
+- External runtime blocker: the pinned Global Medicines Atlas source still declares `requires-python = ">=3.14,<3.15"`; this repo's integration remains unqualified under the mandatory Python 3.15.1 runtime. P3.3 remains open until full-scope evidence and the actual goal-tool result support closure.
