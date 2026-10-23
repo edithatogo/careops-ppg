@@ -79,6 +79,26 @@ Metadata readback and visible body rendering are separate checks. The Clinical t
 
 Reference: https://learn.microsoft.com/sharepoint/dev/business-apps/power-automate/sharepoint-connector-actions-triggers
 
+### Selected route without additional premium subscriptions — 24 October 2026
+
+Use library columns/content types first, with maintained Word library templates
+and supported scalar document-property controls where actual rendering is
+qualified. Use standard SharePoint Power Automate actions only for the necessary
+file and metadata operations through existing qualified connections. Verify
+entitlement and action-specific requirements; a Standard connector label does not
+qualify separately licensed document-generation actions.
+
+The implementation alternatives exclude Copilot document-generation forms,
+Premium Word Online (Business) template/PDF actions, paid content assembly/Syntex
+and third-party paid generators. Keep manual template entry for unsupported body
+behavior and retain working outputs. Different source editions remain retained
+copies with provenance; native file history records edits to each copy rather
+than substituting for source edition or capture date.
+
+Execute the bounded inventory, template/client checks, standard-action trial and
+preservation/recovery checks in [the existing plan, Phase 4](tracks/python315_qualification_20261023/plan.md#phase-4--library-columns-and-document-templates-without-additional-premium-subscriptions).
+This planning change neither configures a tenant nor claims native qualification.
+
 
 ## Solution admission and recovery
 

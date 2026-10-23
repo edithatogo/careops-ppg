@@ -23,6 +23,11 @@
 
 A track or prompt is not an armed goal or completed runtime migration. Shared chat goal creation was rejected due to its unfinished goal.
 
+The library-column route below is the selected next implementation approach. The
+earlier Atlas upstream blocker is superseded: Atlas PR #1295 merged its Python
+3.15.1 migration. Qualification of PPG's pinned Atlas integration remains a
+separate task; neither that pin nor its runtime evidence changes in this plan PR.
+
 ## Evidence checkpoint — 2026-10-24
 
 - Runtime inventory: `.python-version` is `3.15.1`; README, CI, canary and Git hook select and verify that runtime. The Atlas qualification helper now refuses any interpreter other than the repo's `.venv` Python 3.15.1. Historical 3.11/3.14 references and version-test literals remain historical or deliberate fixtures; no active local runner selects those versions.
@@ -40,3 +45,36 @@ A track or prompt is not an armed goal or completed runtime migration. Shared ch
 - PR #32 (`c959a39f1e4c43932007b9c62dad713f6c1b7da3`) passed its exact-head required checks and was clean/mergeable. Repository branch protection required zero approving reviews. The PR was marked ready and merged with a merge commit; GitHub reports merged state at `957943e3b3aaaea9575082a89a256ddc2da6ecb9`.
 - Readback confirmed `main` at `957943e3b3aaaea9575082a89a256ddc2da6ecb9`, matching the PR merge commit. The local tracking ref `origin/main` was fetched to the same SHA; the worktree was clean at verification.
 - P3.1b is complete. P3.3 remains open: Atlas integration is blocked by its Python `<3.15` metadata, and native SharePoint structured-document generation remains unqualified without the required Copilot entitlement. Do not report the broader qualification as complete.
+
+## Phase 4 — Library columns and document templates without additional premium subscriptions
+
+- [x] P4.1 Record the selected alternatives and exclude routes requiring additional premium subscriptions or usage billing.
+- [ ] P4.2 Inventory the selected library's existing columns, content types, templates and standard connector access. Map exact internal names/types to authoritative inputs; reuse existing fields before proposing additions. Record ownership and recoverable preimages in existing evidence.
+- [ ] P4.3 Qualify one fictional policy/review package with a maintained Word library/content-type template. Where supported, link simple document properties to visible fields using document-property controls/Quick Parts. Verify actual property values and body rendering separately in the selected desktop and browser clients, including Mac where used; retain manual entry on a documented refresh or editing gap.
+- [ ] P4.4 Qualify only the necessary standard SharePoint Power Automate actions for copying the template, creating files and updating metadata. Confirm existing entitlement, connections and policy access first; use serial conditional writes/readback and guard modification-trigger loops. The connector's Standard classification does not make its separately licensed generation actions eligible.
+- [ ] P4.5 Verify saved file identity, links, metadata, editing and recovery for the selected package. Preserve earlier outputs, human edits, issued history and source/template revisions. Record a failed or interrupted operation before retrying; verify retries do not create duplicate revisions. Do not close native acceptance from source CI alone.
+
+### Selected alternatives
+
+1. **Library columns and content types — first choice:** store structured metadata, required fields and document-kind templates; support filtering, grouping and routing without relying on Word-body generation.
+2. **Maintained Word library/content-type templates:** create documents from an approved layout; link supported scalar document properties where verified, and keep manual content entry for narrative, conditional sections and variable-length tables until their behavior is qualified.
+3. **Power Automate with standard SharePoint actions:** copy/create files and update library properties using existing qualified connections and entitlement. No automatic Word-body merge is implied by a successful metadata update.
+
+Exclude Copilot document-generation forms, Word Online (Business) template-population/PDF actions classified as Premium in Power Automate, paid content assembly/Syntex, and third-party paid generators from this implementation route. No additional subscription, usage billing, consent, connection or tenant setting is authorised by this plan.
+
+For the fictional policy package, map DocumentUID, policy identifier, document kind,
+source edition, source URL, capture date, review status and related register/case
+reference. Retain template revision, output revision and the unresolved-items
+indicator where applicable. Keep source edition and capture date distinct from
+SharePoint file-history version. Retain distinguishable copies of different
+source editions; file history records edits to each copy. Preserve the existing
+register as the source of identity and status rather than creating another register.
+
+References: [SharePoint column types](https://support.microsoft.com/en-us/sharepoint/lists/data-and-lists/list-and-library-column-types-and-options),
+[library templates](https://support.microsoft.com/en-us/sharepoint/documents-and-library/set-a-custom-template-for-a-sharepoint-library),
+[Office document properties](https://support.microsoft.com/en-us/office/collab-files/view-or-change-the-properties-for-an-office-file),
+[Quick Parts](https://support.microsoft.com/en-us/word/quick-parts),
+[SharePoint connector classification and actions](https://learn.microsoft.com/en-us/connectors/sharepointonline/),
+[Word connector classification](https://learn.microsoft.com/en-us/connectors/wordonlinebusiness/),
+[content assembly billing](https://learn.microsoft.com/en-us/microsoft-365/documentprocessing/content-assembly),
+[Atlas Python migration](https://github.com/edithatogo/global-medicines-atlas/pull/1295).
