@@ -49,6 +49,13 @@ class SourceStandards(unittest.TestCase):
             self.definitions['sourceFrameworkEditionId'] = value
             with self.assertRaises(ValueError): self.run_reconcile()
 
+        for value in [None, '']:
+            self.definitions = frameworks()
+            self.definitions['sourceFrameworkEditionId'] = value
+            self.definitions['frameworks'][0]['frameworkEditionId'] = value
+            with self.assertRaisesRegex(ValueError, 'Explicit source framework edition'):
+                self.run_reconcile()
+
     def test_cached_discrepancy_is_retained_without_correcting_input(self):
         before = copy.deepcopy((self.candidate, self.extracted, self.definitions))
         result = self.run_reconcile()

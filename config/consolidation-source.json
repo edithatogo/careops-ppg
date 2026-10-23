@@ -761,7 +761,7 @@
     {
       "path": "scripts/ppg_source_standards.py",
       "sourceGitBlob": "41d7e6882cafe8c413632d3a37dd83cdd2a6c207",
-      "sha256": "6fe80aac89e9a0bec0660806d0dc72edd8675eecec8bdc6d5b0bc8fb4c412e86",
+      "sha256": "2681c61ac2b2d3531396d92e89b04996c6d95b874b1e668100f6fcc0779b81a1",
       "adapted": true
     },
     {
@@ -2153,7 +2153,7 @@
     {
       "path": "tests/test_source_standards.py",
       "sourceGitBlob": "6a19a8e24137a088f35567b397865f8504951cd0",
-      "sha256": "b47452ee5f979ef4ac8224f664022c3d7d9a61f2887e40e3a61ffdfb5cb242c0",
+      "sha256": "0ce1fe80486ed5e8dc506ce264fdf13a200843fa8b55ef45b6f4f8ee98a3283e",
       "adapted": true
     },
     {

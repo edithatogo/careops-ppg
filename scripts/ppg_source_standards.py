@@ -79,8 +79,11 @@ def reconcile(candidate, extracted, definitions):
         operations[op['sourceRow']] = op
     if len({r['sourceRow'] for r in raw}) != len(raw):
         raise ValueError('Duplicate raw source row')
+    selected = definitions.get('sourceFrameworkEditionId')
+    if not isinstance(selected, str) or not selected.strip():
+        raise ValueError('Explicit source framework edition required')
     published = [f for f in definitions['frameworks']
-                 if f['frameworkEditionId'] == definitions.get('sourceFrameworkEditionId') and f['status'] == 'published']
+                 if f['frameworkEditionId'] == selected and f['status'] == 'published']
     if len(published) != 1:
         raise ValueError('Known published candidate framework required')
     headings = {r['code']: r['requirementId'] for r in published[0]['requirements']}
