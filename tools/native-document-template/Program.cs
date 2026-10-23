@@ -45,15 +45,21 @@ Paragraph P(string value) => new(new Run(new Text(value) { Space = SpaceProcessi
 Paragraph Label(string value) => new(new ParagraphProperties(new KeepNext(),
     new SpacingBetweenLines { Before = "100", After = "20" }),
     new Run(new RunProperties(new Bold(), new Color { Val = "334155" }), new Text(value)));
-SdtBlock Plain(string name) => new(Props(name, new SdtContentText { MultiLine = true }),
-    new SdtContentBlock(P("[" + name + "]")));
+SdtBlock Plain(string name, bool keepNext = false)
+{
+    var paragraph = new Paragraph(new Run(new Text("[" + name + "]")));
+    if (keepNext) paragraph.PrependChild(new ParagraphProperties(new KeepNext()));
+    return new SdtBlock(Props(name, new SdtContentText { MultiLine = true }), new SdtContentBlock(paragraph));
+}
 SdtBlock Repeat(string name, string[] children)
 {
     var contents = new SdtContentBlock();
     var labels = name == "comparison_rows"
         ? new[] { "Local source / version / clause", "Governing source / clause", "Necessary control", "Proposed change", "Gap / response" }
         : new[] { "Role / requirement basis", "Question", "Candidate version", "Actual response / disposition" };
-    for (var n = 0; n < children.Length; n++) contents.Append(Label(labels[n]), Plain(children[n]));
+    // Keep each row's labelled fields together across page breaks; the last value ends the chain.
+    for (var n = 0; n < children.Length; n++)
+        contents.Append(Label(labels[n]), Plain(children[n], keepNext: n < children.Length - 1));
     var item = new SdtBlock(new SdtProperties(new SdtId { Val = id++ }, new W15.SdtRepeatedSectionItem()), contents);
     return new SdtBlock(Props(name, new W15.SdtRepeatedSection()), new SdtContentBlock(item));
 }

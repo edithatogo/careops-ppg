@@ -1,6 +1,9 @@
-"""Qualify the fictional Atlas -> PPG package using the existing Atlas runtime.
+"""Qualify the fictional Atlas -> PPG package using the repo Python runtime.
 
-Run with ATLAS/.venv/bin/python scripts/qualify_atlas_adapter.py --atlas-root ATLAS.
+Run with .venv/bin/python scripts/qualify_atlas_adapter.py --atlas-root ATLAS.
+The pinned Atlas commit currently declares Python >=3.14,<3.15, so execution of
+its source under this repository's Python 3.15.1 remains an explicit external
+compatibility blocker. Do not switch to ATLAS/.venv to bypass the repo runtime.
 Atlas code/data are not modified. All fixture DBs and jobs use a temporary folder.
 """
 from __future__ import annotations
@@ -17,7 +20,19 @@ from ppg_atlas_adapter import AdapterError, ATLAS_COMMIT, CONTRACT_SHA256, captu
 
 ROOT = Path(__file__).resolve().parents[1]
 
+def require_repo_runtime(version=None, executable=None):
+    expected = tuple(int(part) for part in (ROOT / '.python-version').read_text().strip().split('.'))
+    actual = tuple(sys.version_info[:3]) if version is None else tuple(version)
+    expected_executable = (ROOT / ('.venv/Scripts/python.exe' if sys.platform == 'win32'
+                                   else '.venv/bin/python')).resolve()
+    actual_executable = Path(sys.executable if executable is None else executable).resolve()
+    if actual != expected:
+        raise RuntimeError(f'Requires repository Python {".".join(map(str, expected))}; got {actual}')
+    if actual_executable != expected_executable:
+        raise RuntimeError(f'Requires repository interpreter {expected_executable}; got {actual_executable}')
+
 def main():
+    require_repo_runtime()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--atlas-root', required=True, type=Path)
     args = parser.parse_args(); atlas = args.atlas_root.resolve()

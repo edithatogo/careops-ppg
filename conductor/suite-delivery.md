@@ -21,7 +21,7 @@ Do not create another track, chat, acceptance pack or status ledger for alignmen
 2. **runtime** — Test declared Python/Node runtimes and current authoring dependencies without changing the private scheduled runtime.
    Done when: Portable fixtures build and replay on exact pins; actual native qualification remains separate.
 3. **templates** — Qualify a maintained structured-document template for one fictional policy/review package.
-   Done when: Human edits, document identity, source/template revision and issued history survive regeneration.
+   Done when: Human edits and earlier outputs remain unchanged; a stable case/occurrence identity links immutable revisions with each output reference, source/template revision and issued history retained.
 
 ## Dependency and delivery defaults
 
@@ -46,10 +46,10 @@ checks affected by the change, with broad checks at an integration milestone.
 
 ## Qualified source delivery baseline
 
-The current development pins are Python 3.15.1 and Node 26.12.1. CI retains its
-Python 3.11 / Node 22 minimum compatibility lane and the qualified current lane;
-these runtime files do not raise the supported minimum. Shared security, actual
-source packages and canaries use immutable CareOps policy f0e8db2.
+The current development pins are Python 3.15.1 and Node 26.12.1. CI uses the
+qualified Python 3.15.1 runtime across its Node 22 and Node 26.12.1 lanes; no
+older Python compatibility runner remains active. Shared security, actual source
+packages and canaries use immutable CareOps policy f0e8db2.
 
 Existing weekly Dependabot owns GitHub Actions in this runtime-dependency-free
 toolkit. Renovate is restricted to custom.regex for the direct uv installer;
@@ -133,28 +133,30 @@ See the [shared ALM evidence requirements](https://github.com/edithatogo/careops
 and Microsoft's [existing-flow solution guidance](https://learn.microsoft.com/en-us/power-automate/create-flow-solution).
 
 
-## Runtime receipt and selected-pin consistency — 22 October 2026
+## Runtime receipt and selected-pin consistency — 24 October 2026
 
-Python3.15.1 and Node26.12.1 package jobs were qualified in PR18/16, but the
-local Python pin, main test matrix and canary receipt still selected older
-versions. Align the local pin and full test matrix with those qualified package
-runtimes; retain the Python3.11/Node22 minimum compatibility case. The actual
-canary receipt now reads the committed local runtime pins and exits nonzero for
+All active PPG Python entry points use the repository's explicit Python 3.15.1
+environment. CI verifies the actual interpreter after setup, and the full test
+matrix runs Python 3.15.1 with Node 22 and 26.12.1. The development canary uses
+separate Python 3.15.1 environments for its optional XLSB parser and CI tools;
+the hash-locked `pyxlsb` candidate is parsed against a small attributed workbook
+fixture before the dependency audit runs.
+
+The actual canary receipt reads the committed runtime pins and exits nonzero for
 evidence mismatch, runtime mismatch or invalid evidence after saving its receipt.
-The initial isolated CI-tool interpreter selected 3.14.8 for its hash-locked wheel support; the current candidate below advances that patch version.
-This fixes a green-job/failed-receipt mismatch, not native tool promotion.
-Actual receipt tests cover successful evidence, every failed/cancelled/skipped
-stage, missing lock, wrong runtime and malformed evidence, including exit status.
-Native workflow authentication and document qualification remain with their owner.
+Tests cover success, failed/cancelled/skipped stages, missing lock, old runtime,
+malformed evidence and exit status. The receipt proves a qualified source tool
+candidate only; it does not promote native tools or qualify SharePoint document
+generation. The Atlas qualification helper also requires the PPG `.venv`; its
+pinned upstream source currently declares Python below 3.15, so that cross-repo
+integration remains unqualified rather than using an older Atlas environment.
 
-
-The current uv candidate uses the official checksum-pinned Linux x86_64 release
+The canary bootstraps uv from its official checksum-pinned Linux x86_64 release
 asset because the default setup-uv mirror manifest omitted uv 0.13.5. Platform,
-archive digest and executable version are checked before use. The bootstrap step
-keeps its existing outcome identity and failure recording. Its isolated tool
-interpreter now targets CPython 3.14.9; receipt tests reject the previous 3.14.8
-profile as well as an unrelated older minor. Current-head hosted qualification is
-required; neither a successful bootstrap nor discovery alone promotes the candidate.
+archive digest and executable version are checked before use. The workflow keeps
+its existing outcome identity and failure recording. Current-head hosted checks
+remain required; neither successful bootstrap nor discovery alone promotes the
+candidate.
 
 - [x] Retain automated proposals for the direct installer's uv version. The
   scoped Renovate regex manager tracks UV_VERSION; merging remains disabled.

@@ -20,6 +20,30 @@ edits, repeated/optional content and issued history. Local schema validation doe
 not establish native rendering, access or production eligibility.
 
 The portable tests exercise actual generated DOCX packages, repeated groups,
-Unicode, links, schema validation, unchanged parts and refusal/recovery behavior.
-Inputs are fictional. Native configuration and operational evidence stay outside
-this repository. Do not copy a prior deployment's bindings or qualification claims.
+Unicode, a dynamic HTTPS source-snapshot hyperlink, schema validation, unchanged
+parts and refusal/recovery behavior. Non-HTTPS source links are refused. Inputs
+are fictional. Native configuration and operational evidence stay outside this
+repository. Do not copy a prior deployment's bindings or qualification claims.
+
+## Native structured-document qualification
+
+For SharePoint structured document generation, first verify that the template
+creator has an assigned Microsoft Copilot license, Edit access to the target
+library, and a maintained Word (.docx) template. Use an isolated fictional
+occurrence for qualification; do not enable billing, assign a license, grant
+access or change site settings as part of this source workflow.
+
+Treat the case/occurrence identity as the stable parent identity and each
+generated document reference as the identity of one immutable output revision.
+Every submission creates a new document, and regeneration receives a new
+reference number. Retain the earlier file, reference, human edits and issued
+history, then link the next reference to the same case/occurrence with its own
+source hash, template revision and output revision.
+
+Before replacing this fallback, read back an actual generated output and verify
+repeating rows, optional content, links, Word rendering/editing, output access,
+revision metadata, and retry/recovery behavior. Verify a human-edited first
+output and its history remain unchanged after generating the next revision.
+Template publication and document generation do not approve content or authorize
+circulation. See Microsoft's [structured document generation prerequisites and
+reference behavior](https://learn.microsoft.com/en-us/sharepoint/copilot-in-sharepoint-structured-document-generation).

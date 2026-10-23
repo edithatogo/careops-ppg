@@ -65,6 +65,11 @@ internal static class ManualPopulation
         Require(input.GetProperty("outputRevision").GetString() == b.GetProperty("jobId").GetString() + "/revision" + b.GetProperty("outputRevision").ToString(), "Job/revision mismatch");
         Require(input.GetProperty("source_snapshot").GetString()!.EndsWith("/LC02-operator-request-" + b.GetProperty("requestId").GetString() + ".json", StringComparison.Ordinal), "Request mismatch");
         Require(input.GetProperty("source_manifest").GetString()!.Contains(b.GetProperty("jobId").GetString()!, StringComparison.Ordinal), "Missing job provenance");
+        var sourceSnapshotText = input.GetProperty("source_snapshot").GetString()!;
+        Require(Uri.TryCreate(sourceSnapshotText, UriKind.Absolute, out var sourceSnapshotUri)
+            && sourceSnapshotUri.Scheme == Uri.UriSchemeHttps
+            && !string.IsNullOrEmpty(sourceSnapshotUri.Host)
+            && string.IsNullOrEmpty(sourceSnapshotUri.UserInfo), "HTTPS source snapshot link required");
         var output = Path.GetFullPath(args[5]); var receipt = Path.GetFullPath(args[6]);
         Require(output != receipt, "Output and receipt paths must differ");
         Require(!File.Exists(output) && !File.Exists(receipt), "Existing output or receipt; preserve edits and history");
@@ -110,6 +115,13 @@ internal static class ManualPopulation
                 var value = input.GetProperty(name); var text = value.ValueKind == JsonValueKind.Array ? string.Join("; ", value.EnumerateArray().Select(x => x.GetString())) : value.GetString()!;
                 SetText(s, text); filled.Add(new { field = name, value = text });
             }
+            var sourceRelation = doc.MainDocumentPart!.AddHyperlinkRelationship(sourceSnapshotUri!, true);
+            var sourceLink = new Hyperlink(new Run(new RunProperties(new Color { Val = "0563C1" },
+                new Underline { Val = UnderlineValues.Single }),
+                new Text("\u2002Open source snapshot") { Space = SpaceProcessingModeValues.Preserve }))
+                { Id = sourceRelation.Id };
+            controls.Single(x => Name(x) == "source_snapshot").InsertAfterSelf(sourceLink);
+            filled.Add(new { field = "source_snapshot_link", value = sourceSnapshotUri!.ToString() });
             main.Save();
             var ids = main.Descendants<SdtId>().Select(x => x.Val!.Value).ToList();
             Require(ids.Count == ids.Distinct().Count(), "Duplicate populated control ID");
@@ -119,7 +131,9 @@ internal static class ManualPopulation
         var result = stream.ToArray(); var after = Parts(result);
         Require(before.Keys.ToHashSet().SetEquals(after.Keys), "Package member set changed");
         var changed = before.Keys.Where(k => !before[k].SequenceEqual(after[k])).ToList();
-        Require(changed.SequenceEqual(new[] { "word/document.xml" }), "Non-document package parts changed");
+        var allowedChanged = new HashSet<string>(StringComparer.Ordinal)
+            { "word/document.xml", "word/_rels/document.xml.rels" };
+        Require(changed.Count == allowedChanged.Count && changed.All(allowedChanged.Contains), "Unexpected package parts changed");
         Require(File.ReadAllBytes(args[3]).SequenceEqual(templateBytes) && File.ReadAllBytes(args[4]).SequenceEqual(sourceBytes), "Source/template changed during preparation");
         var proof = new { generationRoute = "local-manual-fallback", nativeGenerationQualified = false, nativeArtifactQualified = false,
             CaseUID = b.GetProperty("CaseUID").GetString(), occurrenceReference = b.GetProperty("occurrenceID").GetString(), documentKind = b.GetProperty("documentKind").GetString(),

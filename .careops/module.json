@@ -10,7 +10,7 @@
   "nextTasks": [
     {
       "id": "source",
-      "status": "queued",
+      "status": "complete",
       "lane": "existing implementation or platform lane",
       "operation": "Port only reviewed reusable improvements from the private PPG working implementation.",
       "tools": [
@@ -21,7 +21,7 @@
     },
     {
       "id": "runtime",
-      "status": "queued",
+      "status": "complete",
       "lane": "existing implementation or platform lane",
       "operation": "Test declared Python/Node runtimes and current authoring dependencies without changing the private scheduled runtime.",
       "tools": [
@@ -33,14 +33,14 @@
     },
     {
       "id": "templates",
-      "status": "queued",
+      "status": "in_progress",
       "lane": "existing implementation or platform lane",
       "operation": "Qualify a maintained structured-document template for one fictional policy/review package.",
       "tools": [
         "M365 CLI",
         "Power Automate"
       ],
-      "success": "Human edits, document identity, source/template revision and issued history survive regeneration."
+      "success": "Human edits and earlier outputs remain unchanged; stable case/occurrence identity links immutable revisions with each output reference, source/template revision and issued history retained."
     }
   ]
 }

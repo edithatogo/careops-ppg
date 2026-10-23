@@ -15,10 +15,45 @@ STAGES = ['source', 'policy', 'python', 'node', 'bootstrap', 'resolve', 'qualifi
 
 
 class CanaryQualificationTests(unittest.TestCase):
+    def test_canary_uses_only_the_exact_qualified_python_pin(self):
+        workflow = (ROOT / '.github/workflows/development-canary.yml').read_text()
+        python_pins = [line.split(':', 1)[1].strip() for line in workflow.splitlines()
+                       if line.strip().startswith('python-version:')]
+        self.assertEqual(python_pins, ["'3.15.1'"])
+        self.assertNotIn('allow-prereleases:', workflow)
+        self.assertNotIn('steps.discover.outputs.version', workflow)
+        self.assertIn('global-json-file: tools/native-document-template/global.json', workflow)
+        self.assertIn('dotnet restore --locked-mode', workflow)
+        self.assertIn('scripts/run_portable_tests.py --python-only', workflow)
+        self.assertNotIn('.venv/bin/python -m unittest discover -s tests', workflow)
+        self.assertIn('requirements-xlsb.lock', workflow)
+        self.assertIn('--require-hashes --only-binary=:all: -r requirements-xlsb.lock', workflow)
+        self.assertIn('m.version("pyxlsb") == "1.0.10"', workflow)
+        self.assertIn('pip_audit --disable-pip --no-deps -r requirements-xlsb.lock', workflow)
+        self.assertIn("unittest discover -s tests -p 'test_pyxlsb_qualification.py' -v", workflow)
+
+    def test_python_checks_use_the_repo_local_verified_interpreter(self):
+        for relative in ['.github/workflows/development-canary.yml',
+                         '.github/workflows/package-release.yml',
+                         '.github/workflows/security.yml']:
+            workflow = (ROOT / relative).read_text()
+            self.assertNotRegex(workflow, r'(?m)^\s+python3\s')
+            self.assertNotRegex(workflow, r'(?m)^\s+python (?!-m venv )')
+            self.assertIn("assert sys.version_info[:3] == (3, 15, 1)", workflow)
+
+    def test_repository_commit_hook_uses_repo_local_python(self):
+        hook_path = ROOT / '.githooks/pre-commit'
+        if not hook_path.exists():
+            self.skipTest('Portable consumer packages intentionally omit repository-only Git hooks.')
+        hook = hook_path.read_text()
+        self.assertIn('repo_python=.venv/bin/python', hook)
+        self.assertIn('sys.version_info[:3] == (3, 15, 1)', hook)
+        self.assertNotIn('python3 ', hook)
+
     def test_actual_receipt_preserves_failures_and_requires_bound_runtime_evidence(self):
         workflow = (ROOT / '.github/workflows/development-canary.yml').read_text()
         step = workflow.split('      - name: Record actual tool qualification outcomes\n', 1)[1].split('\n      - ', 1)[0]
-        script = textwrap.dedent(step.split('        run: |\n', 1)[1]).replace('python3', shlex.quote(sys.executable), 1)
+        script = textwrap.dedent(step.split('        run: |\n', 1)[1]).replace('.venv/bin/python', shlex.quote(sys.executable), 1)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); evidence = root / '.local/tool-canary'; evidence.mkdir(parents=True)
             for pin in ['.python-version', '.node-version']:
@@ -45,7 +80,7 @@ class CanaryQualificationTests(unittest.TestCase):
             for name, value in [('python-version', 'Python ' + (ROOT / '.python-version').read_text().strip() + ' (fixture)'), ('node-version', 'v' + (ROOT / '.node-version').read_text().strip()), ('tool-python-version', 'Python 3.15.1 (fixture)')]:
                 (evidence / (name + '.txt')).write_text(value)
             self.assertEqual(execute({})['state'], 'qualified-tool-candidate')
-            for old_runtime in ['3.13.0', '3.14.8']:
+            for old_runtime in ['3.13.0', '3.14.8', '3.14.9']:
                 (evidence / 'tool-python-version.txt').write_text('Python ' + old_runtime + ' (fixture)')
                 self.assertEqual(execute({}, expect_failure=True)['state'], 'runtime-mismatch')
             (evidence / 'candidate.json').write_text('{broken')

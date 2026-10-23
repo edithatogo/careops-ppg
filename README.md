@@ -16,9 +16,29 @@ Microsoft deployment is configured or implied by the local checks.
 
 Requires explicitly selected repo-local Python 3.15.1 and Node.js 22 or 26.12.1.
 The document qualification suite additionally requires the pinned .NET 10.0.402 SDK.
-Restore its locked dependencies from `tools/native-document-template` before running
-`.venv/bin/python scripts/run_portable_tests.py`. Operating a selected Python/Node
-module does not require the optional document-authoring utility.
+Create and verify the repo-local environment before running Python tools:
+
+```sh
+uv venv --python 3.15.1 .venv
+.venv/bin/python -VV
+.venv/bin/python -c 'import sys; assert sys.version_info[:3] == (3, 15, 1)'
+```
+
+Restore the locked .NET dependencies from `tools/native-document-template` before
+running `.venv/bin/python scripts/run_portable_tests.py`. Operating a selected
+Python/Node module does not require the optional document-authoring utility.
+The optional, read-only XLSB extraction paths are pinned in
+[`requirements-xlsb.lock`](requirements-xlsb.lock); install them into the selected
+repo-local interpreter only when those paths are needed:
+
+```sh
+uv pip install --python .venv/bin/python --require-hashes --only-binary=:all: -r requirements-xlsb.lock
+```
+
+The optional Atlas adapter qualification helper also requires this repository's
+`.venv/bin/python`. Its pinned Atlas source currently declares Python `<3.15`, so
+the cross-repository integration remains unqualified until that source supports
+the required Python 3.15.1 runtime. Do not run it with `ATLAS/.venv/bin/python`.
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -p 'test_*.py'
@@ -40,10 +60,14 @@ approval remain explicit operational decisions.
 Evaluate [SharePoint structured document generation](https://learn.microsoft.com/en-us/sharepoint/copilot-in-sharepoint-structured-document-generation)
 first for maintained document structures. Reuse authoritative records and Word
 templates; preserve human edits, source/template versions and output revisions.
-Confirm actual entitlement, repeating/optional content, links, editing, access and
-retry/recovery through output readback before migration. The included local/manual
-assembler is a fallback; it does not establish native-route availability or approve
-content. No licence, consent or settings changes are included.
+Verify the template creator's Copilot entitlement, target-library edit access and
+DOCX template before qualification. Each submission creates a new output with its
+own reference, so link revision references to a stable case/occurrence identity
+and retain prior files and human edits. Confirm repeating/optional content, links,
+editing, access and retry/recovery through output readback before migration. The
+included local/manual assembler is a fallback; it does not establish native-route
+availability or approve content. No licence, consent or settings changes are
+included.
 
 ## Security and publishing boundary
 
@@ -85,13 +109,11 @@ update the workflow reference and `policy-revision` together, then pass every
 current-head check. These tools have no third-party Python or Node package
 runtime dependencies, so there is no application dependency lock to regenerate.
 A separate weekly/manual development canary resolves a hash-locked preview CI
-tool candidate, runs the PPG tests and keeps exact-version receipts. It also freezes
-the official Python runtime manifest and tests a newer compatible preview when one
-exists. An unavailable preview is recorded as unavailable with tests skipped; a
-green discovery job does not qualify that runtime. Candidate results never modify
-the working runtime or promote an update. Propose exact-version changes in a PR
-and pass every current-head required check before promotion. No package release,
-SBOM or attestation is implied by the canary alone.
+tool candidate and runs the PPG tests on the exact qualified Python and Node
+runtime pins. It retains exact-version receipts and does not install or execute
+unqualified Python previews. Propose runtime changes as exact-version changes in
+a PR and pass every current-head required check before promotion. No package
+release, SBOM or attestation is implied by the canary alone.
 
 ## Portable package candidates
 
@@ -105,11 +127,11 @@ public licence is granted, no release is published, and no policy content or
 native service is processed. SharePoint remains the preferred structured-document
 route; packaging does not replace that preference or establish its availability.
 
-Development CI tools use an isolated exact Python3.14.8 environment with integrity
-hashes and wheels only, while PPG behaviour still runs on Python3.15.1 and
-Node26.12.0. Tool versions, lock digest and terminal qualification are retained;
-no missing or failed qualification is promoted. Existing minimum-runtime tests
-remain. Source packages and canaries do not establish operational acceptance.
+Development CI tools use an isolated exact Python3.15.1 environment with integrity
+hashes and wheels only, while PPG behaviour also runs on Python3.15.1 and
+Node26.12.1. Tool versions, lock digest and terminal qualification are retained;
+no missing or failed qualification is promoted. The Node22 compatibility lane
+remains. Source packages and canaries do not establish operational acceptance.
 
 ## Fixed cover and bounded package source
 
