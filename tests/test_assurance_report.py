@@ -11,6 +11,29 @@ report=importlib.util.module_from_spec(spec);spec.loader.exec_module(report)
 
 
 class AssuranceReport(unittest.TestCase):
+    def test_actual_single_step_receipt_exit_status(self):
+        for key in ('event', 'state'):
+            for code, expected in ((0, 'successful'), (7, 'incomplete'), (None, 'incomplete')):
+                with self.subTest(key=key, code=code), tempfile.TemporaryDirectory() as tmp:
+                    path = Path(tmp) / 'attempt.jsonl'
+                    path.write_text(json.dumps({key: 'command-exited', 'exitCode': code}) + '\n')
+                    self.assertEqual(report.inspect_input(path)['outcome'], expected)
+
+    def test_plan_requires_all_stages_not_just_last_completed_stage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'plan.jsonl'
+            header = {'event': 'created', 'planSHA256': 'a' * 64, 'totalSteps': 2}
+            stages = [{'event': event, 'index': index} for index in range(2)
+                      for event in ('started', 'completed')]
+            for count, expected in ((0, 'incomplete'), (2, 'incomplete'), (3, 'incomplete'), (4, 'successful')):
+                path.write_text(''.join(json.dumps(x) + '\n' for x in [header, *stages[:count]]))
+                self.assertEqual(report.inspect_input(path)['outcome'], expected)
+            for invalid in (None, 0, True, '2'):
+                path.write_text(''.join(json.dumps(x) + '\n' for x in [{**header, 'totalSteps': invalid}, *stages]))
+                self.assertEqual(report.inspect_input(path)['outcome'], 'incomplete')
+            path.write_text(''.join(json.dumps(x) + '\n' for x in [header, *stages, {'event': 'refused'}]))
+            self.assertEqual(report.inspect_input(path)['outcome'], 'refused')
+
     def test_success_refusal_and_incomplete_are_separate(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)

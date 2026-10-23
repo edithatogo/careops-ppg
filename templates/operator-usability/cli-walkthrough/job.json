@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "preparationId": "fictional-cli-r1",
+  "sources": [
+    {
+      "sourceId": "reference-one",
+      "file": "source.txt",
+      "sha256": "d6c5da23f48363192f67c2f6661188adbc61e84020f882d475422c7ebd0ab122",
+      "expectedTextSHA256": "d6c5da23f48363192f67c2f6661188adbc61e84020f882d475422c7ebd0ab122",
+      "authorityLabel": "captured-reference-unconfirmed",
+      "originalReference": "Fictional training reference",
+      "originalVersionRef": "edition 1",
+      "sourceEdition": "edition 1",
+      "evaluationNeedle": "12 months"
+    }
+  ]
+}
