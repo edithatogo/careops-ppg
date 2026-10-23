@@ -101,7 +101,7 @@ native service is processed. SharePoint remains the preferred structured-documen
 route; packaging does not replace that preference or establish its availability.
 
 Development CI tools use an isolated exact Python3.14.8 environment with integrity
-hashes and wheels only, while PPG behaviour still runs on Python3.15.0 and
+hashes and wheels only, while PPG behaviour still runs on Python3.15.1 and
 Node26.12.0. Tool versions, lock digest and terminal qualification are retained;
 no missing or failed qualification is promoted. Existing minimum-runtime tests
 remain. Source packages and canaries do not establish operational acceptance.
