@@ -101,6 +101,42 @@ for P4.4. Do not overwrite or rerun an in-flight implementation to reproduce old
 evidence. No cloud schema, files, flow settings
 or connection state changed during the inventory.
 
+### Native saved-body qualification continuation — 24 October 2026
+
+An isolated, manually triggered copy of the maintained Standard SharePoint/Excel
+route executed the existing saved-body candidate. Native publication readback
+matched the complete intended graph and connection references. The original
+working flow was preserved. Detailed bindings and receipts remain private.
+
+- Two fresh fictional revisions completed generation. Independent downloads
+  verified all five ZIP members and CRCs, receipt/job hashes, both claims and the
+  exact saved Word bytes. Generated and saved Word hashes differed, demonstrating
+  that finalisation handled the native Office metadata rewrite.
+- An unchanged replay succeeded with all five files and native pins identical.
+  Complete action pagination confirmed the document/package writers were skipped
+  and claim/receipt actions used GETs.
+- A deliberate edit in Word for the web changed exactly one paragraph. The same
+  revision then refused with `saved_output_edited_requires_reconciliation`.
+  Complete action history confirmed the downstream output writers were skipped;
+  the edited document, ZIP, both claims and receipt remained unchanged by refusal.
+  The original Word revision was downloaded from native history and matched its
+  original hash. The edited current revision remains retained.
+- A separate Word-open/resave during an earlier replay triggered the late
+  saved-byte guard. Paragraph text was unchanged, but native bytes/pins changed;
+  that run is drift-refusal evidence, not an unchanged-replay pass.
+
+Interrupted recovery remains unqualified. A controlled post-claim interruption
+profile was prepared and its CLI draft response matched the intended change, but
+the native designer exposed only the earlier published version with Publish
+disabled. No interruption-profile run was submitted. The normal draft was
+restored; fresh active readback matched its complete graph and references and
+confirmed Stopped state. Recheck state before resuming. Reconcile the
+draft/publication mismatch before attempting the controlled interruption, then
+restore the normal profile and prove same-revision recovery and unchanged replay.
+Do not replace the working flow or mark P4.3–P4.5 complete from these partial
+results. No arbitrary new document shape, PDF route or operational approval is
+established by this continuation.
+
 References: [SharePoint column types](https://support.microsoft.com/en-us/sharepoint/lists/data-and-lists/list-and-library-column-types-and-options),
 [library templates](https://support.microsoft.com/en-us/sharepoint/documents-and-library/set-a-custom-template-for-a-sharepoint-library),
 [Office document properties](https://support.microsoft.com/en-us/office/collab-files/view-or-change-the-properties-for-an-office-file),
