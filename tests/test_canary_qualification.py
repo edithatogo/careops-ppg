@@ -80,7 +80,7 @@ class CanaryQualificationTests(unittest.TestCase):
             for name, value in [('python-version', 'Python ' + (ROOT / '.python-version').read_text().strip() + ' (fixture)'), ('node-version', 'v' + (ROOT / '.node-version').read_text().strip()), ('tool-python-version', 'Python 3.15.1 (fixture)')]:
                 (evidence / (name + '.txt')).write_text(value)
             self.assertEqual(execute({})['state'], 'qualified-tool-candidate')
-            for old_runtime in ['3.13.0', '3.14.8']:
+            for old_runtime in ['3.13.0', '3.14.8', '3.14.9']:
                 (evidence / 'tool-python-version.txt').write_text('Python ' + old_runtime + ' (fixture)')
                 self.assertEqual(execute({}, expect_failure=True)['state'], 'runtime-mismatch')
             (evidence / 'candidate.json').write_text('{broken')
