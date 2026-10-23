@@ -96,7 +96,7 @@ class ManualPopulationTests(unittest.TestCase):
         self.assertEqual(len(links), 1)
         link_text = links[0].find('.//w:t', NS)
         self.assertIsNotNone(link_text)
-        self.assertEqual(link_text.text, ' Open source snapshot')
+        self.assertEqual(link_text.text, '\u2002Open source snapshot')
         self.assertEqual(link_text.get('{http://www.w3.org/XML/1998/namespace}space'), 'preserve')
         relation_id = links[0].get('{' + R_NS + '}id')
         relationships = ET.fromstring(package.read('word/_rels/document.xml.rels'))
@@ -121,6 +121,16 @@ class ManualPopulationTests(unittest.TestCase):
             ids = [e.get('{' + NS['w'] + '}val') for e in root.findall('.//w:sdtPr/w:id', NS)]
             self.assertEqual(len(ids), len(set(ids)))
             self.assertEqual(len(root.findall('.//w15:repeatingSectionItem', NS)), count)
+            if count:
+                parents = {child: parent for parent in root.iter() for child in parent}
+                row_markers = root.findall('.//w15:repeatingSectionItem', NS)
+                for marker in row_markers:
+                    item = parents[parents[marker]]
+                    paragraphs = item.findall('.//w:p', NS)
+                    self.assertEqual(len(paragraphs), 10)
+                    for paragraph in paragraphs[:-1]:
+                        self.assertIsNotNone(paragraph.find('w:pPr/w:keepNext', NS))
+                    self.assertIsNone(paragraphs[-1].find('w:pPr/w:keepNext', NS))
             aliases = [e.get('{' + NS['w'] + '}val') for e in root.findall('.//w:sdtPr/w:alias', NS)]
             self.assertNotIn('consultation_rows', aliases)
             self.assertNotIn('[OptionalContent]', ''.join(root.itertext()))
