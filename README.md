@@ -61,12 +61,14 @@ the lock header records the exact command. The fictional API/package check does
 not establish hosted/native deployment, real-source integrity or clinical acceptance.
 
 ```sh
-.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
-node tests/test_submission_assembler.cjs
-node tests/test_metadata_prefill.cjs
-node tests/test_native_cover_request.cjs
+.venv/bin/python scripts/run_portable_tests.py
 .venv/bin/python scripts/build_submission_assembler.py
 ```
+
+For focused Python checks, pass exact module names, for example
+`.venv/bin/python scripts/run_portable_tests.py --python-only test_workbench_cli`.
+The full runner includes all maintained Node tests; use it after the locked SDK
+restore at a coherent integration milestone.
 
 Open `.local/submission-package/PPG-submission-assembler.html` to prepare a draft
 package locally. Generated files stay ignored. Source reconciliation requires an
@@ -74,6 +76,9 @@ explicit source field contract, identity ledger and a separately qualified targe
 adapter. It never interprets missing rows as automatic retirement. See individual
 scripts' `--help` where available. Human findings, acceptance, publication and
 approval remain explicit operational decisions.
+
+For a runnable offline first operation, follow the [guided CLI walkthrough](docs/guided-cli.md#first-run-an-offline-fictional-reference).
+See the [CLI audit](docs/cli-operability-audit.md) for source status, fixes and remaining qualification boundaries.
 
 ## Document generation
 
@@ -116,18 +121,18 @@ No public licence is granted by this repository.
 
 ## Source CI and updates
 
-Security calls the shared CareOps source checks at the immutable revision
-`1373e971013724dfaa268e215a45505bb89300cd`, with read-only permissions and no
-inherited secrets. Full-history Gitleaks, immutable action references, actionlint
+Security calls the shared CareOps source checks at the immutable revision pinned
+in [the Security workflow](.github/workflows/security.yml), with read-only
+permissions and no inherited secrets. Full-history Gitleaks, immutable action references, actionlint
 and zizmor supplement this repository's portable-content check and PPG tests.
-Tests exercise both the minimum supported Python/Node versions and a separate
-current-runtime candidate. A green source check does not establish native M365
+Tests exercise Python 3.15.1 across the supported Node lanes and a separate
+current-tooling candidate. A green source check does not establish native M365
 operation or policy approval.
 
 Dependabot proposes weekly GitHub Actions updates. Shared-workflow changes must
 update the workflow reference and `policy-revision` together, then pass every
-current-head check. These tools have no third-party Python or Node package
-runtime dependencies, so there is no application dependency lock to regenerate.
+current-head check. The core tools have no third-party Python or Node application runtime
+dependencies; optional parsers and document tooling retain their separate locks.
 A separate weekly/manual development canary resolves a hash-locked preview CI
 tool candidate and runs the PPG tests on the exact qualified Python and Node
 runtime pins. It retains exact-version receipts and does not install or execute

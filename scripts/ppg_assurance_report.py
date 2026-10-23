@@ -57,10 +57,21 @@ def _outcome(records, is_jsonl, top_level=None):
     last = records[-1] if is_jsonl else (top_level or records[0])
     if _refusal_signal(last):
         return 'refused', 'explicit refusal/conflict/denial signal'
+    if is_jsonl and records[0].get('event') == 'created' and 'planSHA256' in records[0]:
+        total = records[0].get('totalSteps')
+        if type(total) is not int or total < 1:
+            return 'incomplete', 'plan stage count missing or invalid; inspect the original plan'
+        events = records[1:]
+        complete = len(events) == total * 2 and all(
+            event.get('index') == index // 2 and
+            event.get('event') == ('started' if index % 2 == 0 else 'completed')
+            for index, event in enumerate(events)
+        )
+        return ('successful', 'all declared plan stages recorded complete') if complete else ('incomplete', 'not every declared plan stage recorded complete')
     event = last.get('event')
     state = last.get('state')
     status = last.get('status')
-    if isinstance(event, str) and event.lower() == 'command-exited':
+    if any(isinstance(value, str) and value.lower() == 'command-exited' for value in (event, state)):
         return ('successful', 'command exit 0') if last.get('exitCode') == 0 else ('incomplete', 'non-zero or missing exit code')
     if is_jsonl:
         if isinstance(event, str) and event.lower() in SUCCESS_EVENTS - {'command-exited'}:

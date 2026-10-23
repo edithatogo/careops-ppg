@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "steps": [
+    {
+      "step": "prepare-sources",
+      "arguments": [
+        "--job",
+        "templates/operator-usability/cli-walkthrough/job.json",
+        "--input",
+        "templates/operator-usability/cli-walkthrough",
+        "--output",
+        ".local/cli-walkthrough/prepared"
+      ],
+      "outputs": [
+        ".local/cli-walkthrough/prepared"
+      ]
+    },
+    {
+      "step": "assurance-report",
+      "arguments": [
+        "--input",
+        ".local/cli-walkthrough/prepared/manifest.json",
+        "--output",
+        ".local/cli-walkthrough/source-status.md"
+      ],
+      "outputs": [
+        ".local/cli-walkthrough/source-status.md"
+      ]
+    }
+  ]
+}
