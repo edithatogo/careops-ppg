@@ -10,3 +10,5 @@
 - [Workflow](./workflow.md)
 
 - [Tracks](./tracks.md)
+
+- [Canonical consolidation and preserved histories](../docs/consolidation.md)

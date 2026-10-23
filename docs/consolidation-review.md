@@ -29,6 +29,15 @@ Findings addressed before the second PR:
 
 Qualification: the coherent milestone passed1,041 Python tests and65 Node checks,
 with no skips. Subsequent exact changed-fixture/selection checks also pass; two
-additional regression cases are included in the final hosted suite. Actual PR-head
-CI, review and merged-source package recovery remain required before duplicate
-archival. Agent technical review does not claim human/native acceptance.
+additional regression cases are included in the final hosted suite. All required final-head checks and recorded PR reviews passed. Merged-source
+package recovery, provenance verification and fresh-clone source parity passed
+before the duplicate was archived. Agent technical review does not claim human/native acceptance.
+
+## Final disposition
+
+The framework-selection review fix is included in merged PR30. The final hosted
+suite additionally exercises the two new regression cases. The merged-main
+security and package workflows pass on fca58a3; full source hashes, package
+recovery and preserved remote branch identities were checked before archival.
+The closing documentation change records only observed facts and stable public
+links; no source, fixture, dependency or native binding is changed by it.
