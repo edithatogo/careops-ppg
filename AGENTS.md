@@ -21,3 +21,11 @@ secret detection or suppress content findings to publish operational material.
 For modular source delivery, read `conductor/suite-delivery.md` and the ordered
 queue in `.careops/module.json`. Preserve the portable boundaries above, qualified
 CI and current native/file owners. Source guidance does not authorise deployment.
+
+## Required Python execution
+
+All active Python development, build, test, automation and CI execution uses
+Python3.15, currently exact patch3.15.1. Use an explicit repo-local interpreter,
+verify its version, and align constraints, locks and current setup instructions.
+Older runners are not compatibility defaults; preserve only historical evidence
+and intentional synthetic version tests. Do not replace a running environment.

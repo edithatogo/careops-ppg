@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: edithatogo/careops
-          ref: d829db7aa46e3789eb1b339f1ab1ad7e5d780d49
+          ref: 30df4953ea87c8915b4a525fc671a4c9857c3f7f
           path: .careops-ci-tools
           persist-credentials: false
           submodules: false
@@ -59,7 +59,7 @@ jobs:
           mkdir -p .local/tool-canary
           python .careops-ci-tools/portfolio-scripts/ci_delivery.py lock --root .careops-ci-tools --preview --output .careops-ci-tools/.local/canary/requirements.lock --receipt .local/tool-canary/candidate.json
           cp .careops-ci-tools/.local/canary/requirements.lock .local/tool-canary/requirements.lock
-          uv venv --python 3.14.9 "$RUNNER_TEMP/ppg-tool-canary"
+          uv venv --python 3.15.1 "$RUNNER_TEMP/ppg-tool-canary"
           uv pip install --python "$RUNNER_TEMP/ppg-tool-canary/bin/python" --require-hashes --only-binary=:all: -r .local/tool-canary/requirements.lock
           "$RUNNER_TEMP/ppg-tool-canary/bin/python" -VV > .local/tool-canary/tool-python-version.txt
           python -VV > .local/tool-canary/python-version.txt
@@ -114,7 +114,7 @@ jobs:
                   runtimes[name] = path.read_text().strip() if path.exists() else ''
               if state == 'qualified-tool-candidate' and (not digest or candidate.get('lockSha256') != digest):
                   state = 'evidence-mismatch'
-              if state == 'qualified-tool-candidate' and not (runtimes['python-version'].startswith('Python ' + Path('.python-version').read_text().strip() + ' ') and runtimes['node-version'] == 'v' + Path('.node-version').read_text().strip() and runtimes['tool-python-version'].startswith('Python 3.14.9 ')):
+              if state == 'qualified-tool-candidate' and not (runtimes['python-version'].startswith('Python ' + Path('.python-version').read_text().strip() + ' ') and runtimes['node-version'] == 'v' + Path('.node-version').read_text().strip() and runtimes['tool-python-version'].startswith('Python 3.15.1 ')):
                   state = 'runtime-mismatch'
           except (OSError, ValueError, TypeError):
               state = 'evidence-invalid'
@@ -144,7 +144,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: edithatogo/careops
-          ref: d829db7aa46e3789eb1b339f1ab1ad7e5d780d49
+          ref: 30df4953ea87c8915b4a525fc671a4c9857c3f7f
           path: .careops-ci-tools
           persist-credentials: false
           submodules: false
