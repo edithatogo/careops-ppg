@@ -37,8 +37,10 @@ uv pip install --python .venv/bin/python --require-hashes --only-binary=:all: -r
 
 The optional Atlas adapter qualification helper also requires this repository's
 `.venv/bin/python`. Its pinned Atlas source currently declares Python `<3.15`, so
-the cross-repository integration remains unqualified until that source supports
-the required Python 3.15.1 runtime. Do not run it with `ATLAS/.venv/bin/python`.
+the cross-repository integration remains unqualified. The helper refuses that
+source before importing it. The newer Atlas Python migration candidate still
+needs complete consumer-contract qualification; see the existing qualification
+plan. Do not run it with `ATLAS/.venv/bin/python`.
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -p 'test_*.py'

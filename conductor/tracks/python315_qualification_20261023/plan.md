@@ -26,7 +26,11 @@ A track or prompt is not an armed goal or completed runtime migration. Shared ch
 The library-column route below is the selected next implementation approach. The
 earlier Atlas upstream blocker is superseded: Atlas PR #1295 merged its Python
 3.15.1 migration. Qualification of PPG's pinned Atlas integration remains a
-separate task; neither that pin nor its runtime evidence changes in this plan PR.
+separate task; the existing consumer pin is retained pending full qualification.
+
+The later integration probe below retains the existing Atlas pin: the migrated
+candidate has not passed the full consumer qualification. Runtime checks now
+refuse unsupported pinned source before importing it.
 
 ## Evidence checkpoint — 2026-10-24
 
@@ -136,6 +140,33 @@ restore the normal profile and prove same-revision recovery and unchanged replay
 Do not replace the working flow or mark P4.3–P4.5 complete from these partial
 results. No arbitrary new document shape, PDF route or operational approval is
 established by this continuation.
+
+### Publication and Atlas integration follow-up — 24 October 2026
+
+The supported Dataverse read for the isolated flow failed with `AADSTS65002`:
+the current CLI application lacks required API preauthorization. No consent,
+client identity or tenant setting was changed, and the denial was not retried.
+The stopped trial's normal active graph remains the retained restoration point.
+Draft/publication reconciliation and interrupted recovery remain open. Microsoft
+documents [separate draft and published workflow rows](https://learn.microsoft.com/en-us/power-automate/drafts-versioning)
+and the [Dataverse management route](https://learn.microsoft.com/en-us/power-automate/manage-flows-with-code).
+
+An independent local integration probe used the exact Atlas Python migration
+commit and its updated contract in an isolated source checkout. All 32 resolved
+runtime dependencies installed from a hash lock into the verified PPG Python
+3.15.1 environment. The fictional API lookup and preceding refusal/context checks
+executed; the existing unknown-evidence scenario then failed strict validation.
+The candidate's `EvidenceItem.status_code` is nonblank, while its absence-state
+validator rejects a nonempty status for unknown/not-covered evidence. This leaves
+the required unknown-preservation scenario unqualified; no validator was weakened
+and no clinical/domain contract was changed to force a pass.
+
+The candidate code, exact dependency lock and failure remain private. Neither
+the Atlas commit nor contract pin was promoted. The maintained qualifier now
+checks the pinned source's declared, explicitly qualified Python constraint
+before importing or executing Atlas, rather than relying on a documentation-only
+warning about the incompatible older pin. Resolve the evidence-contract scenario
+and rerun the full fictional API/package qualification before promoting a new pin.
 
 References: [SharePoint column types](https://support.microsoft.com/en-us/sharepoint/lists/data-and-lists/list-and-library-column-types-and-options),
 [library templates](https://support.microsoft.com/en-us/sharepoint/documents-and-library/set-a-custom-template-for-a-sharepoint-library),

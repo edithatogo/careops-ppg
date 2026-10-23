@@ -14,11 +14,17 @@ import json
 import subprocess
 import sys
 import tempfile
+import tomllib
 import zipfile
 from pathlib import Path
 from ppg_atlas_adapter import AdapterError, ATLAS_COMMIT, CONTRACT_SHA256, capture, digest, encoded, supporting_files, query_parameters
 
 ROOT = Path(__file__).resolve().parents[1]
+
+def require_atlas_runtime(metadata):
+    """Refuse unsupported pinned source before importing or executing Atlas."""
+    if metadata.get('project', {}).get('requires-python') != '>=3.15,<3.16':
+        raise AdapterError('consumer_python315_constraint_unqualified')
 
 def require_repo_runtime(version=None, executable=None):
     expected = tuple(int(part) for part in (ROOT / '.python-version').read_text().strip().split('.'))
@@ -40,8 +46,9 @@ def main():
         return subprocess.check_output(['git', '-C', str(atlas), *args], text=True).strip()
     if git('rev-parse', 'HEAD') != ATLAS_COMMIT:
         raise AdapterError('consumer_commit_drift')
-    if git('status', '--porcelain', '--', 'src', 'tests/test_query_service.py', 'contracts/openapi-readonly-v1.json'):
+    if git('status', '--porcelain', '--', 'src', 'tests/test_query_service.py', 'contracts/openapi-readonly-v1.json', 'pyproject.toml'):
         raise AdapterError('consumer_working_source_drift')
+    require_atlas_runtime(tomllib.loads((atlas/'pyproject.toml').read_text()))
     if digest((atlas/'contracts/openapi-readonly-v1.json').read_bytes()) != CONTRACT_SHA256:
         raise AdapterError('consumer_contract_drift')
     sys.path.insert(0, str(atlas/'src'))
