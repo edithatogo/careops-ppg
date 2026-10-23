@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DLL = ROOT / 'tools/native-document-template/bin/Debug/net10.0/TemplateBuilder.dll'
 NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
       'w15': 'http://schemas.microsoft.com/office/word/2012/wordml'}
+R_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+PKG_REL_NS = 'http://schemas.openxmlformats.org/package/2006/relationships'
 
 
 def sha(data):
@@ -69,9 +71,9 @@ class ManualPopulationTests(unittest.TestCase):
         return result
 
     def prepare(self, rows=1, name='output', same_path=False, revision=1,
-                job_id='TEST-JOB', request_id='TEST-REQUEST'):
+                job_id='TEST-JOB', request_id='TEST-REQUEST', source_uri=None):
         self.input['comparison_rows'] = [self.row] * rows
-        self.input['source_snapshot'] = (
+        self.input['source_snapshot'] = source_uri or (
             'https://example.invalid/LC02-operator-request-' + request_id + '.json')
         self.input['source_manifest'] = job_id
         self.input['outputRevision'] = job_id + '/revision' + str(revision)
@@ -88,6 +90,19 @@ class ManualPopulationTests(unittest.TestCase):
                          str(self.p / 'input.json'), str(self.p / 'template.docx'), str(self.p / 'source.txt'),
                          out, out if same_path else str(self.p / (name + '.json')))
 
+    def assert_source_snapshot_link(self, package, expected_target):
+        document = ET.fromstring(package.read('word/document.xml'))
+        links = document.findall('.//w:hyperlink', NS)
+        self.assertEqual(len(links), 1)
+        self.assertEqual(''.join(links[0].itertext()), 'Open source snapshot')
+        relation_id = links[0].get('{' + R_NS + '}id')
+        relationships = ET.fromstring(package.read('word/_rels/document.xml.rels'))
+        matches = [relationship for relationship in relationships.findall('pkg:Relationship',
+                   {'pkg': PKG_REL_NS}) if relationship.get('Id') == relation_id]
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0].get('TargetMode'), 'External')
+        self.assertEqual(matches[0].get('Target'), expected_target)
+
     def test_shapes_parts_values_and_retry(self):
         for count in (0, 1, 3):
             name = 'rows' + str(count)
@@ -96,8 +111,9 @@ class ManualPopulationTests(unittest.TestCase):
             with zipfile.ZipFile(self.p / (name + '.docx')) as z, zipfile.ZipFile(self.p / 'template.docx') as src:
                 self.assertEqual(z.namelist(), src.namelist())
                 for part in z.namelist():
-                    if part != 'word/document.xml':
+                    if part not in {'word/document.xml', 'word/_rels/document.xml.rels'}:
                         self.assertEqual(z.read(part), src.read(part), part)
+                self.assert_source_snapshot_link(z, self.input['source_snapshot'])
                 root = ET.fromstring(z.read('word/document.xml'))
             ids = [e.get('{' + NS['w'] + '}val') for e in root.findall('.//w:sdtPr/w:id', NS)]
             self.assertEqual(len(ids), len(set(ids)))
@@ -119,11 +135,21 @@ class ManualPopulationTests(unittest.TestCase):
         self.assertIn('paths must differ', result.stderr)
         self.assertFalse((self.p / 'output.docx').exists())
 
+    def test_non_https_source_link_is_refused_without_output(self):
+        result = self.prepare(source_uri='http://example.invalid/LC02-operator-request-TEST-REQUEST.json')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('HTTPS source snapshot link required', result.stderr)
+        self.assertFalse((self.p / 'output.docx').exists())
+        self.assertFalse((self.p / 'output.json').exists())
+
     def test_new_revision_preserves_human_edit_identity_and_issued_history(self):
         first = self.prepare(name='draft-r1')
         self.assertEqual(first.returncode, 0, first.stderr)
         first_doc = self.p / 'draft-r1.docx'
         first_receipt = self.p / 'draft-r1.json'
+        with zipfile.ZipFile(first_doc) as package:
+            self.assert_source_snapshot_link(package,
+                'https://example.invalid/LC02-operator-request-TEST-REQUEST.json')
         first_proof = json.loads(first_receipt.read_text())
         self.assertEqual(first_proof['CaseUID'], 'FICTIONAL-TEST')
         self.assertEqual(first_proof['occurrenceReference'], 'TEST-OCC')
@@ -175,6 +201,9 @@ class ManualPopulationTests(unittest.TestCase):
         second = self.prepare(rows=2, name='draft-r2', revision=2,
                               job_id='TEST-JOB-V2', request_id='TEST-REQUEST-2')
         self.assertEqual(second.returncode, 0, second.stderr)
+        with zipfile.ZipFile(self.p / 'draft-r2.docx') as package:
+            self.assert_source_snapshot_link(package,
+                'https://example.invalid/LC02-operator-request-TEST-REQUEST-2.json')
 
         second_proof = json.loads((self.p / 'draft-r2.json').read_text())
         self.assertEqual(second_proof['CaseUID'], first_proof['CaseUID'])

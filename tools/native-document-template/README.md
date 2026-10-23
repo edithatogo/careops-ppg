@@ -20,9 +20,10 @@ edits, repeated/optional content and issued history. Local schema validation doe
 not establish native rendering, access or production eligibility.
 
 The portable tests exercise actual generated DOCX packages, repeated groups,
-Unicode, links, schema validation, unchanged parts and refusal/recovery behavior.
-Inputs are fictional. Native configuration and operational evidence stay outside
-this repository. Do not copy a prior deployment's bindings or qualification claims.
+Unicode, a dynamic HTTPS source-snapshot hyperlink, schema validation, unchanged
+parts and refusal/recovery behavior. Non-HTTPS source links are refused. Inputs
+are fictional. Native configuration and operational evidence stay outside this
+repository. Do not copy a prior deployment's bindings or qualification claims.
 
 ## Native structured-document qualification
 
