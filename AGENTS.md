@@ -29,3 +29,7 @@ Python3.15, currently exact patch3.15.1. Use an explicit repo-local interpreter,
 verify its version, and align constraints, locks and current setup instructions.
 Older runners are not compatibility defaults; preserve only historical evidence
 and intentional synthetic version tests. Do not replace a running environment.
+
+PyYAML6.0.3 currently has no Linux CPython3.15 wheel. CI tool qualification permits
+its hash-verified source distribution explicitly; other tool dependencies retain
+binary-only installation. Keep the Python3.15 interpreter and test actual builds.

@@ -60,7 +60,7 @@ jobs:
           python .careops-ci-tools/portfolio-scripts/ci_delivery.py lock --root .careops-ci-tools --preview --output .careops-ci-tools/.local/canary/requirements.lock --receipt .local/tool-canary/candidate.json
           cp .careops-ci-tools/.local/canary/requirements.lock .local/tool-canary/requirements.lock
           uv venv --python 3.15.1 "$RUNNER_TEMP/ppg-tool-canary"
-          uv pip install --python "$RUNNER_TEMP/ppg-tool-canary/bin/python" --require-hashes --only-binary=:all: -r .local/tool-canary/requirements.lock
+          uv pip install --python "$RUNNER_TEMP/ppg-tool-canary/bin/python" --require-hashes --only-binary=:all: --no-binary=pyyaml -r .local/tool-canary/requirements.lock
           "$RUNNER_TEMP/ppg-tool-canary/bin/python" -VV > .local/tool-canary/tool-python-version.txt
           python -VV > .local/tool-canary/python-version.txt
           node --version > .local/tool-canary/node-version.txt
