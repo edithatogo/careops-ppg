@@ -22,17 +22,24 @@ For modular source delivery, read `conductor/suite-delivery.md` and the ordered
 queue in `.careops/module.json`. Preserve the portable boundaries above, qualified
 CI and current native/file owners. Source guidance does not authorise deployment.
 
-## Required Python execution
+## Runtime preference and qualified exceptions — 24 October 2026
 
-All active Python development, build, test, automation and CI execution uses
-Python3.15, currently exact patch3.15.1. Use an explicit repo-local interpreter,
-verify its version, and align constraints, locks and current setup instructions.
-Older runners are not compatibility defaults; preserve only historical evidence
-and intentional synthetic version tests. Do not replace a running environment.
+Prefer the newest suitable runtime/dependencies; the working default remains
+Python3.15.1. The user's later instruction permits another version when needed.
+Record the concrete reason/scope, select an explicit repo-local interpreter,
+verify its actual version and qualify its dependencies and behavior. Preserve
+working latest-version environments and in-flight operations. A scoped alternate
+is not an implicit older default or a reason to weaken functional/security gates.
+
+The pinned Atlas source requires Python below3.15, while the newer source contract
+has an unresolved unknown-evidence scenario. Its explicit compatibility profile
+uses .python-version-atlas, .venv-atlas and requirements-atlas.lock. This exception
+applies only to the optional read-only Atlas qualification; the PPG default,
+builds and core CI remain on3.15.1. Never select an external ATLAS/.venv implicitly.
 
 PyYAML6.0.3 currently has no Linux CPython3.15 wheel. CI tool qualification permits
 its hash-verified source distribution explicitly; other tool dependencies retain
-binary-only installation. Keep the Python3.15 interpreter and test actual builds.
+binary-only installation. Preserve that working profile and test actual builds.
 
 ## Targeted test execution
 
@@ -51,7 +58,9 @@ Default to no automatic retries. skip/skipif requires a real capability conditio
 and reason; xfail needs a known issue/reason and strict=True. Neither is for speed.
 Never retry native mutations, sends or real external effects through test plugins.
 Difftest0.3.0 failed actual3.15.1 qualification (PyO3 maximum3.14); do not install
-it with a compatibility override or downgrade Python. Rerunfailures16.7 is opt-in
+it with a compatibility override or change a working runtime just to adopt this
+optional selector. Necessary runtime exceptions follow the policy above.
+Rerunfailures16.7 is opt-in
 for bounded, diagnosed fictional/read-only transient cases with first failure
 visible; it must not turn flaky outcomes into clean acceptance.
 

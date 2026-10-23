@@ -168,8 +168,8 @@ and Microsoft's [existing-flow solution guidance](https://learn.microsoft.com/en
 
 ## Runtime receipt and selected-pin consistency — 24 October 2026
 
-All active PPG Python entry points use the repository's explicit Python 3.15.1
-environment. CI verifies the actual interpreter after setup, and the full test
+Default PPG Python entry points use the repository's explicit Python 3.15.1
+environment. CI verifies the actual interpreter after setup, and the core test
 matrix runs Python 3.15.1 with Node 22 and 26.12.1. The development canary uses
 separate Python 3.15.1 environments for its optional XLSB parser and CI tools;
 the hash-locked `pyxlsb` candidate is parsed against a small attributed workbook
@@ -180,9 +180,14 @@ evidence mismatch, runtime mismatch or invalid evidence after saving its receipt
 Tests cover success, failed/cancelled/skipped stages, missing lock, old runtime,
 malformed evidence and exit status. The receipt proves a qualified source tool
 candidate only; it does not promote native tools or qualify SharePoint document
-generation. The Atlas qualification helper also requires the PPG `.venv`; its
-pinned upstream source currently declares Python below 3.15, so that cross-repo
-integration remains unqualified rather than using an older Atlas environment.
+generation. The user's 24 October clarification permits necessary scoped version
+exceptions while preferring the latest suitable dependencies. The Atlas helper
+uses an explicit `.venv-atlas` profile pinned by `.python-version-atlas` and
+`requirements-atlas.lock`: its source/contract pin requires Python below 3.15 and
+the newer contract's unknown-evidence scenario remains unresolved. This profile
+does not replace `.venv` or select an external Atlas environment implicitly.
+Qualify actual API/package behavior, exact source/contract and hosted checks;
+neither a runtime pin nor dependency installation alone proves integration.
 
 The canary bootstraps uv from its official checksum-pinned Linux x86_64 release
 asset because the default setup-uv mirror manifest omitted uv 0.13.5. Platform,

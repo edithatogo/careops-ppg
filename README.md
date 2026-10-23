@@ -14,7 +14,10 @@ Microsoft deployment is configured or implied by the local checks.
 
 ## Run locally
 
-Requires explicitly selected repo-local Python 3.15.1 and Node.js 22 or 26.12.1.
+The default uses explicitly selected repo-local Python 3.15.1 and Node.js 22 or
+26.12.1. Prefer the newest suitable dependencies; a necessary alternate version
+is allowed with a recorded reason, scope and actual qualification. The optional
+Atlas exception below preserves the working default.
 The document qualification suite additionally requires the pinned .NET 10.0.402 SDK.
 Create and verify the repo-local environment before running Python tools:
 
@@ -35,12 +38,27 @@ repo-local interpreter only when those paths are needed:
 uv pip install --python .venv/bin/python --require-hashes --only-binary=:all: -r requirements-xlsb.lock
 ```
 
-The optional Atlas adapter qualification helper also requires this repository's
-`.venv/bin/python`. Its pinned Atlas source currently declares Python `<3.15`, so
-the cross-repository integration remains unqualified. The helper refuses that
-source before importing it. The newer Atlas Python migration candidate still
-needs complete consumer-contract qualification; see the existing qualification
-plan. Do not run it with `ATLAS/.venv/bin/python`.
+The optional read-only Atlas adapter uses a separate compatibility profile.
+Its maintained source/contract pin requires Python `<3.15`; the newer source has
+an unresolved unknown-evidence contract scenario. Python 3.14.9 in `.venv-atlas`
+is therefore scoped to this integration, with hash-locked runtime/test dependencies.
+The helper checks the explicit flag, actual interpreter, source commit, clean
+source, declared runtime constraint and contract hash before executing Atlas.
+It never implicitly selects an external `ATLAS/.venv`.
+
+Use a clean Atlas checkout at `d75e8d06cd3d772cfa1fee4fe150eab318ef231b`:
+
+```sh
+uv venv --python 3.14.9 .venv-atlas
+.venv-atlas/bin/python -VV
+uv pip install --python .venv-atlas/bin/python --require-hashes --only-binary=:all: -r requirements-atlas.lock
+.venv-atlas/bin/python scripts/qualify_atlas_adapter.py --atlas-root .local/atlas-original-pin --atlas-compatibility
+```
+
+Regenerate the optional lock from that checkout's `pyproject.toml` and
+`requirements-atlas-qualification.in` using the selected compatibility interpreter;
+the lock header records the exact command. The fictional API/package check does
+not establish hosted/native deployment, real-source integrity or clinical acceptance.
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -p 'test_*.py'

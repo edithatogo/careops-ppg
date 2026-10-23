@@ -30,7 +30,9 @@ separate task; the existing consumer pin is retained pending full qualification.
 
 The later integration probe below retains the existing Atlas pin: the migrated
 candidate has not passed the full consumer qualification. Runtime checks now
-refuse unsupported pinned source before importing it.
+refuse source that does not match the explicitly selected runtime profile before
+importing it. The user's later clarification permits the qualified Atlas
+compatibility profile below; the default remains Python 3.15.1.
 
 ## Evidence checkpoint — 2026-10-24
 
@@ -167,6 +169,35 @@ checks the pinned source's declared, explicitly qualified Python constraint
 before importing or executing Atlas, rather than relying on a documentation-only
 warning about the incompatible older pin. Resolve the evidence-contract scenario
 and rerun the full fictional API/package qualification before promoting a new pin.
+
+### Qualified compatibility route — 24 October 2026 user clarification
+
+The user clarified that latest dependencies remain preferred, but another version
+may be used when needed. This supersedes mandatory-version/no-alternate wording
+in earlier checkpoints. Current project instructions, spec and setup guidance
+retain the working Python 3.15.1 default and permit explicit qualified scoped
+exceptions. No working environment was downgraded or replaced.
+
+The maintained Atlas commit/contract is unchanged. Its declared Python range is
+`>=3.14,<3.15`; the newer source's unknown-evidence scenario remains unresolved.
+A separate repo-local `.venv-atlas` therefore uses the newest available 3.14
+patch selected for this trial, 3.14.9, with all 36 runtime/test dependencies
+resolved and installed from `requirements-atlas.lock`. Qualification uses an
+explicit compatibility flag, its own runtime pin and actual-interpreter check;
+an external Atlas environment is never an implicit fallback.
+
+The actual fictional API-to-package trial passed all 24 existing checks: lookup,
+schema/query/provenance and denial guards, unknown preservation, response/member
+hashes, ZIP CRCs, replay, edited-output refusal, new-revision edit preservation
+and unchanged fixture database. The receipt records the selected profile and
+actual Python version and is retained by content hash. No model validator,
+identity decision, source/case write or clinical-acceptance gate was weakened.
+
+The dedicated CI job repeats this exact pinned-source integration with the locked
+compatibility profile; the core Python 3.15.1 lanes remain. Portable packaging
+includes the optional runtime pin, lock and qualification input. Current-head
+hosted results and post-merge verification remain required. Native interrupted
+recovery and the broader P4.3–P4.5 requirements remain open independently.
 
 References: [SharePoint column types](https://support.microsoft.com/en-us/sharepoint/lists/data-and-lists/list-and-library-column-types-and-options),
 [library templates](https://support.microsoft.com/en-us/sharepoint/documents-and-library/set-a-custom-template-for-a-sharepoint-library),
