@@ -145,5 +145,72 @@ def build_flow(existing, binding):
         a['PDF_outcome']={'type':'Compose','runAfter':{'Optional_PDF':['Succeeded','Failed','TimedOut']},'inputs':{'coreStatus':'COMPLETE / DRAFT','pdfStatus':"@if(equals(actions('Optional_PDF')?['status'],'Succeeded'),'COMPLETE / DRAFT','FAILED — DOCX and package remain usable; inspect Optional_PDF and retry the same revision')",'runId':"@workflow()?['run']?['name']",'core':"@outputs('Core_complete')"}}
         failure_uri=receipt_create.replace("'.pdf.receipt.json'',overwrite=false)","'.pdf-failed-',workflow()?['run']?['name'],'.json'',overwrite=false)")
         a['Record_PDF_failure']={'type':'If','runAfter':dep('PDF_outcome'),'expression':{'not':{'equals':["@actions('Optional_PDF')?['status']",'Succeeded']}},'actions':{'Save_PDF_failure':http('POST',failure_uri,None,"@string(outputs('PDF_outcome'))")},'else':{'actions':{}}}
+    if binding.get('fullReview'):
+        # An explicit request kind selects the new version. Legacy requests keep
+        # their original script, engine pin, input-pin order and job fingerprint.
+        full=binding['fullReview'];full_id=str(UUID(full['enginePin']['UniqueId']))
+        chosen="equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1')"
+        if binding.get('caseIntake'):
+            chosen="or("+chosen+",equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'))"
+        legacy="equals(body('Read_request_config')?['kind'],'PPG-native-package-request-v1')"
+        a['Require_request_kind']['expression']={'and':[{'equals':['@and(or('+chosen+','+legacy+'),startsWith(body(\'Read_request_pin\')?[\'ServerRelativeUrl\'],'+lit(folder+'/')+'))',True]}]}
+        old_engine=a['Read_engine_pin']['inputs']['parameters']['parameters/uri']
+        new_engine="_api/web/GetFileById('"+full_id+"')?$select="+','.join(PIN_FIELDS)
+        engine_uri='@if('+chosen+','+lit(new_engine)+','+lit(old_engine)+')'
+        engine_match='and('+','.join("equals(body('Read_engine_pin')?['"+k+"'],"+lit(full['enginePin'][k])+")" for k in PIN_FIELDS)+')'
+        a['Require_qualified_engine']['expression']={'and':[{'equals':['@if('+chosen+','+engine_match+','+engine+')',True]}]}
+        full_uri="@concat('_api/web/GetFileById(''',if("+chosen+",body('Read_request_config')?['fullDocumentInputUniqueId'],body('Read_request_config')?['compiledTemplateUniqueId']),''')?$select="+','.join(PIN_FIELDS)+"')"
+        a['Read_full_input_pin']=http('GET',full_uri,'Read_template')
+        a['Read_full_input']=content(sp_path("body('Read_full_input_pin')?['ServerRelativeUrl']"),'Read_full_input_pin',True)
+        a['Input_pins']['runAfter']=dep('Read_full_input')
+        for suffix in ['', '_before_write', '_before_receipt']:
+            a['Read_engine_pin'+suffix]['inputs']['parameters']['parameters/uri']=engine_uri
+            name='Input_pins'+suffix;old_pins=a[name]['inputs']
+            extra={'role':'full-document-input',**{k:"@body('Read_full_input_pin"+suffix+"')?['"+k+"']" for k in PIN_FIELDS}}
+            sets='Pin_sets'+suffix
+            a[sets]=compose({'legacy':old_pins,'full':old_pins+[extra]},next(iter(a[name]['runAfter'])))
+            a[name]['runAfter']=dep(sets);a[name]['inputs']='@if('+chosen+",outputs('"+sets+"')?['full'],outputs('"+sets+"')?['legacy'])"
+            if suffix:
+                previous='Read_request_properties'+suffix
+                a['Read_full_input_pin'+suffix]=http('GET',full_uri,next(iter(a[previous]['runAfter'])))
+                a[previous]['runAfter']=dep('Read_full_input_pin'+suffix)
+        a['Native_request']['inputs']['kind']='@if('+chosen+",'m365-full-review-request-v1','m365-cover-request-v1')"
+        # Revision is technical request metadata, so one library-property edit
+        # advances a request without editing a second JSON copy. Preserve the
+        # original serialized input when it already agrees (stable old replay).
+        full_input="if(equals(body('Read_full_input')?['outputRevision'],outputs('Accepted_values')?['PPGCoverOutputRevision']),body('Read_full_input'),setProperty(body('Read_full_input'),'outputRevision',outputs('Accepted_values')?['PPGCoverOutputRevision']))"
+        a['Native_request']['inputs']['fullDocumentInputJson']='@if('+chosen+',string('+full_input+"),'')"
+        a['Native_request']['inputs']['sourceSelectionJson']='@if('+chosen+",coalesce(body('Read_source_job')?['selectionJson'],''),'')"
+        # Static script IDs retain the connector's exact two-parameter schema.
+        # A dynamic ID makes the service demand an untyped ScriptParameters
+        # object and was rejected before save during native qualification.
+        legacy_run=copy.deepcopy(a['Run_script_from_SharePoint_library']);legacy_run['runAfter']={}
+        full_run=copy.deepcopy(legacy_run);full_run['inputs']['parameters']['scriptId']=full['scriptGraphId']
+        a['Select_document_script']={'type':'If','runAfter':dep('Native_request'),'expression':{'equals':['@'+chosen,True]},'actions':{'Run_full_review_script':full_run},'else':{'actions':{'Run_existing_cover_script':legacy_run}}}
+        a['Run_script_from_SharePoint_library']=compose('@if('+chosen+",outputs('Run_full_review_script'),outputs('Run_existing_cover_script'))",'Select_document_script')
+        a['Expected_receipt']['inputs']['generationRoute']="@"+result+"generationRoute']"
+        a['Expected_receipt']['inputs']['documentShape']='@if('+chosen+",'maintained-full-review-v1','fixed-cover-v1')"
+        # Keep existing receipt bytes stable for legacy replay. New extra fields
+        # belong only to the full route's completion record.
+        full_record=copy.deepcopy(a['Expected_receipt']['inputs'])
+        old_record=copy.deepcopy(full_record);old_record.pop('generationRoute');old_record.pop('documentShape')
+        a['Receipt_shapes']=compose({'legacy':old_record,'full':full_record},next(iter(a['Expected_receipt']['runAfter'])))
+        a['Expected_receipt']['runAfter']=dep('Receipt_shapes');a['Expected_receipt']['inputs']='@if('+chosen+",outputs('Receipt_shapes')?['full'],outputs('Receipt_shapes')?['legacy'])"
+    if binding.get('caseIntake'):
+        if not binding.get('fullReview'):raise ValueError('case_intake_requires_full_template_route')
+        from ppg_native_case_intake import extend_case_intake
+        extend_case_intake(a,binding,http,content,compose,check,sp_path,lit)
+    if binding.get('savedBodyFinalisation'):
+        if binding['savedBodyFinalisation'] is not True or binding.get('pdfConnection'):
+            raise ValueError('saved_body_candidate_requires_explicit_profile_without_pdf')
+        from ppg_saved_body_flow import extend_saved_body
+        extend_saved_body(a,binding,http,content,compose,check,output_path,file_uri)
+    # Save payloads omit authentication; the service supplies the connection
+    # token expression. Never copy authentication material from a run or client.
+    def omit_service_auth(group):
+        for action in group.values():
+            if action.get('type')=='OpenApiConnection':action['inputs'].pop('authentication',None)
+            omit_service_auth(action.get('actions',{}));omit_service_auth(action.get('else',{}).get('actions',{}))
+    omit_service_auth(a)
     d['actions']=a;d['triggers']={'manual':{'type':'Request','kind':'Button','inputs':{'schema':{'type':'object','properties':{'requestItemId':{'type':'string','title':'Package request ID (optional)','description':'Leave blank for the maintained PPG request.'}},'required':[]}},'runtimeConfiguration':{'concurrency':{'runs':1}}}}
     return {'properties':{'definition':d,'connectionReferences':refs,'displayName':'PPG | Generate cover and existing pack','state':'Stopped'}}

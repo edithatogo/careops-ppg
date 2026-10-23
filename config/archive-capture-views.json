@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "viewFields": [
+    "DocIcon",
+    "LinkFilename",
+    "PPGCaptureKind",
+    "PPGOriginalFilename",
+    "PPGCaptureSourceURL",
+    "PPGCaptureDate",
+    "PPGCaptureSHA256",
+    "PPGDocumentUID",
+    "PPGPolicyEdition",
+    "PPGCurrency",
+    "_UIVersionString"
+  ],
+  "views": [
+    {
+      "title": "Archive captures \u2014 provenance",
+      "groupBy": null
+    },
+    {
+      "title": "Archive captures \u2014 source locator",
+      "groupBy": "PPGSourceURLKey"
+    }
+  ]
+}

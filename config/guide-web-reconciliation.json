@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "registers": [
+    {
+      "key": "contexts",
+      "title": "PPG Guide Review Contexts",
+      "description": "Unapproved version-bound guide review evidence. No clinical approval or source writes.",
+      "fields": [
+        {
+          "name": "ContextKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ContextKey\" StaticName=\"ContextKey\" DisplayName=\"ContextKey\" Required=\"TRUE\" EnforceUniqueValues=\"TRUE\" Indexed=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SourceAnchorId",
+          "type": "Number",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Number\" Name=\"SourceAnchorId\" StaticName=\"SourceAnchorId\" DisplayName=\"SourceAnchorId\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"DocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ProposalRevision",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ProposalRevision\" StaticName=\"ProposalRevision\" DisplayName=\"ProposalRevision\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SnapshotJSON",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"SnapshotJSON\" StaticName=\"SnapshotJSON\" DisplayName=\"SnapshotJSON\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "SourceReviewText",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"SourceReviewText\" StaticName=\"SourceReviewText\" DisplayName=\"SourceReviewText\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        }
+      ],
+      "view": [
+        "LinkTitle",
+        "ContextKey",
+        "SourceAnchorId",
+        "DocumentUID",
+        "ProposalRevision",
+        "SnapshotJSON",
+        "SourceReviewText",
+        "_UIVersionString",
+        "Modified"
+      ]
+    },
+    {
+      "key": "guides",
+      "title": "PPG Reconciled Guide Revisions",
+      "description": "Unapproved version-bound guide review evidence. No clinical approval or source writes.",
+      "fields": [
+        {
+          "name": "GuideKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"GuideKey\" StaticName=\"GuideKey\" DisplayName=\"GuideKey\" Required=\"TRUE\" EnforceUniqueValues=\"TRUE\" Indexed=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ContextId",
+          "type": "Number",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Number\" Name=\"ContextId\" StaticName=\"ContextId\" DisplayName=\"ContextId\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "GuideRevision",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"GuideRevision\" StaticName=\"GuideRevision\" DisplayName=\"GuideRevision\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "GuideText",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"GuideText\" StaticName=\"GuideText\" DisplayName=\"GuideText\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "Rationale",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Rationale\" StaticName=\"Rationale\" DisplayName=\"Rationale\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "DocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"DocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ProposalRevision",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ProposalRevision\" StaticName=\"ProposalRevision\" DisplayName=\"ProposalRevision\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "SnapshotJSON",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"SnapshotJSON\" StaticName=\"SnapshotJSON\" DisplayName=\"SnapshotJSON\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        }
+      ],
+      "view": [
+        "LinkTitle",
+        "GuideKey",
+        "ContextId",
+        "GuideRevision",
+        "GuideText",
+        "Rationale",
+        "DocumentUID",
+        "ProposalRevision",
+        "SnapshotJSON",
+        "_UIVersionString",
+        "Modified"
+      ]
+    }
+  ],
+  "notificationsEnabled": false
+}

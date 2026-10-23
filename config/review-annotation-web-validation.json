@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "field": {
+    "name": "DispositionSummary",
+    "type": "Text",
+    "required": false,
+    "schemaXml": "<Field Type=\"Text\" Name=\"DispositionSummary\" StaticName=\"DispositionSummary\" DisplayName=\"Disposition summary\" Required=\"FALSE\" MaxLength=\"255\"><Default></Default></Field>"
+  },
+  "validationFormula": "=AND(OR([Review state]=\"Received\",LEN(TRIM([Disposition summary]))>0),OR([Review state]<>\"Incorporated\",LEN(TRIM([Incorporated in version]))>0))",
+  "validationMessage": "For any state beyond Received, enter a disposition summary. Incorporated also requires the document version in which the change was incorporated. Suggestions and recorded dispositions do not authorise a policy.",
+  "history": "Version history preserves prior summaries; append-only Decision rationale retains detailed discussion. Existing records are not backfilled.",
+  "notificationsEnabled": false,
+  "clinicalApproval": false
+}

@@ -1,0 +1,6 @@
+{
+  "familyId": "fictional-policy-family",
+  "sources": [
+    {"sourceKey": "fictional-policy", "canonicalUrl": "https://example.invalid/policy"}
+  ]
+}

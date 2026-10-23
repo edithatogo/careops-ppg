@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "archiveFolderName": "Captured Policy Archive",
+  "supportedExtensions": [
+    "pdf",
+    "captured"
+  ],
+  "identityField": "PPGDocumentUID",
+  "viewFields": [
+    "DocIcon",
+    "LinkFilename",
+    "PPGDocumentUID",
+    "PPGPolicyEdition",
+    "PPGCurrency",
+    "PPGReplacesEdition",
+    "PPGAuthorityLink",
+    "PPGCurrencyChecked",
+    "PPGCurrencyEvidence",
+    "_UIVersionString"
+  ],
+  "scope": 1,
+  "views": [
+    {
+      "key": "all",
+      "title": "Policy editions \u2014 all",
+      "currencies": []
+    },
+    {
+      "key": "unconfirmed",
+      "title": "Policy editions \u2014 unconfirmed",
+      "currencies": [
+        "Unconfirmed"
+      ],
+      "includeBlank": true
+    },
+    {
+      "key": "current",
+      "title": "Policy editions \u2014 verified current",
+      "currencies": [
+        "Verified current"
+      ]
+    },
+    {
+      "key": "historical",
+      "title": "Policy editions \u2014 historical",
+      "currencies": [
+        "Verified superseded",
+        "Verified withdrawn"
+      ]
+    }
+  ],
+  "archiveNavigationViews": [
+    "Captured policies \u2014 all",
+    "Captured policies \u2014 CMO relevance"
+  ],
+  "excludeSupportingSourcePages": true
+}

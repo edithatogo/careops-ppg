@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "0.1.0",
+  "sourceSystemId": "example-ppg-register",
+  "source": {
+    "siteUrl": null,
+    "filePath": null,
+    "fileUniqueId": null
+  },
+  "destination": {
+    "siteUrl": null,
+    "catalogueListId": null,
+    "reviewQueueListId": null,
+    "evidenceLibraryId": null,
+    "solutionId": null
+  },
+  "executionMode": "manual",
+  "writeBack": false,
+  "automaticDeletion": false,
+  "schedule": {
+    "enabled": false,
+    "metadataPollHours": 1,
+    "fullReconcileHours": 24
+  },
+  "note": "Fill exact values in ignored .local/deployment.json; do not commit tenant/account identifiers."
+}

@@ -20,6 +20,7 @@ interface PackageResult {
   status: string; sourceWrites: boolean; sent: boolean; wordGenerationPerformed?: boolean;
   coverSHA256?: string; coverBytes?: number; coverBase64?: string; generationRoute?: string;
   requestSHA256?: string; claimJson?: string; jobJson?: string;
+  finalisationMembersJson?: string; generatedDocumentSHA256?: string;
 }
 const MAX_WIRE_BYTES = 4000000;
 const MAX_RAW_BYTES = 2000000;
@@ -29,12 +30,72 @@ function main(workbook: ExcelScript.Workbook, jobJson: string, membersJson: stri
   // The workbook exists only to host the authorised Run script action.
   const envelope: { kind?: string; jobJson: string; coverJson: string } = JSON.parse(jobJson);
   if (utf8(JSON.stringify({jobJson,membersJson})).length > MAX_WIRE_BYTES) throw Error('request_limit');
-  const result: PackageResult = JSON.parse(envelope.kind === 'm365-cover-request-v1' ?
+  const result: PackageResult = JSON.parse(envelope.kind === 'm365-saved-body-package-v1' ? packageSavedBody(jobJson,membersJson) : envelope.kind === 'm365-case-intake-request-v1' ? nativeCaseIntake(jobJson,membersJson) : ['m365-cover-request-v1','m365-full-review-request-v1'].indexOf(envelope.kind || '') >= 0 ?
     nativeCoverRequest(jobJson, membersJson) : envelope.kind === 'standard-cover-input-v1' ?
     packageCover(envelope.jobJson, membersJson, envelope.coverJson) : packageJob(jobJson, membersJson));
   return result;
 }
-function packageJob(jobJson: string, membersJson: string): string {
+
+interface SavedBodyRequest {
+  kind: string; generatedJobJson: string; generatedClaimJson: string;
+  savedPinBefore: NativePin; savedPinAfter: NativePin;
+  documentPath: string; savedBodyBase64: string; existingSavedClaimJson: string;
+}
+function packageSavedBody(requestJson: string, membersJson: string): string {
+  // Separate finalisation protocol: never change the generated v1 claim or
+  // reinterpret an existing legacy ZIP. The native caller must acquire saved
+  // bytes between metadata reads and retain uncertain writes for reconciliation.
+  if (utf8(JSON.stringify({requestJson,membersJson})).length > MAX_WIRE_BYTES) throw Error('request_limit');
+  const req: SavedBodyRequest = JSON.parse(requestJson);
+  if (!req || req.kind !== 'm365-saved-body-package-v1') throw Error('saved_body_request_invalid');
+  const job: Job = JSON.parse(req.generatedJobJson), claim: NativeClaim = JSON.parse(req.generatedClaimJson);
+  const originalJobSHA = sha256(utf8(req.generatedJobJson));
+  if (!job || job.schemaVersion !== 1 || !claim || claim.kind !== 'PPG-native-package-claim-v1'
+      || claim.jobId !== job.jobId || claim.jobSHA256 !== originalJobSHA
+      || !/^[a-f0-9]{64}$/.test(claim.requestSHA256 || '') || claim.createdAtUtc !== job.createdAtUtc
+      || !/^[A-Za-z0-9_-]{1,100}$/.test(claim.generationRunId || '')) throw Error('generated_claim_mismatch');
+  if (!['document/PPG-review-DRAFT.docx','cover/PPG-cover-DRAFT.docx'].includes(req.documentPath)) throw Error('saved_document_path_invalid');
+  const keys = ['UniqueId','ETag','Length','UIVersionLabel','ServerRelativeUrl'];
+  const before = req.savedPinBefore, after = req.savedPinAfter;
+  if (!before || !after || keys.some(k => typeof before[k as keyof NativePin] !== 'string'
+      || !(before[k as keyof NativePin] as string).trim() || before[k as keyof NativePin] !== after[k as keyof NativePin])
+      || before.ETag.trim() === '*' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(before.UniqueId)
+      || !/^\d+$/.test(before.Length) || !before.ServerRelativeUrl.startsWith('/')
+      || !before.ServerRelativeUrl.endsWith('/'+job.jobId+'.docx')) throw Error('saved_body_unstable_pin');
+  const body = decodeMember(req.savedBodyBase64), digest = sha256(body);
+  if (body.length < 4 || body[0] !== 80 || body[1] !== 75 || body[2] !== 3 || body[3] !== 4
+      || body.length !== Number(before.Length)) throw Error('saved_body_invalid');
+  const members: Content[] = JSON.parse(membersJson);
+  if (!Array.isArray(job.members) || job.members.filter(m => m.path === req.documentPath).length !== 1
+      || !Array.isArray(members) || members.some(m => m.path === req.documentPath)) throw Error('saved_body_member_ambiguous');
+  // Reject changed non-document inputs against the original manifest before
+  // rebinding only the saved document. packageJob checks paths/counts/digests.
+  const selected = job.members.find(m => m.path === req.documentPath);
+  if (!selected) throw Error('saved_body_member_missing');
+  const generatedDocumentSHA256 = selected.sha256;
+  const savedPin = {UniqueId:before.UniqueId,ETag:before.ETag,Length:before.Length,
+    UIVersionLabel:before.UIVersionLabel,ServerRelativeUrl:before.ServerRelativeUrl};
+  const savedClaim = {kind:'PPG-native-saved-body-claim-v1',jobId:job.jobId,
+    generatedJobSHA256:originalJobSHA,generatedClaimSHA256:sha256(utf8(req.generatedClaimJson)),
+    generatedDocumentSHA256,savedDocumentSHA256:digest,savedPin};
+  const savedClaimJson = JSON.stringify(savedClaim);
+  if (typeof req.existingSavedClaimJson !== 'string') throw Error('saved_claim_state_required');
+  if (req.existingSavedClaimJson && req.existingSavedClaimJson !== savedClaimJson) throw Error('saved_output_edited_requires_reconciliation');
+  selected.sha256 = digest; selected.size = body.length;
+  selected.sourceReference = before.ServerRelativeUrl;
+  selected.sourceVersionRef = before.UIVersionLabel+':'+before.ETag;
+  const finalJob = {...job,savedBodyProvenance:savedClaim};
+  const jobJson = JSON.stringify(finalJob);
+  const result: PackageResult = JSON.parse(packageJob(jobJson,JSON.stringify([
+    {path:req.documentPath,base64:req.savedBodyBase64},...members]),3000000));
+  const response = JSON.stringify({...result,jobJson,claimJson:savedClaimJson,
+    coverBase64:req.savedBodyBase64,coverSHA256:digest,coverBytes:body.length,
+    generatedDocumentSHA256,generationRoute:'sharepoint-saved-body-finalisation-v1',
+    wordGenerationPerformed:false,requestSHA256:claim.requestSHA256});
+  if (utf8(response).length > MAX_WIRE_BYTES) throw Error('response_limit');
+  return response;
+}
+function packageJob(jobJson: string, membersJson: string, rawLimit: number = MAX_RAW_BYTES): string {
   // Count escaped string parameters as actually serialized, with routing headroom.
   if (utf8(JSON.stringify({ jobJson, membersJson })).length > MAX_WIRE_BYTES) throw Error("request_limit");
   const job: Job = JSON.parse(jobJson);
@@ -71,13 +132,13 @@ function packageJob(jobJson: string, membersJson: string): string {
       throw Error("member_path_collision");
     names.add(key);
     if (actual.path !== expected.path) throw Error("member_order_or_path_mismatch");
-    if (!Number.isInteger(expected.size) || expected.size < 0 || expected.size > MAX_RAW_BYTES ||
+    if (!Number.isInteger(expected.size) || expected.size < 0 || expected.size > rawLimit ||
         !/^[0-9a-f]{64}$/.test(expected.sha256 || "")) throw Error("member_contract_invalid");
     if (typeof expected.sourceReference !== "string" || !expected.sourceReference.trim() ||
         typeof expected.sourceVersionRef !== "string" || !expected.sourceVersionRef.trim()) throw Error("member_provenance_missing");
     const bytes = decodeMember(actual.base64);
     total += bytes.length;
-    if (total > MAX_RAW_BYTES) throw Error("complete_package_oversize");
+    if (total > rawLimit) throw Error("complete_package_oversize");
     if (bytes.length !== expected.size || sha256(bytes) !== expected.sha256) throw Error("member_hash_or_size_mismatch");
     entries.push({ name: expected.path, bytes });
   }
@@ -88,7 +149,7 @@ function packageJob(jobJson: string, membersJson: string): string {
       status: "DRAFT / HUMAN CHECK REQUIRED", sourceWrites: false, sent: false, policyApproved: false,
       wordGenerationPerformed: false });
   const provenanceBytes = utf8(provenance);
-  if (total + provenanceBytes.length > MAX_RAW_BYTES) throw Error("complete_package_oversize");
+  if (total + provenanceBytes.length > rawLimit) throw Error("complete_package_oversize");
   entries.push({ name: "package-provenance.json", bytes: provenanceBytes });
   const zip = storeZip(entries);
   const record: PackageResult = { schemaVersion: job.schemaVersion, jobId: job.jobId, outputRevision: job.outputRevision,
@@ -299,22 +360,35 @@ interface NativeCoverRequest {
   sourceJobJson: string; sourceReceiptJson: string;
   sourcePin: { UniqueId: string; ETag: string; Length: string; ServerRelativeUrl: string };
   pinsJson: string;
+  fullDocumentInputJson?: string;
+  sourceSelectionJson?: string;
+  intakeScopeJson?: string;
+  includeFinalisationMembers?: boolean;
 }
 interface NativeClaim {
   kind: string; jobId: string; requestSHA256: string; jobSHA256: string; createdAtUtc: string; generationRunId: string;
 }
 interface NativePin { role: string; UniqueId: string; ETag: string; Length: string; UIVersionLabel: string; ServerRelativeUrl: string; }
-function nativeCoverRequest(requestJson: string, membersJson: string): string {
+function nativeCoverRequest(requestJson: string, membersJson: string, caseIntake: boolean = false): string {
   // Per-job preparation occurs in the existing M365 script, from frozen native
   // inputs. The locally compiled template is a maintained authoring asset only.
   if (utf8(JSON.stringify({requestJson,membersJson})).length > MAX_WIRE_BYTES) throw Error('request_limit');
   const req: NativeCoverRequest = JSON.parse(requestJson), contents: Content[] = JSON.parse(membersJson);
-  if (req.kind !== 'm365-cover-request-v1' || !/^[A-Za-z0-9_-]{1,100}$/.test(req.generationRunId || '') || !Number.isSafeInteger(req.requestItemId) || req.requestItemId < 1 ||
+  const intakeScope: {baselinePackagePath:string;draftPackagePath:string} | undefined = req.intakeScopeJson ? JSON.parse(req.intakeScopeJson) : undefined;
+  if(intakeScope && !caseIntake)throw Error('intake_adapter_required');
+  const rawLimit=caseIntake?3000000:MAX_RAW_BYTES;
+  const sourcePath = intakeScope ? intakeScope.baselinePackagePath : 'evidence/existing-pack.zip';
+  if(intakeScope && !['evidence/recorded-baseline.zip','evidence/recorded-baseline.json'].includes(sourcePath))throw Error('intake_baseline_path_invalid');
+  if(intakeScope && !['evidence/selected-draft.docx','evidence/original-source.txt'].includes(intakeScope.draftPackagePath))throw Error('intake_draft_path_invalid');
+  const full = req.kind === 'm365-full-review-request-v1';
+  if ((!full && req.kind !== 'm365-cover-request-v1') || !/^[A-Za-z0-9_-]{1,100}$/.test(req.generationRunId || '') || !Number.isSafeInteger(req.requestItemId) || req.requestItemId < 1 ||
       !req.values || !/^[a-z0-9][a-z0-9-]{0,39}$/.test(req.values.PPGCoverOutputRevision || '') ||
       typeof req.templateVersion !== 'string' || !req.templateVersion.trim() ||
       typeof req.pinsJson !== 'string' || utf8(req.pinsJson).length > 100000) throw Error('native_request_invalid');
   const pins: NativePin[] = JSON.parse(req.pinsJson);
   const roles = ['request','compiled-template','maintained-template','source-pack','source-job','source-receipt','engine'];
+  if (full) roles.push('full-document-input');
+  if (req.intakeScopeJson) roles.push('selected-baseline','selected-draft');
   if (!Array.isArray(pins) || pins.length !== roles.length || new Set(pins.map(p => p.role)).size !== roles.length ||
       pins.some(p => roles.indexOf(p.role) < 0 || [p.UniqueId,p.ETag,p.UIVersionLabel,p.ServerRelativeUrl].some(v => typeof v !== 'string' || !v.trim()) ||
         typeof p.Length !== 'string' || !/^\d+$/.test(p.Length))) throw Error('native_pins_missing');
@@ -326,19 +400,39 @@ function nativeCoverRequest(requestJson: string, membersJson: string): string {
       !req.sourcePin || req.sourcePin.UniqueId.toLowerCase() !== receipt.package.UniqueId.toLowerCase() ||
       req.sourcePin.ETag !== receipt.package.ETag || String(req.sourcePin.Length) !== String(receipt.package.Length) ||
       typeof req.sourcePin.ServerRelativeUrl !== 'string' || !req.sourcePin.ServerRelativeUrl.startsWith('/')) throw Error('frozen_package_binding_mismatch');
-  if (!Array.isArray(contents) || contents.length !== 2 || contents[0].path !== 'existing-pack.zip' ||
-      contents[1].path !== 'maintained-template.docx') throw Error('native_source_members_invalid');
+  if (!Array.isArray(contents) || contents.length !== (req.intakeScopeJson ? 3 : 2) || contents[0].path !== 'existing-pack.zip' ||
+      contents[1].path !== 'maintained-template.docx' || (intakeScope && contents[2].path !== intakeScope.draftPackagePath)) throw Error('native_source_members_invalid');
   const source = decodeMember(contents[0].base64), originalTemplate = decodeMember(contents[1].base64);
-  if (source.length + originalTemplate.length > MAX_RAW_BYTES || source.length < 4 ||
-      source[0] !== 80 || source[1] !== 75 || source[2] !== 3 || source[3] !== 4 ||
+  if (source.length + originalTemplate.length > rawLimit || source.length < 4 ||
+      (!intakeScope && (source[0] !== 80 || source[1] !== 75 || source[2] !== 3 || source[3] !== 4)) ||
       source.length !== Number(req.sourcePin.Length) || sha256(source) !== receipt.package.sha256 ||
       sha256(originalTemplate) !== req.template.templateSHA256) throw Error('native_source_hash_mismatch');
   const coverJson = JSON.stringify({templateSHA256:req.template.templateSHA256,parts:req.template.parts,values:req.values});
-  const cover = coverBytes(coverJson), sourceSHA = sha256(source);
+  const fullJson = full ? JSON.stringify({template:req.template,input:JSON.parse(req.fullDocumentInputJson || 'null')}) : '';
+  const fullInput: FullReviewValues | undefined = full ? JSON.parse(req.fullDocumentInputJson || 'null') : undefined;
+  let includedRecordIDs=sourceJob.includedRecordIDs.slice();
+  if (full && req.sourceSelectionJson) {
+    const selection: {kind:string;CaseUID:string;currentPolicyClaim:boolean;nextOccurrenceFindingsInherited:boolean;
+      candidate:{DocumentReference:string;UniqueId:string;ETag:string;SHA256:string};
+      includedEvents:{[key:string]:{CaseUID:string;EventUID:string;DocumentReference:string;ReviewedVersionRef:string;DocumentSHA256:string;FictionalTest:boolean}[]}}=JSON.parse(req.sourceSelectionJson);
+    if(selection.kind!=='fictional-lifecycle-revision-selection-v1' || selection.CaseUID!==sourceJob.CaseUID || selection.currentPolicyClaim!==false || selection.nextOccurrenceFindingsInherited!==false)throw Error('full_selection_scope_invalid');
+    for(const kind of Object.keys(selection.includedEvents))for(const event of selection.includedEvents[kind]){
+      if(event.CaseUID!==sourceJob.CaseUID || event.FictionalTest!==true || event.DocumentReference!==selection.candidate.DocumentReference || event.DocumentSHA256!==selection.candidate.SHA256 || event.ReviewedVersionRef!=='sharepoint:'+selection.candidate.UniqueId+':'+selection.candidate.ETag || !event.EventUID)throw Error('full_event_scope_invalid');
+      includedRecordIDs.push(event.EventUID);
+    }
+    if(new Set(includedRecordIDs).size!==includedRecordIDs.length)throw Error('full_record_duplicate');
+  }
+  if (full && (!fullInput || fullInput.CaseUID !== sourceJob.CaseUID || fullInput.outputRevision !== req.values.PPGCoverOutputRevision ||
+      fullInput.sourceSHA256 !== sha256(source) || fullInput.templateVersion !== req.templateVersion ||
+      JSON.stringify(fullInput.includedRecordIDs) !== JSON.stringify(includedRecordIDs))) throw Error('full_source_identity_mismatch');
+  const cover = full ? fullDocumentBytes(fullJson) : coverBytes(coverJson), sourceSHA = sha256(source);
   const frozen = JSON.stringify({requestItemId:req.requestItemId,templateVersion:req.templateVersion,
     templateSHA256:req.template.templateSHA256,compiledPartsSHA256:sha256(utf8(JSON.stringify(req.template.parts))),
     values:req.values,sourceJobSHA256:receipt.jobSHA256,sourcePackageSHA256:sourceSHA,
-    sourcePin:req.sourcePin,pinsJson:req.pinsJson,selectionKind:'existing-frozen-package'});
+    sourcePin:req.sourcePin,pinsJson:req.pinsJson,selectionKind:'existing-frozen-package',
+    ...(full ? {fullDocumentInputJson:req.fullDocumentInputJson,sourceSelectionJson:req.sourceSelectionJson || '',generationRoute:'standard-office-script-full-review-v1'} : {}),
+    ...(req.intakeScopeJson ? {intakeScopeJson:req.intakeScopeJson} : {}),
+    ...(req.includeFinalisationMembers === true ? {savedBodyFinalisationProtocol:'v1'} : {})});
   const requestSHA = sha256(utf8(frozen)), jobId = 'job-item'+req.requestItemId+'-'+req.values.PPGCoverOutputRevision;
   let created = req.createdAtUtc, generationRunId = req.generationRunId;
   let old: NativeClaim | undefined;
@@ -350,28 +444,202 @@ function nativeCoverRequest(requestJson: string, membersJson: string): string {
     if (!/^[A-Za-z0-9_-]{1,100}$/.test(generationRunId || '')) throw Error('native_claim_run_missing');
   }
   const sourceSelection = utf8(req.sourceJobJson), snapshot = utf8(frozen);
+  const documentPath=full ? 'document/PPG-review-DRAFT.docx' : 'cover/PPG-cover-DRAFT.docx';
   const job: Job & { coverSnapshot: CoverContract; selectionKind: string; parentJobSHA256: string; generationRunId: string } = {
-    schemaVersion:1,jobId,documentKind:'fixed-cover-and-existing-package',CaseUID:sourceJob.CaseUID,
+    schemaVersion:1,jobId,documentKind:full ? 'full-review-and-existing-package' : 'fixed-cover-and-existing-package',CaseUID:sourceJob.CaseUID,
     sourceSnapshotRef:req.sourcePin.ServerRelativeUrl,sourceSHA256:sourceSHA,
     templateVersion:req.templateVersion,templateSHA256:req.template.templateSHA256,
-    outputRevision:req.values.PPGCoverOutputRevision,includedRecordIDs:sourceJob.includedRecordIDs,
+    outputRevision:req.values.PPGCoverOutputRevision,includedRecordIDs,
     createdAtUtc:created,generationRunId,selectionKind:'existing-frozen-package',parentJobSHA256:receipt.jobSHA256,
-    coverSnapshot:{route:'standard-office-script-fixed-cover-v1',manifestSHA256:sha256(utf8(coverJson)),
-      templateSHA256:req.template.templateSHA256,path:'cover/PPG-cover-DRAFT.docx'},
+    coverSnapshot:{route:full ? 'standard-office-script-full-review-v1' : 'standard-office-script-fixed-cover-v1',manifestSHA256:sha256(utf8(full ? fullJson : coverJson)),
+      templateSHA256:req.template.templateSHA256,path:documentPath},
     members:[
-      {path:'cover/PPG-cover-DRAFT.docx',sha256:sha256(cover),size:cover.length,sourceReference:'maintained-cover-template',sourceVersionRef:req.templateVersion},
-      {path:'evidence/existing-pack.zip',sha256:sourceSHA,size:source.length,sourceReference:req.sourcePin.ServerRelativeUrl,sourceVersionRef:req.sourcePin.ETag},
+      {path:documentPath,sha256:sha256(cover),size:cover.length,sourceReference:full ? 'maintained-full-review-template' : 'maintained-cover-template',sourceVersionRef:req.templateVersion},
+      {path:sourcePath,sha256:sourceSHA,size:source.length,sourceReference:req.sourcePin.ServerRelativeUrl,sourceVersionRef:req.sourcePin.ETag},
       {path:'selection/frozen-source-job.json',sha256:sha256(sourceSelection),size:sourceSelection.length,sourceReference:'existing-frozen-source-job',sourceVersionRef:receipt.jobSHA256},
       {path:'generation/request-snapshot.json',sha256:sha256(snapshot),size:snapshot.length,sourceReference:'SharePoint request item '+req.requestItemId,sourceVersionRef:requestSHA}
     ]};
+  if(req.intakeScopeJson){
+    const extra=decodeMember(contents[2].base64), scope:{draftReference:string;draftPin:NativePin}=JSON.parse(req.intakeScopeJson);
+    job.members.push({path:contents[2].path,sha256:sha256(extra),size:extra.length,sourceReference:scope.draftReference,sourceVersionRef:scope.draftPin.ETag});
+  }
   const jobJson = JSON.stringify(job), hash = sha256(utf8(jobJson));
   if (old && old.jobSHA256 !== hash) throw Error('native_claim_job_mismatch');
   const claim: NativeClaim = {kind:'PPG-native-package-claim-v1',jobId,requestSHA256:requestSHA,jobSHA256:hash,createdAtUtc:created,generationRunId};
-  const members = [{path:'evidence/existing-pack.zip',base64:contents[0].base64},
+  const members = [{path:sourcePath,base64:contents[0].base64},
     {path:'selection/frozen-source-job.json',base64:encodeBase64(sourceSelection)},
     {path:'generation/request-snapshot.json',base64:encodeBase64(snapshot)}];
-  const result: PackageResult = JSON.parse(packageCover(jobJson,JSON.stringify(members),coverJson));
-  const response = JSON.stringify({...result,requestSHA256:requestSHA,claimJson:JSON.stringify(claim),jobJson});
+  if(req.intakeScopeJson)members.push(contents[2]);
+  const result: PackageResult = JSON.parse(full ? packageJob(jobJson,JSON.stringify([{path:documentPath,base64:encodeBase64(cover)},...members]),rawLimit) : packageCover(jobJson,JSON.stringify(members),coverJson));
+  if (full) {
+    result.wordGenerationPerformed=true; result.coverSHA256=sha256(cover); result.coverBytes=cover.length;
+    result.coverBase64=encodeBase64(cover); result.generationRoute='standard-office-script-full-review-v1';
+  }
+  const response = JSON.stringify({...result,
+    ...(req.includeFinalisationMembers === true ? {zipBase64:''} : {}),
+    requestSHA256:requestSHA,claimJson:JSON.stringify(claim),jobJson,
+    ...(req.includeFinalisationMembers === true ? {finalisationMembersJson:JSON.stringify(members)} : {})});
   if (utf8(response).length > MAX_WIRE_BYTES) throw Error('response_limit');
   return response;
+}
+
+interface IntakeCase { Id:number;CaseUID:string;Title:string;linkedDocumentUIDs:string;sourceBaselineRef:string;evidenceDraftLink:string;
+  'odata.etag':string;OData__UIVersionString:string;caseStatus?:string;proposedOutcome?:string;accountableRole?:string;nextAction?:string; }
+interface IntakeRow {Id:number;DocumentUID:string;sourceDocumentId:string;sourceSnapshotRef:string;rawSourceRecordRef:string;'odata.etag':string;}
+interface CaseIntakeRequest extends NativeCoverRequest {
+  intake:{site:string;mode:string;expectedCaseUID:string;case: IntakeCase;catalogue: IntakeRow[];baselinePin:NativePin;draftPin:NativePin;
+    eventSets?:{[key:string]:{value:{CaseUID:string}[];[key:string]:{CaseUID:string}[]|string}};
+    historicalSelection?:{kind:string;caseBinding:IntakeCase;catalogueBinding:{records:IntakeRow[]};sources:{role:string;sourceReference:string;nativePin:NativePin;sha256:string}[]};};
+}
+function nativeCaseIntake(requestJson:string,membersJson:string):string {
+  if(utf8(JSON.stringify({requestJson,membersJson})).length>MAX_WIRE_BYTES)throw Error('request_limit');
+  const req:CaseIntakeRequest=JSON.parse(requestJson), x=req.intake, c=x.case, rows=x.catalogue, members:Content[]=JSON.parse(membersJson);
+  const lifecycle=x.mode==='fictional-initiated-source';
+  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if(!x || (lifecycle?!/^LC-FICTIONAL-[A-Za-z0-9-]{1,180}$/.test(c.CaseUID):!uuid.test(c.CaseUID)) || c.CaseUID!==x.expectedCaseUID || !Number.isSafeInteger(c.Id) || c.Id<1 || !c['odata.etag'] || !c.OData__UIVersionString || !c.Title ||
+     !/^https:\/\/[^/]+\.sharepoint\.com\/(sites|teams)\/[^?#]+$/.test(x.site) || !['catalogue-current','recorded-baseline','fictional-initiated-source'].includes(x.mode))throw Error('intake_case_invalid');
+  function path(ref:string):string{
+    if(typeof ref!=='string'||!ref.startsWith(x.site+'/')||/[?#\\]/.test(ref))throw Error('intake_source_outside_site');
+    const p=decodeURIComponent(ref.slice(ref.indexOf('/',8)));
+    if(p.split('/').some(v=>v==='.'||v==='..')||p.includes('%'))throw Error('intake_source_outside_site');return p;
+  }
+  const ids:string[]=JSON.parse(c.linkedDocumentUIDs);
+  if(!Array.isArray(ids)||!ids.length||ids.length>200||ids.some(v=>typeof v!=='string'||!v.trim()||(!lifecycle&&!uuid.test(v)))||new Set(ids).size!==ids.length ||
+     !Array.isArray(rows)||(!lifecycle&&(rows.length!==ids.length||new Set(rows.map(r=>r.DocumentUID)).size!==ids.length))||
+     rows.some(r=>!ids.includes(r.DocumentUID)||!r['odata.etag']||!r.sourceDocumentId||!r.rawSourceRecordRef))throw Error('intake_catalogue_identity_unresolved');
+  if(members.length!==3||members[0].path!=='existing-pack.zip'||members[1].path!=='maintained-template.docx'||members[2].path!=='evidence/selected-draft.docx')throw Error('intake_members_invalid');
+  const baseline=decodeMember(members[0].base64), draft=decodeMember(members[2].base64);
+  const jsonBaseline=c.sourceBaselineRef.toLowerCase().endsWith('.json');
+  for(const pair of [{ref:c.sourceBaselineRef,pin:x.baselinePin,raw:baseline,suffix:jsonBaseline?'.json':'.zip'},{ref:c.evidenceDraftLink,pin:x.draftPin,raw:draft,suffix:lifecycle?'.txt':'.docx'}]){
+    if(path(pair.ref)!==pair.pin.ServerRelativeUrl||!pair.ref.toLowerCase().endsWith(pair.suffix)||!uuid.test(pair.pin.UniqueId)||!pair.pin.ETag||!pair.pin.UIVersionLabel||
+      String(pair.raw.length)!==String(pair.pin.Length)||pair.raw.length<4)throw Error('intake_file_binding_invalid');
+    if(['.zip','.docx'].includes(pair.suffix)&&(pair.raw[0]!==80||pair.raw[1]!==75||pair.raw[2]!==3||pair.raw[3]!==4))throw Error('intake_file_binding_invalid');
+  }
+  if(jsonBaseline){const capture=JSON.parse(textFromUtf8(baseline));if(!capture||typeof capture!=='object')throw Error('intake_capture_invalid');}
+  if(lifecycle){
+    const request:{request:{CaseUID:string;DocumentUID:string;occurrenceReference:string;qualificationOnly:boolean;realPolicyEffects:boolean;DocumentReference:string;ReviewedVersionRef:string;DocumentSHA256:string}}=JSON.parse(textFromUtf8(baseline)),r=request.request;
+    if(!jsonBaseline||!c.caseStatus||!c.caseStatus.startsWith('Initiated')||rows.length||!r||r.CaseUID!==c.CaseUID||r.qualificationOnly!==true||r.realPolicyEffects!==false||!r.occurrenceReference||
+      JSON.stringify(ids)!==JSON.stringify([r.DocumentUID])||r.DocumentReference!==c.evidenceDraftLink||r.ReviewedVersionRef!=='sharepoint:'+x.draftPin.UniqueId+':'+x.draftPin.ETag||r.DocumentSHA256!==sha256(draft))throw Error('initiated_source_binding_mismatch');
+    textFromUtf8(draft);
+    if(!x.eventSets||Object.keys(x.eventSets).sort().join()!=='assurance,consultation,readiness'||Object.keys(x.eventSets).some(k=>!Array.isArray(x.eventSets[k].value)||x.eventSets[k].value.length||['nextLink','odata.nextLink','@odata.nextLink'].some(n=>!!x.eventSets![k][n])))throw Error('new_occurrence_has_events_or_incomplete_read');
+  }else if(x.mode==='catalogue-current'){
+    if(rows.some(r=>r.sourceSnapshotRef!==c.sourceBaselineRef))throw Error('catalogue_baseline_mismatch');
+  }else{
+    const h=x.historicalSelection;
+    if(!h||h.kind!=='existing-case-artifact-selection'||['Id','CaseUID','linkedDocumentUIDs','sourceBaselineRef','evidenceDraftLink','odata.etag','OData__UIVersionString'].some(k=>JSON.stringify(h.caseBinding[k as keyof IntakeCase])!==JSON.stringify(c[k as keyof IntakeCase]))||
+      h.catalogueBinding.records.length!==ids.length||h.catalogueBinding.records.some(r=>!ids.includes(r.DocumentUID)||r.sourceSnapshotRef!==c.sourceBaselineRef)||
+      new Set(h.catalogueBinding.records.map(r=>r.DocumentUID)).size!==ids.length)throw Error('historical_case_binding_mismatch');
+    const originals=h.sources.filter(s=>s.role==='recorded-baseline');
+    if(originals.length!==1||originals[0].sourceReference!==c.sourceBaselineRef||originals[0].sha256!==sha256(baseline)||
+      ['UniqueId','ETag','Length','UIVersionLabel','ServerRelativeUrl'].some(k=>originals[0].nativePin[k as keyof NativePin]!==x.baselinePin[k as keyof NativePin]))throw Error('historical_baseline_changed');
+  }
+  const scope={kind:'catalogue-case-intake-v1',mode:x.mode,CaseUID:c.CaseUID,case:c,catalogue:rows,
+    historicalSelection:x.mode==='recorded-baseline'?x.historicalSelection:null,
+    baselineReference:c.sourceBaselineRef,baselinePin:x.baselinePin,baselineSHA256:sha256(baseline),baselinePackagePath:'evidence/recorded-baseline.'+(jsonBaseline?'json':'zip'),
+    draftReference:c.evidenceDraftLink,draftPin:x.draftPin,draftSHA256:sha256(draft),
+    draftPackagePath:lifecycle?'evidence/original-source.txt':'evidence/selected-draft.docx',
+    draftScope:lifecycle?'exact original source for initiated fictional occurrence; no candidate selected':'freshly observed existing manual draft; not asserted byte-identical to historical draft',
+    ...(lifecycle?{ownOccurrenceEvents:x.eventSets}:{}),
+    currentPolicyClaim:false,businessReviewPerformed:false,findingsInherited:false,sourceWrites:false,caseWrites:false};
+  const scopeJson=JSON.stringify(scope);
+  const sourceJob:Job={schemaVersion:1,jobId:'job-case-item'+c.Id+'-'+req.values.PPGCoverOutputRevision,documentKind:lifecycle?'read-only-initiated-fictional-source-intake':'read-only-catalogue-case-intake',CaseUID:c.CaseUID,
+    sourceSnapshotRef:c.sourceBaselineRef,sourceSHA256:sha256(baseline),templateVersion:'catalogue-case-intake-v1',templateSHA256:sha256(utf8('catalogue-case-intake-v1')),
+    outputRevision:req.values.PPGCoverOutputRevision,includedRecordIDs:ids,createdAtUtc:req.existingClaimJson?JSON.parse(req.existingClaimJson).createdAtUtc:req.createdAtUtc,members:[]};
+  const sourceJobJson=JSON.stringify({...sourceJob,selection:scope});
+  const values:FullReviewValues={};for(const key of FULL_SCALARS)values[key]='Unresolved — no finding selected by this source-only intake.';
+  values.case_title=c.Title;values.CaseUID=c.CaseUID;values.source_snapshot=encodeURI(c.sourceBaselineRef);values.version='DRAFT / '+(lifecycle?'INITIATED FICTIONAL SOURCE ONLY':x.mode==='recorded-baseline'?'RECORDED HISTORICAL BASELINE':'CATALOGUE-MATCHED SNAPSHOT')+' / currency unassessed';
+  values.intended_result=c.proposedOutcome||'Unresolved';values.source_manifest='Recorded baseline '+encodeURI(c.sourceBaselineRef)+'\nSHA-256 '+sha256(baseline)+'\nBaseline version '+x.baselinePin.UIVersionLabel+'; case version '+c.OData__UIVersionString+'\nSelection mode '+x.mode+'; current policy currency is not assessed.';
+  values.draft_links_and_changes=(lifecycle?'Exact original source (no existing candidate selected) ':'Separately pinned existing draft ')+encodeURI(c.evidenceDraftLink)+'\nSHA-256 '+sha256(draft)+'; native version '+x.draftPin.UIVersionLabel+'. Earlier draft bytes and proof are retained separately.';
+  values.ownership_and_implementation='Recorded case value (acceptance unassessed): '+(c.accountableRole||'Unresolved');values.next_action=c.nextAction||'Unresolved';
+  values.documentKind='catalogue-case-source-only-review-package';values.sourceSHA256=sha256(baseline);values.templateVersion=req.templateVersion;values.outputRevision=req.values.PPGCoverOutputRevision;values.includedRecordIDs=ids;
+  values.OptionalContent='Source-only intake. Original baseline and selected draft are included unchanged. No review, approval, ownership acceptance or earlier occurrence findings are inferred.';
+  values.comparison_rows=[];values.consultation_rows=[];
+  req.kind='m365-full-review-request-v1';req.values={...req.values,PPGCoverCaseUID:c.CaseUID};req.sourcePin=x.baselinePin;
+  req.sourceJobJson=sourceJobJson;req.sourceReceiptJson=JSON.stringify({jobSHA256:sha256(utf8(sourceJobJson)),package:{sha256:sha256(baseline),UniqueId:x.baselinePin.UniqueId,ETag:x.baselinePin.ETag,Length:x.baselinePin.Length}});
+  req.fullDocumentInputJson=JSON.stringify(values);req.sourceSelectionJson='';req.intakeScopeJson=scopeJson;
+  members[2].path=scope.draftPackagePath;
+  return nativeCoverRequest(JSON.stringify(req),JSON.stringify(members),true);
+}
+
+interface FullReviewValues { [key: string]: string | string[] | { [key: string]: string }[]; }
+interface FullReviewTemplate extends CoverInput {
+  kind: string; mainXml: string;
+  slots: { [key: string]: { block: boolean; paragraphProperties: string } };
+  repeats: { [key: string]: { fields: string[]; wrapper: string; item: string } };
+}
+const FULL_SCALARS = ('case_title CaseUID source_snapshot version intended_result source_manifest draft_links_and_changes ownership_and_implementation decision_route candidate_reference reviewer_response operative_confirmation role_acceptance review_findings decision_evidence next_action measures documentKind sourceSHA256 templateVersion outputRevision includedRecordIDs OptionalContent').split(' ');
+const FULL_GROUPS: { [key: string]: string[] } = {
+  comparison_rows:['ComparisonSource','ComparisonGoverningSource','ComparisonControl','ComparisonChange','ComparisonGap'],
+  consultation_rows:['ConsultationRole','ConsultationQuestion','ConsultationVersion','ConsultationResponse']
+};
+function fullDocumentBytes(fullJson: string): number[] {
+  if (utf8(fullJson).length > 700000) throw Error('full_input_limit');
+  const data: {template:FullReviewTemplate;input:FullReviewValues} = JSON.parse(fullJson), t=data.template, input=data.input;
+  const fields=FULL_SCALARS.concat(Object.keys(FULL_GROUPS));
+  if (!t || t.kind !== 'PPG-full-review-template-v1' || !input || Object.keys(input).sort().join() !== fields.slice().sort().join() ||
+      Object.keys(t.slots).sort().join() !== FULL_SCALARS.concat(...Object.keys(FULL_GROUPS).map(k=>FULL_GROUPS[k])).sort().join() ||
+      Object.keys(t.repeats).sort().join() !== Object.keys(FULL_GROUPS).sort().join()) throw Error('full_shape_invalid');
+  function xmlText(value: string): string {
+    if (typeof value !== 'string' || value.length > 12000 || /[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]|[\ud800-\udbff](?![\udc00-\udfff])|(^|[^\ud800-\udbff])[\udc00-\udfff]/.test(value)) throw Error('full_text_invalid');
+    return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function textRuns(value: string): string {
+    return value.replace(/\r\n?/g,'\n').split('\n').map(line=>line.split(/(https:\/\/[^\s<>"\[\]]+)/g).map(piece=>{
+      const run='<w:r><w:t xml:space="preserve">'+xmlText(piece)+'</w:t></w:r>';
+      // An explicit Word HYPERLINK field needs no external relationship and
+      // preserves the exact evidence URL in the visible text and saved field.
+      if (!piece.startsWith('https://')) return run;
+      // Sentence delimiters following a URL belong to the visible prose, not
+      // the target (for example "candidate.docx; version 2.0").
+      const target=piece.replace(/[.,;]+$/g,''), suffix=piece.slice(target.length);
+      return '<w:fldSimple w:instr=" HYPERLINK &quot;'+xmlText(target)+'&quot; "><w:r><w:t xml:space="preserve">'+xmlText(target)+'</w:t></w:r></w:fldSimple>'+(suffix ? '<w:r><w:t xml:space="preserve">'+xmlText(suffix)+'</w:t></w:r>' : '');
+    }).join('')).join('<w:r><w:br/></w:r>');
+  }
+  function fill(xml: string, values: { [key: string]: string }): string {
+    return xml.replace(/<!--PPG_VALUE:([A-Za-z_0-9]+)-->/g,(_,name:string)=>{
+      if (!(name in values) || !t.slots[name]) throw Error('full_slot_missing');
+      const slot=t.slots[name], runs=textRuns(values[name]);
+      return slot.block ? '<w:p>'+slot.paragraphProperties+runs+'</w:p>' : runs;
+    });
+  }
+  const scalars: { [key: string]: string } = {};
+  for (const name of FULL_SCALARS) {
+    const value=input[name];
+    if (name === 'includedRecordIDs') {
+      if (!Array.isArray(value) || !value.length || value.some(v=>typeof v !== 'string' || !v.trim()) || new Set(value).size !== value.length) throw Error('full_records_invalid');
+      scalars[name]=(value as string[]).join('; ');
+    } else { if (typeof value !== 'string') throw Error('full_scalar_invalid'); scalars[name]=value; }
+    xmlText(scalars[name]);
+  }
+  if (['CaseUID','source_snapshot','version','documentKind','sourceSHA256','templateVersion','outputRevision'].some(k=>!scalars[k].trim()) || !/^[0-9a-f]{64}$/.test(scalars.sourceSHA256)) throw Error('full_identity_missing');
+  let xml=t.mainXml;
+  for (const name of Object.keys(FULL_GROUPS)) {
+    const rows=input[name], repeat=t.repeats[name];
+    if (!Array.isArray(rows) || rows.length > 50 || repeat.fields.join() !== FULL_GROUPS[name].join()) throw Error('full_repeat_invalid');
+    const items=rows.map(row=>{
+      if (!row || typeof row !== 'object' || Array.isArray(row) || Object.keys(row).sort().join() !== repeat.fields.slice().sort().join()) throw Error('full_row_invalid');
+      return fill(repeat.item,row as { [key: string]: string });
+    }).join('');
+    const marker='<!--PPG_REPEAT:'+name+'-->';
+    if (xml.split(marker).length !== 2 || repeat.wrapper.split('<!--PPG_ITEMS-->').length !== 2) throw Error('full_repeat_template_changed');
+    xml=xml.replace(marker, rows.length ? repeat.wrapper.replace('<!--PPG_ITEMS-->',items) : '');
+  }
+  xml=fill(xml,scalars); let id=1000;
+  // Generated hyperlinks are rich content. Retaining the template's plain-text
+  // declaration passes schema validation but Word rejects the saved document.
+  // Convert only the detached output controls; the maintained template is intact.
+  xml=xml.replace(/<w:text(?:\s[^<>]*)?\/>/g,'<w:richText/>');
+  xml=xml.replace(/<w:id w:val="-?\d+"\s*\/>/g,()=>'<w:id w:val="'+id+++'"/>');
+  if (xml.includes('<!--PPG_') || xml.includes('<w:dataBinding') || !xml.includes('DRAFT') || xml.includes('<!DOCTYPE')) throw Error('full_output_invalid');
+  const entries: ZipEntry[]=[],names=new Set<string>();let total=0,main=0;
+  if (!Array.isArray(t.parts) || t.parts.length > 100 || !/^[0-9a-f]{64}$/.test(t.templateSHA256)) throw Error('full_parts_invalid');
+  for (const part of t.parts) {
+    safePath(part.path);const key=part.path.toLowerCase();if(names.has(key)) throw Error('full_part_collision');names.add(key);
+    let bytes=decodeMember(part.base64);total+=bytes.length;
+    if (total>300000 || sha256(bytes)!==part.sha256) throw Error('full_template_changed');
+    if(part.path==='word/document.xml'){bytes=utf8(xml);main++;}
+    entries.push({name:part.path,bytes});
+  }
+  if(main!==1 || !names.has('[content_types].xml') || !names.has('_rels/.rels')) throw Error('full_package_invalid');
+  const result=storeZip(entries);if(result.length>MAX_RAW_BYTES)throw Error('full_document_limit');return result;
 }

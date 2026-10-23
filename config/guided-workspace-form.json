@@ -1,0 +1,82 @@
+{
+  "bodyJSONFormatter": {
+    "sections": [
+      {
+        "displayname": "1. Case and source context",
+        "fields": [
+          "Title",
+          "CaseUID",
+          "Linked documents",
+          "sourceBaselineRef"
+        ]
+      },
+      {
+        "displayname": "2. Proposed work",
+        "fields": [
+          "Content-review role",
+          "Intended outcome",
+          "Next action",
+          "Target date or condition"
+        ]
+      },
+      {
+        "displayname": "3. Review recording",
+        "fields": [
+          "Review status"
+        ]
+      },
+      {
+        "displayname": "4. Evidence and implementation records",
+        "fields": [
+          "Evidence and draft",
+          "Attachments"
+        ]
+      }
+    ]
+  },
+  "footerJSONFormatter": {
+    "elmType": "div",
+    "children": [
+      {
+        "elmType": "div",
+        "txtContent": "Record findings and implementation stages against the exact CaseUID, document version and hash. No finding is inferred from this form."
+      },
+      {
+        "elmType": "a",
+        "style": {
+          "display": "block",
+          "padding": "6px 0"
+        },
+        "attributes": {
+          "href": "='{{workspacePath}}/Lists/PPG Readiness Events/All readiness events.aspx?FilterField1=CaseUID&FilterValue1=' + [$CaseUID]",
+          "target": "_blank"
+        },
+        "txtContent": "Readiness findings for this case"
+      },
+      {
+        "elmType": "a",
+        "style": {
+          "display": "block",
+          "padding": "6px 0"
+        },
+        "attributes": {
+          "href": "='{{workspacePath}}/Lists/PPG Assurance Events/All assurance events.aspx?FilterField1=CaseUID&FilterValue1=' + [$CaseUID]",
+          "target": "_blank"
+        },
+        "txtContent": "Decision and implementation evidence for this case"
+      },
+      {
+        "elmType": "a",
+        "style": {
+          "display": "block",
+          "padding": "6px 0"
+        },
+        "attributes": {
+          "href": "='{{workspacePath}}/Lists/PPG Consultation and Handoff Events/All consultation and handoff events.aspx?FilterField1=CaseUID&FilterValue1=' + [$CaseUID]",
+          "target": "_blank"
+        },
+        "txtContent": "Consultation and ownership acceptance for this case"
+      }
+    ]
+  }
+}

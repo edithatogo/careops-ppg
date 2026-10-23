@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "views": [
+    {
+      "key": "contexts",
+      "register": "contexts",
+      "title": "Source and recipient checks",
+      "fields": [
+        "LinkTitle",
+        "CaseUID",
+        "ReviewedVersionRef",
+        "SourceFreshness",
+        "SourceCheckedAt",
+        "SourceDueDate",
+        "RecipientEligibility",
+        "RecipientRole",
+        "_UIVersionString"
+      ]
+    },
+    {
+      "key": "requests",
+      "register": "requests",
+      "title": "Follow-up requests",
+      "fields": [
+        "LinkTitle",
+        "RequestKey",
+        "Operation",
+        "CaseUID",
+        "Stage",
+        "FollowupState",
+        "AsOf",
+        "Created"
+      ]
+    },
+    {
+      "key": "history",
+      "register": "events",
+      "title": "Case follow-up history",
+      "fields": [
+        "LinkTitle",
+        "CaseUID",
+        "Stage",
+        "FollowupState",
+        "OccurredOn",
+        "Actor",
+        "Rationale",
+        "NextAction",
+        "WaitingReason",
+        "SourceDueDate",
+        "AgreedTargetDate",
+        "ReviewedVersionRef",
+        "EventUID"
+      ]
+    },
+    {
+      "key": "completed",
+      "register": "digests",
+      "title": "Completed digest previews",
+      "fields": [
+        "LinkTitle",
+        "RunKey",
+        "CandidateCount",
+        "ExceptionCount",
+        "SuppressedCount",
+        "Created"
+      ],
+      "rowKind": "Completed preview",
+      "exactTitle": "Completed Preview digest"
+    },
+    {
+      "key": "candidates",
+      "register": "digests",
+      "title": "Digest candidates",
+      "fields": [
+        "LinkTitle",
+        "RunKey",
+        "CaseUID",
+        "Stage",
+        "AcceptedRole",
+        "NextAction",
+        "WaitingReason",
+        "SourceDueDate",
+        "AgreedTargetDate",
+        "SourceAsOf",
+        "SourceCheckedAt",
+        "Reason",
+        "StageEnteredOn",
+        "Priority"
+      ],
+      "rowKind": "Candidate"
+    },
+    {
+      "key": "exceptions",
+      "register": "digests",
+      "title": "Digest exceptions",
+      "fields": [
+        "LinkTitle",
+        "RunKey",
+        "CaseUID",
+        "Reason",
+        "Created"
+      ],
+      "rowKind": "Exception"
+    },
+    {
+      "key": "suppressed",
+      "register": "digests",
+      "title": "Suppressed follow-ups",
+      "fields": [
+        "LinkTitle",
+        "RunKey",
+        "CaseUID",
+        "Reason",
+        "Created"
+      ],
+      "rowKind": "Suppressed"
+    }
+  ],
+  "notificationsEnabled": false,
+  "note": "Historical snapshot rows require the matching completed run. No email, task or assignment is created."
+}

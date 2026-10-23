@@ -1,0 +1,70 @@
+{
+  "events": [
+    {
+      "CaseUID": "FICTIONAL-case",
+      "DocumentReference": "FICTIONAL-document",
+      "ReviewedVersionRef": "v1",
+      "DocumentSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "EventUID": "FICTIONAL-followup",
+      "Stage": "Preparation",
+      "State": "Open",
+      "OccurredOn": "2026-10-18T00:00:00Z",
+      "Actor": "Fictional operator",
+      "Rationale": "Fictional priority rationale",
+      "Priority": "Normal",
+      "NextAction": "Prepare fictional evidence",
+      "WaitingReason": "",
+      "SourceDueDate": null,
+      "AgreedTargetDate": null,
+      "PreviousEventUID": null
+    }
+  ],
+  "currentScopes": [
+    {
+      "CaseUID": "FICTIONAL-case",
+      "DocumentReference": "FICTIONAL-document",
+      "ReviewedVersionRef": "v1",
+      "DocumentSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "SourceAsOf": "2026-10-18T00:00:00Z",
+      "SourceCheckedAt": "2026-10-18T00:00:00Z",
+      "SourceFreshness": "Current",
+      "Recipient": {
+        "Role": "Fictional role",
+        "Address": "fictional@example.invalid",
+        "Eligibility": "Verified",
+        "EvidenceReference": "fictional://directory-check"
+      }
+    }
+  ],
+  "ownershipEvents": [
+    {
+      "CaseUID": "FICTIONAL-case",
+      "DocumentReference": "FICTIONAL-document",
+      "ReviewedVersionRef": "v1",
+      "DocumentSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "EventUID": "FICTIONAL-proposal",
+      "EventKind": "Ownership handoff",
+      "RecordState": "Proposed",
+      "SubjectRole": "Fictional role",
+      "FromRole": "Fictional requester",
+      "ConditionsState": "None recorded"
+    },
+    {
+      "CaseUID": "FICTIONAL-case",
+      "DocumentReference": "FICTIONAL-document",
+      "ReviewedVersionRef": "v1",
+      "DocumentSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "EventUID": "FICTIONAL-accepted",
+      "EventKind": "Ownership handoff",
+      "RecordState": "Accepted",
+      "SubjectRole": "Fictional role",
+      "FromRole": "Fictional requester",
+      "ConditionsState": "None recorded",
+      "ParentEventUID": "FICTIONAL-proposal",
+      "ActorName": "Fictional operator",
+      "OccurredOn": "2026-10-18T00:00:00Z",
+      "Summary": "Fictional acceptance",
+      "EvidenceReference": "fictional://acceptance"
+    }
+  ]
+}

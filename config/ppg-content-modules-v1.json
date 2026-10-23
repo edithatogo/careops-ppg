@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "moduleVersion": "1.0.0",
+  "status": "proposed-for-pilot",
+  "requiredness": "unverified",
+  "authorityEvidence": [],
+  "modules": [
+    {"key": "core.identity", "label": "Identity and document metadata", "headings": []},
+    {"key": "core.purpose", "label": "Purpose", "headings": ["Purpose"]},
+    {"key": "core.scope", "label": "Scope", "headings": ["Scope"]},
+    {"key": "procedure.actions", "label": "Procedure and responsibilities", "headings": ["Procedure including roles and responsibilities"]},
+    {"key": "core.terms", "label": "Terms", "headings": ["Definition of Terms"]},
+    {"key": "core.authorities", "label": "Supporting and governing documents", "headings": ["Supporting documents"]},
+    {"key": "core.references", "label": "References", "headings": ["References and Suggested Reading"]},
+    {"key": "assurance.audit", "label": "Audit and evaluation", "headings": ["Audit Strategy"]},
+    {"key": "implementation.plan", "label": "Communication and implementation", "headings": ["Document Communication and Implementation Plan"]},
+    {"key": "governance.consultation", "label": "Consultation", "headings": ["Consultation"]},
+    {"key": "governance.approval", "label": "Approval history", "headings": ["Procedure Approval"]},
+    {"key": "governance.history", "label": "Revision history", "headings": ["Procedure Revision History"]},
+    {"key": "support.appendices", "label": "Appendices", "headings": ["Appendices"]},
+    {"key": "evidence.annotations", "label": "Retained comments and notes", "headings": []},
+    {"key": "evidence.layout", "label": "Headers, footers and layout", "headings": []},
+    {"key": "evidence.unmapped", "label": "Unmapped source content", "headings": []}
+  ],
+  "optionalModifiers": ["site", "population", "service", "capability"],
+  "rules": []
+}

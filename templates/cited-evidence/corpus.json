@@ -1,0 +1,23 @@
+{
+  "fictional": true,
+  "sources": [
+    {
+      "sourceId": "fictional-archive-v1",
+      "file": "archive-v1.txt",
+      "authorityLabel": "captured-reference-unconfirmed",
+      "sha256": "7a95047610ad8d20fdd4c5792e8f40b66606746a7e10f109afbd4ce0cc9e2799"
+    },
+    {
+      "sourceId": "fictional-archive-v2",
+      "file": "archive-v2.txt",
+      "authorityLabel": "captured-reference-unconfirmed",
+      "sha256": "3d417cdc1a0a889eb541c0decfe37d46c78c22f69cf3aac9a5d1a0e476b13d11"
+    },
+    {
+      "sourceId": "fictional-draft",
+      "file": "draft.txt",
+      "authorityLabel": "draft-unapproved",
+      "sha256": "84d337bec6ca5f0191d89b2d73a39f7341c18efc2db8cd0932cfddbcbe2077d4"
+    }
+  ]
+}

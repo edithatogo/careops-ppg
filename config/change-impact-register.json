@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "title": "PPG Change and Impact",
+  "description": "Version-bound review change summaries. Draft capture does not approve or issue policy.",
+  "enableVersioning": true,
+  "fields": [
+    {
+      "name": "ChangeKey",
+      "type": "Text",
+      "required": true,
+      "unique": true,
+      "schemaXml": "<Field Type=\"Text\" Name=\"ChangeKey\" StaticName=\"ChangeKey\" DisplayName=\"ChangeKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+    },
+    {
+      "name": "DocumentUID",
+      "type": "Text",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"DocumentUID\" Required=\"TRUE\"></Field>"
+    },
+    {
+      "name": "FromEdition",
+      "type": "Text",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Text\" Name=\"FromEdition\" StaticName=\"FromEdition\" DisplayName=\"FromEdition\" Required=\"TRUE\"></Field>"
+    },
+    {
+      "name": "ProposedEdition",
+      "type": "Text",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Text\" Name=\"ProposedEdition\" StaticName=\"ProposedEdition\" DisplayName=\"ProposedEdition\" Required=\"TRUE\"></Field>"
+    },
+    {
+      "name": "SourceEvidence",
+      "type": "Text",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Text\" Name=\"SourceEvidence\" StaticName=\"SourceEvidence\" DisplayName=\"SourceEvidence\" Required=\"TRUE\"></Field>"
+    },
+    {
+      "name": "ReviewTriggers",
+      "type": "MultiChoice",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"MultiChoice\" Name=\"ReviewTriggers\" StaticName=\"ReviewTriggers\" DisplayName=\"ReviewTriggers\" Required=\"TRUE\"><CHOICES><CHOICE>Scheduled review</CHOICE><CHOICE>Legislation or directive</CHOICE><CHOICE>Standards change</CHOICE><CHOICE>Audit recommendation</CHOICE><CHOICE>Incident recommendation</CHOICE><CHOICE>Evidence update</CHOICE><CHOICE>Technology or service change</CHOICE><CHOICE>Feedback</CHOICE><CHOICE>Ad hoc improvement</CHOICE></CHOICES></Field>"
+    },
+    {
+      "name": "ChangeMagnitude",
+      "type": "Choice",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Choice\" Name=\"ChangeMagnitude\" StaticName=\"ChangeMagnitude\" DisplayName=\"ChangeMagnitude\" Required=\"TRUE\"><CHOICES><CHOICE>Unassessed</CHOICE><CHOICE>No change</CHOICE><CHOICE>Editorial</CHOICE><CHOICE>Minor</CHOICE><CHOICE>Major</CHOICE></CHOICES></Field>"
+    },
+    {
+      "name": "Urgency",
+      "type": "Choice",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Choice\" Name=\"Urgency\" StaticName=\"Urgency\" DisplayName=\"Urgency\" Required=\"TRUE\"><CHOICES><CHOICE>Unassessed</CHOICE><CHOICE>Routine</CHOICE><CHOICE>Time sensitive</CHOICE><CHOICE>Urgent</CHOICE></CHOICES></Field>"
+    },
+    {
+      "name": "RecordState",
+      "type": "Choice",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Choice\" Name=\"RecordState\" StaticName=\"RecordState\" DisplayName=\"RecordState\" Required=\"TRUE\"><CHOICES><CHOICE>Draft</CHOICE><CHOICE>For review</CHOICE><CHOICE>Decision recorded</CHOICE><CHOICE>Superseded</CHOICE></CHOICES></Field>"
+    },
+    {
+      "name": "MajorChanges",
+      "type": "Note",
+      "required": false,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"MajorChanges\" StaticName=\"MajorChanges\" DisplayName=\"MajorChanges\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"6\"></Field>"
+    },
+    {
+      "name": "MinorChanges",
+      "type": "Note",
+      "required": false,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"MinorChanges\" StaticName=\"MinorChanges\" DisplayName=\"MinorChanges\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"6\"></Field>"
+    },
+    {
+      "name": "Rationale",
+      "type": "Note",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"Rationale\" StaticName=\"Rationale\" DisplayName=\"Rationale\" Required=\"TRUE\" RichText=\"FALSE\" NumLines=\"6\"></Field>"
+    },
+    {
+      "name": "Interactions",
+      "type": "Note",
+      "required": false,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"Interactions\" StaticName=\"Interactions\" DisplayName=\"Interactions\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"6\"></Field>"
+    },
+    {
+      "name": "ImplementationActions",
+      "type": "Note",
+      "required": false,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"ImplementationActions\" StaticName=\"ImplementationActions\" DisplayName=\"ImplementationActions\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"6\"></Field>"
+    },
+    {
+      "name": "UnresolvedQuestions",
+      "type": "Note",
+      "required": true,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"UnresolvedQuestions\" StaticName=\"UnresolvedQuestions\" DisplayName=\"UnresolvedQuestions\" Required=\"TRUE\" RichText=\"FALSE\" NumLines=\"6\"></Field>"
+    },
+    {
+      "name": "DecisionEvidence",
+      "type": "Note",
+      "required": false,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"DecisionEvidence\" StaticName=\"DecisionEvidence\" DisplayName=\"DecisionEvidence\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"6\"></Field>"
+    },
+    {
+      "name": "GuideBinding",
+      "type": "Note",
+      "required": false,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Note\" Name=\"GuideBinding\" StaticName=\"GuideBinding\" DisplayName=\"GuideBinding\" Required=\"FALSE\" RichText=\"FALSE\" NumLines=\"6\"></Field>"
+    },
+    {
+      "name": "ApprovedEdition",
+      "type": "Text",
+      "required": false,
+      "unique": false,
+      "schemaXml": "<Field Type=\"Text\" Name=\"ApprovedEdition\" StaticName=\"ApprovedEdition\" DisplayName=\"ApprovedEdition\" Required=\"FALSE\"></Field>"
+    },
+    {
+      "name": "EffectiveDate",
+      "type": "DateTime",
+      "required": false,
+      "unique": false,
+      "schemaXml": "<Field Type=\"DateTime\" Name=\"EffectiveDate\" StaticName=\"EffectiveDate\" DisplayName=\"EffectiveDate\" Required=\"FALSE\"></Field>"
+    }
+  ],
+  "defaultView": [
+    "LinkTitle",
+    "DocumentUID",
+    "FromEdition",
+    "ProposedEdition",
+    "ReviewTriggers",
+    "ChangeMagnitude",
+    "Urgency",
+    "RecordState",
+    "Modified"
+  ],
+  "notificationsEnabled": false,
+  "owner": "Workbench integration",
+  "identity": "Unique ChangeKey per document/from/proposed edition and change-record revision; preserve key when editing; native item versions retain corrections.",
+  "directFormLimitations": "Native forms enforce required fields/choices/unique key. Cross-record version/authority and decision-evidence checks remain manual; RecordState is not clinical approval."
+}

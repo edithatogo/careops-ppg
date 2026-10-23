@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "registers": [
+    {
+      "title": "PPG Organisational Roles",
+      "description": "Stable positions, committees or groups; records grant no access or clinical authority.",
+      "fields": [
+        {
+          "name": "RoleKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RoleKey\" StaticName=\"RoleKey\" DisplayName=\"RoleKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "Scope",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"Scope\" StaticName=\"Scope\" DisplayName=\"Scope\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "HolderKind",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"HolderKind\" StaticName=\"HolderKind\" DisplayName=\"HolderKind\" Required=\"TRUE\"><CHOICES><CHOICE>person</CHOICE><CHOICE>group</CHOICE><CHOICE>committee</CHOICE></CHOICES><Default>person</Default></Field>"
+        }
+      ]
+    },
+    {
+      "title": "PPG Responsibility Assignments",
+      "description": "Local assignments; upstream ownership assertions remain separate.",
+      "fields": [
+        {
+          "name": "AssignmentKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AssignmentKey\" StaticName=\"AssignmentKey\" DisplayName=\"AssignmentKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "DocumentUID",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"DocumentUID\" StaticName=\"DocumentUID\" DisplayName=\"DocumentUID\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RoleKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RoleKey\" StaticName=\"RoleKey\" DisplayName=\"RoleKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ResponsibilityType",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"ResponsibilityType\" StaticName=\"ResponsibilityType\" DisplayName=\"ResponsibilityType\" Required=\"TRUE\"><CHOICES><CHOICE>executive_accountability</CHOICE><CHOICE>custodian</CHOICE><CHOICE>author</CHOICE><CHOICE>review_lead</CHOICE><CHOICE>contributor</CHOICE><CHOICE>subject_expert</CHOICE><CHOICE>consumer_representative</CHOICE><CHOICE>consultee</CHOICE><CHOICE>endorser</CHOICE><CHOICE>authorising_officer</CHOICE><CHOICE>document_controller</CHOICE><CHOICE>publisher</CHOICE><CHOICE>implementation_lead</CHOICE><CHOICE>assurance_reviewer</CHOICE></CHOICES><Default>executive_accountability</Default></Field>"
+        },
+        {
+          "name": "EffectiveFrom",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"EffectiveFrom\" StaticName=\"EffectiveFrom\" DisplayName=\"EffectiveFrom\" Required=\"TRUE\"><Validation Message=\"Use a real calendar date in YYYY-MM-DD format.\">=AND(LEN([EffectiveFrom])=10,MID([EffectiveFrom],5,1)=\"-\",MID([EffectiveFrom],8,1)=\"-\",LEFT([EffectiveFrom],4)=TEXT(VALUE(LEFT([EffectiveFrom],4)),\"0000\"),MID([EffectiveFrom],6,2)=TEXT(VALUE(MID([EffectiveFrom],6,2)),\"00\"),RIGHT([EffectiveFrom],2)=TEXT(VALUE(RIGHT([EffectiveFrom],2)),\"00\"),VALUE(LEFT([EffectiveFrom],4))&gt;=1,VALUE(MID([EffectiveFrom],6,2))&gt;=1,VALUE(MID([EffectiveFrom],6,2))&lt;=12,VALUE(RIGHT([EffectiveFrom],2))&gt;=1,VALUE(RIGHT([EffectiveFrom],2))&lt;=CHOOSE(VALUE(MID([EffectiveFrom],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveFrom],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveFrom],4)),4)=0,MOD(VALUE(LEFT([EffectiveFrom],4)),100)&lt;&gt;0)),29,28),31,30,31,30,31,31,30,31,30,31))</Validation></Field>",
+          "validationFormula": "=AND(LEN([EffectiveFrom])=10,MID([EffectiveFrom],5,1)=\"-\",MID([EffectiveFrom],8,1)=\"-\",LEFT([EffectiveFrom],4)=TEXT(VALUE(LEFT([EffectiveFrom],4)),\"0000\"),MID([EffectiveFrom],6,2)=TEXT(VALUE(MID([EffectiveFrom],6,2)),\"00\"),RIGHT([EffectiveFrom],2)=TEXT(VALUE(RIGHT([EffectiveFrom],2)),\"00\"),VALUE(LEFT([EffectiveFrom],4))>=1,VALUE(MID([EffectiveFrom],6,2))>=1,VALUE(MID([EffectiveFrom],6,2))<=12,VALUE(RIGHT([EffectiveFrom],2))>=1,VALUE(RIGHT([EffectiveFrom],2))<=CHOOSE(VALUE(MID([EffectiveFrom],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveFrom],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveFrom],4)),4)=0,MOD(VALUE(LEFT([EffectiveFrom],4)),100)<>0)),29,28),31,30,31,30,31,31,30,31,30,31))",
+          "validationMessage": "Use a real calendar date in YYYY-MM-DD format."
+        },
+        {
+          "name": "EffectiveUntil",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"EffectiveUntil\" StaticName=\"EffectiveUntil\" DisplayName=\"EffectiveUntil\" Required=\"FALSE\"><Validation Message=\"Use a real calendar date in YYYY-MM-DD format; blank is allowed.\">=IF([EffectiveUntil]=\"\",TRUE,AND(LEN([EffectiveUntil])=10,MID([EffectiveUntil],5,1)=\"-\",MID([EffectiveUntil],8,1)=\"-\",LEFT([EffectiveUntil],4)=TEXT(VALUE(LEFT([EffectiveUntil],4)),\"0000\"),MID([EffectiveUntil],6,2)=TEXT(VALUE(MID([EffectiveUntil],6,2)),\"00\"),RIGHT([EffectiveUntil],2)=TEXT(VALUE(RIGHT([EffectiveUntil],2)),\"00\"),VALUE(LEFT([EffectiveUntil],4))&gt;=1,VALUE(MID([EffectiveUntil],6,2))&gt;=1,VALUE(MID([EffectiveUntil],6,2))&lt;=12,VALUE(RIGHT([EffectiveUntil],2))&gt;=1,VALUE(RIGHT([EffectiveUntil],2))&lt;=CHOOSE(VALUE(MID([EffectiveUntil],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveUntil],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveUntil],4)),4)=0,MOD(VALUE(LEFT([EffectiveUntil],4)),100)&lt;&gt;0)),29,28),31,30,31,30,31,31,30,31,30,31)))</Validation></Field>",
+          "validationFormula": "=IF([EffectiveUntil]=\"\",TRUE,AND(LEN([EffectiveUntil])=10,MID([EffectiveUntil],5,1)=\"-\",MID([EffectiveUntil],8,1)=\"-\",LEFT([EffectiveUntil],4)=TEXT(VALUE(LEFT([EffectiveUntil],4)),\"0000\"),MID([EffectiveUntil],6,2)=TEXT(VALUE(MID([EffectiveUntil],6,2)),\"00\"),RIGHT([EffectiveUntil],2)=TEXT(VALUE(RIGHT([EffectiveUntil],2)),\"00\"),VALUE(LEFT([EffectiveUntil],4))>=1,VALUE(MID([EffectiveUntil],6,2))>=1,VALUE(MID([EffectiveUntil],6,2))<=12,VALUE(RIGHT([EffectiveUntil],2))>=1,VALUE(RIGHT([EffectiveUntil],2))<=CHOOSE(VALUE(MID([EffectiveUntil],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveUntil],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveUntil],4)),4)=0,MOD(VALUE(LEFT([EffectiveUntil],4)),100)<>0)),29,28),31,30,31,30,31,31,30,31,30,31)))",
+          "validationMessage": "Use a real calendar date in YYYY-MM-DD format; blank is allowed."
+        },
+        {
+          "name": "ReviewState",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"ReviewState\" StaticName=\"ReviewState\" DisplayName=\"ReviewState\" Required=\"TRUE\"><CHOICES><CHOICE>Proposed</CHOICE><CHOICE>Accepted</CHOICE><CHOICE>Declined</CHOICE><CHOICE>Ended</CHOICE><CHOICE>Superseded</CHOICE></CHOICES><Default>Proposed</Default></Field>"
+        },
+        {
+          "name": "EvidenceRef",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"EvidenceRef\" StaticName=\"EvidenceRef\" DisplayName=\"EvidenceRef\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        }
+      ]
+    },
+    {
+      "title": "PPG Role Appointments",
+      "description": "Effective-dated holders. No implicit precedence for acting or delegated appointments.",
+      "fields": [
+        {
+          "name": "AppointmentKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AppointmentKey\" StaticName=\"AppointmentKey\" DisplayName=\"AppointmentKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "RoleKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"RoleKey\" StaticName=\"RoleKey\" DisplayName=\"RoleKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "HolderKey",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"HolderKey\" StaticName=\"HolderKey\" DisplayName=\"HolderKey\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "AppointmentKind",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"AppointmentKind\" StaticName=\"AppointmentKind\" DisplayName=\"AppointmentKind\" Required=\"TRUE\"><CHOICES><CHOICE>substantive</CHOICE><CHOICE>acting</CHOICE><CHOICE>delegated</CHOICE><CHOICE>vacant</CHOICE></CHOICES><Default>substantive</Default></Field>"
+        },
+        {
+          "name": "EffectiveFrom",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"EffectiveFrom\" StaticName=\"EffectiveFrom\" DisplayName=\"EffectiveFrom\" Required=\"TRUE\"><Validation Message=\"Use a real calendar date in YYYY-MM-DD format.\">=AND(LEN([EffectiveFrom])=10,MID([EffectiveFrom],5,1)=\"-\",MID([EffectiveFrom],8,1)=\"-\",LEFT([EffectiveFrom],4)=TEXT(VALUE(LEFT([EffectiveFrom],4)),\"0000\"),MID([EffectiveFrom],6,2)=TEXT(VALUE(MID([EffectiveFrom],6,2)),\"00\"),RIGHT([EffectiveFrom],2)=TEXT(VALUE(RIGHT([EffectiveFrom],2)),\"00\"),VALUE(LEFT([EffectiveFrom],4))&gt;=1,VALUE(MID([EffectiveFrom],6,2))&gt;=1,VALUE(MID([EffectiveFrom],6,2))&lt;=12,VALUE(RIGHT([EffectiveFrom],2))&gt;=1,VALUE(RIGHT([EffectiveFrom],2))&lt;=CHOOSE(VALUE(MID([EffectiveFrom],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveFrom],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveFrom],4)),4)=0,MOD(VALUE(LEFT([EffectiveFrom],4)),100)&lt;&gt;0)),29,28),31,30,31,30,31,31,30,31,30,31))</Validation></Field>",
+          "validationFormula": "=AND(LEN([EffectiveFrom])=10,MID([EffectiveFrom],5,1)=\"-\",MID([EffectiveFrom],8,1)=\"-\",LEFT([EffectiveFrom],4)=TEXT(VALUE(LEFT([EffectiveFrom],4)),\"0000\"),MID([EffectiveFrom],6,2)=TEXT(VALUE(MID([EffectiveFrom],6,2)),\"00\"),RIGHT([EffectiveFrom],2)=TEXT(VALUE(RIGHT([EffectiveFrom],2)),\"00\"),VALUE(LEFT([EffectiveFrom],4))>=1,VALUE(MID([EffectiveFrom],6,2))>=1,VALUE(MID([EffectiveFrom],6,2))<=12,VALUE(RIGHT([EffectiveFrom],2))>=1,VALUE(RIGHT([EffectiveFrom],2))<=CHOOSE(VALUE(MID([EffectiveFrom],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveFrom],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveFrom],4)),4)=0,MOD(VALUE(LEFT([EffectiveFrom],4)),100)<>0)),29,28),31,30,31,30,31,31,30,31,30,31))",
+          "validationMessage": "Use a real calendar date in YYYY-MM-DD format."
+        },
+        {
+          "name": "EffectiveUntil",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"EffectiveUntil\" StaticName=\"EffectiveUntil\" DisplayName=\"EffectiveUntil\" Required=\"FALSE\"><Validation Message=\"Use a real calendar date in YYYY-MM-DD format; blank is allowed.\">=IF([EffectiveUntil]=\"\",TRUE,AND(LEN([EffectiveUntil])=10,MID([EffectiveUntil],5,1)=\"-\",MID([EffectiveUntil],8,1)=\"-\",LEFT([EffectiveUntil],4)=TEXT(VALUE(LEFT([EffectiveUntil],4)),\"0000\"),MID([EffectiveUntil],6,2)=TEXT(VALUE(MID([EffectiveUntil],6,2)),\"00\"),RIGHT([EffectiveUntil],2)=TEXT(VALUE(RIGHT([EffectiveUntil],2)),\"00\"),VALUE(LEFT([EffectiveUntil],4))&gt;=1,VALUE(MID([EffectiveUntil],6,2))&gt;=1,VALUE(MID([EffectiveUntil],6,2))&lt;=12,VALUE(RIGHT([EffectiveUntil],2))&gt;=1,VALUE(RIGHT([EffectiveUntil],2))&lt;=CHOOSE(VALUE(MID([EffectiveUntil],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveUntil],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveUntil],4)),4)=0,MOD(VALUE(LEFT([EffectiveUntil],4)),100)&lt;&gt;0)),29,28),31,30,31,30,31,31,30,31,30,31)))</Validation></Field>",
+          "validationFormula": "=IF([EffectiveUntil]=\"\",TRUE,AND(LEN([EffectiveUntil])=10,MID([EffectiveUntil],5,1)=\"-\",MID([EffectiveUntil],8,1)=\"-\",LEFT([EffectiveUntil],4)=TEXT(VALUE(LEFT([EffectiveUntil],4)),\"0000\"),MID([EffectiveUntil],6,2)=TEXT(VALUE(MID([EffectiveUntil],6,2)),\"00\"),RIGHT([EffectiveUntil],2)=TEXT(VALUE(RIGHT([EffectiveUntil],2)),\"00\"),VALUE(LEFT([EffectiveUntil],4))>=1,VALUE(MID([EffectiveUntil],6,2))>=1,VALUE(MID([EffectiveUntil],6,2))<=12,VALUE(RIGHT([EffectiveUntil],2))>=1,VALUE(RIGHT([EffectiveUntil],2))<=CHOOSE(VALUE(MID([EffectiveUntil],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveUntil],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveUntil],4)),4)=0,MOD(VALUE(LEFT([EffectiveUntil],4)),100)<>0)),29,28),31,30,31,30,31,31,30,31,30,31)))",
+          "validationMessage": "Use a real calendar date in YYYY-MM-DD format; blank is allowed."
+        },
+        {
+          "name": "ReviewState",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"ReviewState\" StaticName=\"ReviewState\" DisplayName=\"ReviewState\" Required=\"TRUE\"><CHOICES><CHOICE>Proposed</CHOICE><CHOICE>Accepted</CHOICE><CHOICE>Declined</CHOICE><CHOICE>Ended</CHOICE><CHOICE>Superseded</CHOICE></CHOICES><Default>Proposed</Default></Field>"
+        },
+        {
+          "name": "DelegationScope",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"DelegationScope\" StaticName=\"DelegationScope\" DisplayName=\"DelegationScope\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "AuthorityEvidence",
+          "type": "Note",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"AuthorityEvidence\" StaticName=\"AuthorityEvidence\" DisplayName=\"AuthorityEvidence\" Required=\"FALSE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "EvidenceRef",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"EvidenceRef\" StaticName=\"EvidenceRef\" DisplayName=\"EvidenceRef\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        }
+      ]
+    },
+    {
+      "title": "PPG Responsibility Handovers",
+      "description": "Handover or portfolio transfer evidence; does not apply assignments or grant authority.",
+      "fields": [
+        {
+          "name": "HandoverKey",
+          "type": "Text",
+          "required": true,
+          "unique": true,
+          "schemaXml": "<Field Type=\"Text\" Name=\"HandoverKey\" StaticName=\"HandoverKey\" DisplayName=\"HandoverKey\" Required=\"TRUE\" Indexed=\"TRUE\" EnforceUniqueValues=\"TRUE\"></Field>"
+        },
+        {
+          "name": "HandoverKind",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"HandoverKind\" StaticName=\"HandoverKind\" DisplayName=\"HandoverKind\" Required=\"TRUE\"><CHOICES><CHOICE>succession</CHOICE><CHOICE>portfolio_transfer</CHOICE></CHOICES><Default>succession</Default></Field>"
+        },
+        {
+          "name": "FromRoleKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"FromRoleKey\" StaticName=\"FromRoleKey\" DisplayName=\"FromRoleKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "ToRoleKey",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ToRoleKey\" StaticName=\"ToRoleKey\" DisplayName=\"ToRoleKey\" Required=\"TRUE\"></Field>"
+        },
+        {
+          "name": "FromAppointmentKey",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"FromAppointmentKey\" StaticName=\"FromAppointmentKey\" DisplayName=\"FromAppointmentKey\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "ToAppointmentKey",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"ToAppointmentKey\" StaticName=\"ToAppointmentKey\" DisplayName=\"ToAppointmentKey\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "DocumentUIDs",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"DocumentUIDs\" StaticName=\"DocumentUIDs\" DisplayName=\"DocumentUIDs\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "EffectiveFrom",
+          "type": "Text",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"EffectiveFrom\" StaticName=\"EffectiveFrom\" DisplayName=\"EffectiveFrom\" Required=\"TRUE\"><Validation Message=\"Use a real calendar date in YYYY-MM-DD format.\">=AND(LEN([EffectiveFrom])=10,MID([EffectiveFrom],5,1)=\"-\",MID([EffectiveFrom],8,1)=\"-\",LEFT([EffectiveFrom],4)=TEXT(VALUE(LEFT([EffectiveFrom],4)),\"0000\"),MID([EffectiveFrom],6,2)=TEXT(VALUE(MID([EffectiveFrom],6,2)),\"00\"),RIGHT([EffectiveFrom],2)=TEXT(VALUE(RIGHT([EffectiveFrom],2)),\"00\"),VALUE(LEFT([EffectiveFrom],4))&gt;=1,VALUE(MID([EffectiveFrom],6,2))&gt;=1,VALUE(MID([EffectiveFrom],6,2))&lt;=12,VALUE(RIGHT([EffectiveFrom],2))&gt;=1,VALUE(RIGHT([EffectiveFrom],2))&lt;=CHOOSE(VALUE(MID([EffectiveFrom],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveFrom],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveFrom],4)),4)=0,MOD(VALUE(LEFT([EffectiveFrom],4)),100)&lt;&gt;0)),29,28),31,30,31,30,31,31,30,31,30,31))</Validation></Field>",
+          "validationFormula": "=AND(LEN([EffectiveFrom])=10,MID([EffectiveFrom],5,1)=\"-\",MID([EffectiveFrom],8,1)=\"-\",LEFT([EffectiveFrom],4)=TEXT(VALUE(LEFT([EffectiveFrom],4)),\"0000\"),MID([EffectiveFrom],6,2)=TEXT(VALUE(MID([EffectiveFrom],6,2)),\"00\"),RIGHT([EffectiveFrom],2)=TEXT(VALUE(RIGHT([EffectiveFrom],2)),\"00\"),VALUE(LEFT([EffectiveFrom],4))>=1,VALUE(MID([EffectiveFrom],6,2))>=1,VALUE(MID([EffectiveFrom],6,2))<=12,VALUE(RIGHT([EffectiveFrom],2))>=1,VALUE(RIGHT([EffectiveFrom],2))<=CHOOSE(VALUE(MID([EffectiveFrom],6,2)),31,IF(OR(MOD(VALUE(LEFT([EffectiveFrom],4)),400)=0,AND(MOD(VALUE(LEFT([EffectiveFrom],4)),4)=0,MOD(VALUE(LEFT([EffectiveFrom],4)),100)<>0)),29,28),31,30,31,30,31,31,30,31,30,31))",
+          "validationMessage": "Use a real calendar date in YYYY-MM-DD format."
+        },
+        {
+          "name": "ReviewState",
+          "type": "Choice",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Choice\" Name=\"ReviewState\" StaticName=\"ReviewState\" DisplayName=\"ReviewState\" Required=\"TRUE\"><CHOICES><CHOICE>Proposed</CHOICE><CHOICE>Accepted</CHOICE><CHOICE>Declined</CHOICE><CHOICE>Ended</CHOICE><CHOICE>Superseded</CHOICE></CHOICES><Default>Proposed</Default></Field>"
+        },
+        {
+          "name": "EvidenceRef",
+          "type": "Note",
+          "required": true,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Note\" Name=\"EvidenceRef\" StaticName=\"EvidenceRef\" DisplayName=\"EvidenceRef\" Required=\"TRUE\" RichText=\"FALSE\"></Field>"
+        },
+        {
+          "name": "AcceptedBy",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AcceptedBy\" StaticName=\"AcceptedBy\" DisplayName=\"AcceptedBy\" Required=\"FALSE\"></Field>"
+        },
+        {
+          "name": "AcceptedAt",
+          "type": "Text",
+          "required": false,
+          "unique": false,
+          "schemaXml": "<Field Type=\"Text\" Name=\"AcceptedAt\" StaticName=\"AcceptedAt\" DisplayName=\"AcceptedAt\" Required=\"FALSE\"></Field>"
+        }
+      ]
+    }
+  ],
+  "notificationsEnabled": false,
+  "dateConvention": "ISO date; inclusive start, exclusive end; text fields require validation",
+  "grantsAccess": false
+}

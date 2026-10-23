@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "capability": "cited-evidence-assistant",
+  "runtime": "m365-native-pending-qualification",
+  "mode": "read-only-prototype",
+  "maximumSelectedSources": 5,
+  "sourceStatuses": [
+    "retrieved",
+    "denied",
+    "missing",
+    "unsupported",
+    "changed-during-read",
+    "error"
+  ],
+  "authorityLabels": [
+    "captured-reference-unconfirmed",
+    "draft-unapproved",
+    "authority-recorded-not-independently-verified"
+  ],
+  "answerStatuses": [
+    "supported",
+    "partial",
+    "unknown",
+    "conflict",
+    "refused"
+  ],
+  "requiredCitation": [
+    "sourceId",
+    "canonicalUrl",
+    "nativeVersionRef",
+    "sha256",
+    "authorityLabel",
+    "startLine",
+    "endLine",
+    "quote"
+  ],
+  "requiredClaim": [
+    "claimId",
+    "text",
+    "citations",
+    "assertsCurrentAuthority"
+  ],
+  "forbiddenActions": [
+    "write",
+    "update",
+    "delete",
+    "create",
+    "share",
+    "send",
+    "assign",
+    "approve",
+    "publish",
+    "change-permissions"
+  ],
+  "nativeRegistration": "Do not upload a file to Agent Assets or call it a native skill without product registration, loading indicator and actual run proof.",
+  "mechanicalCheckBoundary": "Exact citation/quote/scope checks do not establish semantic entailment, clinical adequacy or authenticated authority. Record independent/human review and promotion separately.",
+  "permissionBoundary": "Only retrieve user-selected scope with the current authenticated principal. Stop each denied read; do not reuse stale cached content, expose denied metadata or switch identities/clients to evade denial.",
+  "searchBoundary": "Search hit is discovery only. Retrieve exact file/version before citation. Missing result is not absence; use existing archive index. Unsupported/scanned content stays unknown without qualified extraction.",
+  "requiredRetrievedSourceReceipt": [
+    "sourceId",
+    "canonicalUrl",
+    "retrievedAtUtc",
+    "nativeUniqueId",
+    "nativeVersionRef",
+    "sha256",
+    "authorityLabel",
+    "status"
+  ],
+  "initialQualifiedFormats": [
+    "UTF-8 .txt",
+    ".md"
+  ],
+  "unsupportedFormats": "PDF/Office/scanned/.captured sources require a separately qualified authenticated extraction; never claim archive-wide text coverage.",
+  "runtimeBoundary": "Deployed assistant must run entirely in M365 and Power Platform. Codex is development/testing only and cannot satisfy native runtime acceptance.",
+  "cliLookup": {
+    "command": "scripts/ppg_evidence_cli.py",
+    "mode": "deterministic-delegated-read-only",
+    "supportedFormats": ["UTF-8 TXT/Markdown", "DOCX body paragraphs", "text-bearing PDF through existing pdftotext"],
+    "hashBoundary": "sha256 is UTF-8 extracted text; binarySHA256 is original native file bytes",
+    "paidAIRuntimeRequired": false,
+    "nativeAssistantRuntimeQualified": false
+  }
+}

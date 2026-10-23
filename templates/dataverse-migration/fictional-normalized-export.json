@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "identityExceptions": [],
+  "datasets": {
+    "catalogue": [
+      {
+        "DocumentUID": "00000000-0000-4000-8000-000000000001",
+        "sourceNextReviewMonth": "2026-10",
+        "sourceNextReviewDateRaw": 46300,
+        "sourceTitle": "Fictional"
+      }
+    ],
+    "cases": [
+      {
+        "CaseUID": "00000000-0000-4000-8000-000000000002",
+        "linkedDocumentUIDs": [
+          "00000000-0000-4000-8000-000000000001"
+        ],
+        "caseStatus": "Awaiting human review",
+        "targetDate": null
+      }
+    ],
+    "readiness": [
+      {
+        "EventUID": "00000000-0000-4000-8000-000000000003",
+        "CaseUID": "00000000-0000-4000-8000-000000000002",
+        "ReviewedVersionRef": "fictional-v1",
+        "DocumentSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "Finding": "Not performed"
+      }
+    ],
+    "assurance": [
+      {
+        "EventUID": "00000000-0000-4000-8000-000000000003",
+        "CaseUID": "00000000-0000-4000-8000-000000000002",
+        "ReviewedVersionRef": "fictional-v1",
+        "DocumentSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "Finding": "Not performed"
+      }
+    ],
+    "consultation": [
+      {
+        "EventUID": "00000000-0000-4000-8000-000000000003",
+        "CaseUID": "00000000-0000-4000-8000-000000000002",
+        "ReviewedVersionRef": "fictional-v1",
+        "DocumentSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "Finding": "Not performed"
+      }
+    ],
+    "evidence": [
+      {
+        "NativeFileUniqueId": "00000000-0000-4000-8000-000000000003",
+        "PPGDocumentUID": "",
+        "PPGCurrency": "Unconfirmed",
+        "nativeVersion": "1.0",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ]
+  }
+}

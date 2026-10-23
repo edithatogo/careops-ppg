@@ -24,19 +24,25 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26.12.1'
+      - uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: tools/native-document-template/global.json
+      - name: Select repo-local Python and restore locked document tooling
+        run: |
+          python -m venv .venv
+          .venv/bin/python --version
+          (cd tools/native-document-template && dotnet restore --locked-mode)
       - name: Package committed source and the existing assembler once
-        run: python scripts/build_release_candidate.py --output .local/release-candidate
+        run: .venv/bin/python scripts/build_release_candidate.py --output .local/release-candidate
       - name: Exercise the unpacked package independently of source imports
         run: |
           mkdir -p "$RUNNER_TEMP/ppg-consumer"
           unzip -q .local/release-candidate/careops-ppg-portable.zip -d "$RUNNER_TEMP/ppg-consumer"
           cd "$RUNNER_TEMP/ppg-consumer" || exit 1
-          python -m unittest discover -s tests -p 'test_*.py'
-          node tests/test_submission_assembler.cjs
-          node tests/test_metadata_prefill.cjs
-          node tests/test_cloud_package.cjs
-          node tests/test_native_cover_request.cjs
-          python scripts/build_submission_assembler.py --output rebuilt.html
+          python -m venv .venv
+          (cd tools/native-document-template && dotnet restore --locked-mode)
+          .venv/bin/python scripts/run_portable_tests.py
+          .venv/bin/python scripts/build_submission_assembler.py --output rebuilt.html
           cmp PPG-submission-assembler.html rebuilt.html
       - name: Read immutable qualified inventory tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

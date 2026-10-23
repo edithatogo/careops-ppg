@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "caseViewTitle": "Working drafts — case links",
+  "referenceViewTitle": "Document control — references and authority",
+  "referenceFields": ["ID", "FileLeafRef", "FileRef", "FSObjType", "PPGCaptureSHA256", "PPGCaptureKind", "PPGCaptureSourceURL", "PPGDocumentUID", "PPGPolicyEdition", "PPGCurrency", "PPGAuthorityLink", "PPGCurrencyChecked", "PPGCurrencyEvidence", "PPGReplacesEdition", "PPGCaptureEditionEvidence", "_UIVersionString"],
+  "guidance": "Captured references and supporting pages. Check recorded publication evidence and the exact authoritative edition before use. Source URLs, capture dates, native versions and currency labels do not issue or approve a document.",
+  "draftGuidance": "Local case draft/evidence links only. Missing links remain missing; a working file is not an issued policy. Review the case's version-specific publication and implementation evidence."
+}

@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "criteriaVersion": "1.0.0",
+  "status": "draft-for-pilot",
+  "authority": "Advisory review questions; mandatory rules require verified local authority",
+  "responseOptions": [
+    "supported_finding",
+    "no_issue_in_checked_scope",
+    "not_applicable_with_rationale",
+    "unknown_missing_evidence"
+  ],
+  "criteria": [
+    {
+      "criterionId": "need",
+      "title": "Need and duplication",
+      "question": "Can an existing local or statewide document meet this need?",
+      "evidenceRequired": "Existing PPGs, governing documents and stated purpose",
+      "applicability": "Assess for the selected document; record rationale",
+      "basis": "Advisory example criteria; local authority unverified",
+      "mandatory": false
+    },
+    {
+      "criterionId": "instrument",
+      "title": "Document type",
+      "question": "Is policy, procedure, guideline, protocol, pathway or supporting material the appropriate instrument?",
+      "evidenceRequired": "Applicable document-control rules and intended audience",
+      "applicability": "Assess for the selected document; record rationale",
+      "basis": "Advisory example criteria; local authority unverified",
+      "mandatory": false
+    },
+    {
+      "criterionId": "variation",
+      "title": "Consolidation and variation",
+      "question": "Can shared content be consolidated while retaining justified site, population, capability and service differences?",
+      "evidenceRequired": "Compared passages and evidence for each variation",
+      "applicability": "Assess for the selected document; record rationale",
+      "basis": "Advisory example criteria; local authority unverified",
+      "mandatory": false
+    },
+    {
+      "criterionId": "currency",
+      "title": "Authority and currency",
+      "question": "Have legislation, directives, standards, CSCF, funding, drug access, technology or evidence changed?",
+      "evidenceRequired": "Versioned authoritative sources and applicability assessment",
+      "applicability": "Assess for the selected document; record rationale",
+      "basis": "Advisory example criteria; local authority unverified",
+      "mandatory": false
+    },
+    {
+      "criterionId": "implementation",
+      "title": "Practical implementation",
+      "question": "Are actions, responsibility, escalation, workforce competence and resources clear and feasible?",
+      "evidenceRequired": "Workflow, capability and implementation evidence",
+      "applicability": "Assess for the selected document; record rationale",
+      "basis": "Advisory example criteria; local authority unverified",
+      "mandatory": false
+    },
+    {
+      "criterionId": "equity",
+      "title": "Equity and usability",
+      "question": "Are cultural safety, consumer involvement, accessibility, health literacy, human rights and subgroup impacts addressed?",
+      "evidenceRequired": "Consultation evidence, accessibility and rights assessment",
+      "applicability": "Assess for the selected document; record rationale",
+      "basis": "Advisory example criteria; local authority unverified",
+      "mandatory": false
+    },
+    {
+      "criterionId": "quality",
+      "title": "Quality and assurance",
+      "question": "Are evidence quality, conflicting recommendations, incidents, auditability and measurable outcomes addressed?",
+      "evidenceRequired": "Evidence appraisal, incident lessons and evaluation measures",
+      "applicability": "Assess for the selected document; record rationale",
+      "basis": "Advisory example criteria; local authority unverified",
+      "mandatory": false
+    },
+    {
+      "criterionId": "priority",
+      "title": "Strategic relevance",
+      "question": "Do national, state, local, community or professional changes affect the document?",
+      "evidenceRequired": "Dated priorities and documented relevance",
+      "applicability": "Assess for the selected document; record rationale",
+      "basis": "Advisory example criteria; local authority unverified",
+      "mandatory": false
+    }
+  ],
+  "decisionOptions": [
+    "retain",
+    "minor_revision",
+    "major_revision",
+    "consolidate",
+    "split",
+    "adopt_adapt_external",
+    "change_document_type",
+    "propose_pathway_placement",
+    "supersede",
+    "withdraw",
+    "seek_further_evidence"
+  ]
+}

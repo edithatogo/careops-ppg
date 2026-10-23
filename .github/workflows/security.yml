@@ -45,9 +45,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
-      - run: python -m unittest discover -s tests -p 'test_*.py'
-      - run: node tests/test_submission_assembler.cjs
-      - run: node tests/test_metadata_prefill.cjs
-      - run: node tests/test_cloud_package.cjs
-      - run: node tests/test_native_cover_request.cjs
-      - run: python scripts/build_submission_assembler.py
+      - uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: tools/native-document-template/global.json
+      - name: Select repo-local Python and restore locked document tooling
+        run: |
+          python -m venv .venv
+          .venv/bin/python --version
+          (cd tools/native-document-template && dotnet restore --locked-mode)
+      - run: .venv/bin/python scripts/run_portable_tests.py
+      - run: .venv/bin/python scripts/build_submission_assembler.py
