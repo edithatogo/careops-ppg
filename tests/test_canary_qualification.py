@@ -25,11 +25,12 @@ class CanaryQualificationTests(unittest.TestCase):
         self.assertIn('global-json-file: tools/native-document-template/global.json', workflow)
         self.assertIn('dotnet restore --locked-mode', workflow)
         self.assertIn('scripts/run_portable_tests.py --python-only', workflow)
-        self.assertNotIn('unittest discover -s tests', workflow)
+        self.assertNotIn('.venv/bin/python -m unittest discover -s tests', workflow)
         self.assertIn('requirements-xlsb.lock', workflow)
         self.assertIn('--require-hashes --only-binary=:all: -r requirements-xlsb.lock', workflow)
         self.assertIn('m.version("pyxlsb") == "1.0.10"', workflow)
         self.assertIn('pip_audit --disable-pip --no-deps -r requirements-xlsb.lock', workflow)
+        self.assertIn("unittest discover -s tests -p 'test_pyxlsb_qualification.py' -v", workflow)
 
     def test_python_checks_use_the_repo_local_verified_interpreter(self):
         for relative in ['.github/workflows/development-canary.yml',

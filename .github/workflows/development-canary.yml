@@ -70,6 +70,7 @@ jobs:
           uv pip install --python "$RUNNER_TEMP/ppg-xlsb-canary/bin/python" --require-hashes --only-binary=:all: -r requirements-xlsb.lock
           "$RUNNER_TEMP/ppg-xlsb-canary/bin/python" -VV > .local/tool-canary/xlsb-python-version.txt
           "$RUNNER_TEMP/ppg-xlsb-canary/bin/python" -c 'import importlib.metadata as m, sys; import pyxlsb; assert sys.version_info[:3] == (3, 15, 1); assert m.version("pyxlsb") == "1.0.10"; assert callable(pyxlsb.open_workbook)'
+          "$RUNNER_TEMP/ppg-xlsb-canary/bin/python" -m unittest discover -s tests -p 'test_pyxlsb_qualification.py' -v
           uv venv --python 3.15.1 "$RUNNER_TEMP/ppg-tool-canary"
           uv pip install --python "$RUNNER_TEMP/ppg-tool-canary/bin/python" --require-hashes --only-binary=:all: --no-binary=pyyaml -r .local/tool-canary/requirements.lock
           "$RUNNER_TEMP/ppg-tool-canary/bin/python" -VV > .local/tool-canary/tool-python-version.txt
