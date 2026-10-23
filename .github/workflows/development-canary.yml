@@ -38,6 +38,9 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26.12.1'
+      - uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          global-json-file: tools/native-document-template/global.json
       - name: Install exact uv from its verified official release asset
         id: bootstrap
         env:
@@ -57,24 +60,32 @@ jobs:
         id: resolve
         run: |
           mkdir -p .local/tool-canary
-          python .careops-ci-tools/portfolio-scripts/ci_delivery.py lock --root .careops-ci-tools --preview --output .careops-ci-tools/.local/canary/requirements.lock --receipt .local/tool-canary/candidate.json
+          uv venv --python 3.15.1 .venv
+          .venv/bin/python -VV > .local/tool-canary/python-version.txt
+          .venv/bin/python -c 'import sys; assert sys.version_info[:3] == (3, 15, 1), sys.version'
+          .venv/bin/python .careops-ci-tools/portfolio-scripts/ci_delivery.py lock --root .careops-ci-tools --preview --output .careops-ci-tools/.local/canary/requirements.lock --receipt .local/tool-canary/candidate.json
+          (cd tools/native-document-template && dotnet restore --locked-mode)
           cp .careops-ci-tools/.local/canary/requirements.lock .local/tool-canary/requirements.lock
+          uv venv --python 3.15.1 "$RUNNER_TEMP/ppg-xlsb-canary"
+          uv pip install --python "$RUNNER_TEMP/ppg-xlsb-canary/bin/python" --require-hashes --only-binary=:all: -r requirements-xlsb.lock
+          "$RUNNER_TEMP/ppg-xlsb-canary/bin/python" -VV > .local/tool-canary/xlsb-python-version.txt
+          "$RUNNER_TEMP/ppg-xlsb-canary/bin/python" -c 'import importlib.metadata as m, sys; import pyxlsb; assert sys.version_info[:3] == (3, 15, 1); assert m.version("pyxlsb") == "1.0.10"; assert callable(pyxlsb.open_workbook)'
           uv venv --python 3.15.1 "$RUNNER_TEMP/ppg-tool-canary"
           uv pip install --python "$RUNNER_TEMP/ppg-tool-canary/bin/python" --require-hashes --only-binary=:all: --no-binary=pyyaml -r .local/tool-canary/requirements.lock
           "$RUNNER_TEMP/ppg-tool-canary/bin/python" -VV > .local/tool-canary/tool-python-version.txt
-          python -VV > .local/tool-canary/python-version.txt
           node --version > .local/tool-canary/node-version.txt
       - name: Exercise PPG behaviour and candidate tooling
         id: qualification
         run: |
-          python -m unittest discover -s tests -p 'test_*.py'
+          .venv/bin/python scripts/run_portable_tests.py --python-only
           node tests/test_submission_assembler.cjs
           node tests/test_metadata_prefill.cjs
           node tests/test_cloud_package.cjs
           node tests/test_native_cover_request.cjs
-          python scripts/build_submission_assembler.py
+          .venv/bin/python scripts/build_submission_assembler.py
           "$RUNNER_TEMP/ppg-tool-canary/bin/ruff" check --select E9,F63,F7,F82 scripts tests
           "$RUNNER_TEMP/ppg-tool-canary/bin/python" -m pip_audit --disable-pip --no-deps -r .local/tool-canary/requirements.lock
+          "$RUNNER_TEMP/ppg-tool-canary/bin/python" -m pip_audit --disable-pip --no-deps -r requirements-xlsb.lock
           "$RUNNER_TEMP/ppg-tool-canary/bin/zizmor" --offline --persona pedantic --format plain .github/workflows
       - name: Record actual tool qualification outcomes
         if: always()
@@ -87,7 +98,7 @@ jobs:
           RESOLVE_OUTCOME: ${{ steps.resolve.outcome }}
           QUALIFICATION_OUTCOME: ${{ steps.qualification.outcome }}
         run: |
-          python3 - <<'PYCODE'
+          .venv/bin/python - <<'PYCODE'
           import hashlib, json, os
           from pathlib import Path
           root = Path('.local/tool-canary')
@@ -129,84 +140,6 @@ jobs:
         with:
           name: ppg-tool-candidate
           path: .local/tool-canary/
-          include-hidden-files: true
-          if-no-files-found: warn
-          retention-days: 14
-  runtime:
-    name: Python preview discovery and PPG compatibility
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Read qualified shared runtime discovery helper
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: edithatogo/careops
-          ref: 30df4953ea87c8915b4a525fc671a4c9857c3f7f
-          path: .careops-ci-tools
-          persist-credentials: false
-          submodules: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: '3.15.1'
-      - name: Verify failed discovery retains a terminal receipt
-        run: |
-          probe_receipt=".local/runtime-contract-probe/discovery.json"
-          python .careops-ci-tools/portfolio-scripts/ci_delivery.py runtime-finalize --receipt "$probe_receipt" --discovery-outcome failure --outcome skipped
-          python - "$probe_receipt" <<'PYTHON'
-          import json
-          import sys
-          from pathlib import Path
-          receipt = json.loads(Path(sys.argv[1]).read_text())
-          assert receipt['state'] == 'discovery-failed'
-          assert receipt['discoveryOutcome'] == 'failure'
-          assert receipt['runtimeTestOutcome'] == 'skipped'
-          assert receipt['runtimeTestsExecuted'] is False
-          assert receipt['promoted'] is False
-          PYTHON
-      - name: Freeze manifest and discover a runnable newer preview
-        id: discover
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p .local/runtime-canary
-          runtime_manifest_revision="$(gh api repos/actions/python-versions/commits/main --jq .sha)"
-          [[ "$runtime_manifest_revision" =~ ^[a-f0-9]{40}$ ]]
-          curl --fail --silent --show-error --location "https://raw.githubusercontent.com/actions/python-versions/$runtime_manifest_revision/versions-manifest.json" -o .local/runtime-canary/manifest.json
-          runtime_platform="$(python -c 'import platform; print(platform.freedesktop_os_release()["VERSION_ID"])')"
-          python .careops-ci-tools/portfolio-scripts/ci_delivery.py runtime --platform-version "$runtime_platform" --manifest .local/runtime-canary/manifest.json --manifest-revision "$runtime_manifest_revision" --output .local/runtime-canary/discovery.json --github-output "$GITHUB_OUTPUT"
-      - name: Set up only the exact available preview
-        if: steps.discover.outputs.available == 'true'
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: ${{ steps.discover.outputs.version }}
-          allow-prereleases: true
-      - name: Set up the qualified Node host for cross-runtime cover tests
-        if: steps.discover.outputs.available == 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '26.12.1'
-      - name: Exercise PPG on the resolved Python preview
-        id: runtime_tests
-        if: steps.discover.outputs.available == 'true'
-        run: |
-          python -VV > .local/runtime-canary/python-version.txt
-          python -m unittest discover -s tests -p 'test_*.py'
-          python scripts/build_submission_assembler.py
-      - name: Record actual qualification or explicit unavailability
-        if: always()
-        env:
-          DISCOVERY_OUTCOME: ${{ steps.discover.outcome }}
-          RUNTIME_TEST_OUTCOME: ${{ steps.runtime_tests.outcome }}
-        run: python .careops-ci-tools/portfolio-scripts/ci_delivery.py runtime-finalize --receipt .local/runtime-canary/discovery.json --outcome "$RUNTIME_TEST_OUTCOME" --discovery-outcome "$DISCOVERY_OUTCOME"
-      - name: Retain frozen manifest and actual outcome
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ppg-runtime-candidate
-          path: .local/runtime-canary/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14

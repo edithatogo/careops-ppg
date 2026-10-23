@@ -1,5 +1,6 @@
 """Offline preparation guards; requires the existing built .NET template utility."""
 import hashlib
+import io
 import json
 from pathlib import Path
 import shutil
@@ -19,6 +20,21 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def add_document_paragraph(path, value):
+    """Add a fictional human edit to the DOCX body without changing its other parts."""
+    out = io.BytesIO()
+    with zipfile.ZipFile(path, 'r') as source, zipfile.ZipFile(out, 'w') as edited:
+        for info in source.infolist():
+            raw = source.read(info.filename)
+            if info.filename == 'word/document.xml':
+                marker = b'<w:sectPr'
+                assert marker in raw
+                paragraph = ('<w:p><w:r><w:t>' + value + '</w:t></w:r></w:p>').encode()
+                raw = raw.replace(marker, paragraph + marker, 1)
+            edited.writestr(info, raw)
+    Path(path).write_bytes(out.getvalue())
+
+
 @unittest.skipUnless(shutil.which('dotnet') and DLL.exists(), 'Build existing template utility first')
 class ManualPopulationTests(unittest.TestCase):
     def setUp(self):
@@ -36,7 +52,8 @@ class ManualPopulationTests(unittest.TestCase):
         self.input.update(CaseUID='FICTIONAL-TEST', occurrenceID='TEST-OCC', documentKind='fictional-review-draft',
                           source_snapshot='https://example.invalid/LC02-operator-request-TEST-REQUEST.json',
                           source_manifest='TEST-JOB', outputRevision='TEST-JOB/revision1', OptionalContent='',
-                          sourceSHA256=sha((self.p / 'source.txt').read_bytes()), includedRecordIDs=['TEST-DOC'],
+                          sourceSHA256=sha((self.p / 'source.txt').read_bytes()), templateVersion='review-template-v1',
+                          includedRecordIDs=['TEST-DOC'],
                           templateSHA256=sha((self.p / 'template.docx').read_bytes()), consultation_rows=[])
         self.row = {k: 'Fictional ' + k for k in ('ComparisonSource', 'ComparisonGoverningSource',
                     'ComparisonControl', 'ComparisonChange', 'ComparisonGap')}
@@ -51,14 +68,19 @@ class ManualPopulationTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
         return result
 
-    def prepare(self, rows=1, name='output', same_path=False):
+    def prepare(self, rows=1, name='output', same_path=False, revision=1,
+                job_id='TEST-JOB', request_id='TEST-REQUEST'):
         self.input['comparison_rows'] = [self.row] * rows
+        self.input['source_snapshot'] = (
+            'https://example.invalid/LC02-operator-request-' + request_id + '.json')
+        self.input['source_manifest'] = job_id
+        self.input['outputRevision'] = job_id + '/revision' + str(revision)
         raw = json.dumps(self.input, sort_keys=True, separators=(',', ':')).encode()
         (self.p / 'input.json').write_bytes(raw)
         binding = {k: self.input[k] for k in ('CaseUID', 'occurrenceID', 'documentKind', 'templateSHA256')}
         binding.update(inputSHA256=sha(raw), template={'Length': str((self.p / 'template.docx').stat().st_size)},
-                       sourceScope={'DocumentSHA256': self.input['sourceSHA256']}, jobId='TEST-JOB',
-                       outputRevision=1, requestId='TEST-REQUEST')
+                       sourceScope={'DocumentSHA256': self.input['sourceSHA256']}, jobId=job_id,
+                       outputRevision=revision, requestId=request_id)
         raw_binding = json.dumps(binding).encode()
         (self.p / 'binding.json').write_bytes(raw_binding)
         out = str(self.p / (name + '.docx'))
@@ -96,6 +118,89 @@ class ManualPopulationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('paths must differ', result.stderr)
         self.assertFalse((self.p / 'output.docx').exists())
+
+    def test_new_revision_preserves_human_edit_identity_and_issued_history(self):
+        first = self.prepare(name='draft-r1')
+        self.assertEqual(first.returncode, 0, first.stderr)
+        first_doc = self.p / 'draft-r1.docx'
+        first_receipt = self.p / 'draft-r1.json'
+        first_proof = json.loads(first_receipt.read_text())
+        self.assertEqual(first_proof['CaseUID'], 'FICTIONAL-TEST')
+        self.assertEqual(first_proof['occurrenceReference'], 'TEST-OCC')
+        self.assertEqual(first_proof['documentKind'], 'fictional-review-draft')
+        self.assertEqual(first_proof['templateSHA256'], self.input['templateSHA256'])
+        self.assertEqual(first_proof['originalSourceScope']['DocumentSHA256'], self.input['sourceSHA256'])
+        self.assertEqual(first_proof['outputRevision'], 1)
+
+        # Retain a separate, explicitly fictional prior issued artifact and receipt.
+        issued_doc = self.p / 'issued-history-r0.docx'
+        issued_receipt = self.p / 'issued-history-r0.json'
+        issued_bytes = (self.p / 'template.docx').read_bytes()
+        issued_doc.write_bytes(issued_bytes)
+        issued_record = {
+            'fixtureState': 'FICTIONAL_ISSUED_HISTORY',
+            'CaseUID': 'FICTIONAL-TEST',
+            'occurrenceID': 'TEST-OCC',
+            'documentKind': 'fictional-review-draft',
+            'sourceSHA256': self.input['sourceSHA256'],
+            'templateVersion': self.input['templateVersion'],
+            'templateSHA256': self.input['templateSHA256'],
+            'outputRevision': 'issued-r0',
+            'includedRecordIDs': ['TEST-DOC'],
+            'artifactSHA256': sha(issued_bytes),
+        }
+        issued_receipt.write_text(json.dumps(issued_record, sort_keys=True))
+        issued_before = issued_doc.read_bytes()
+        issued_receipt_before = issued_receipt.read_bytes()
+
+        add_document_paragraph(first_doc, 'FICTIONAL HUMAN EDIT — preserve this revision')
+        first_edited = first_doc.read_bytes()
+        first_receipt_before = first_receipt.read_bytes()
+        with zipfile.ZipFile(first_doc) as edited:
+            self.assertIn(b'FICTIONAL HUMAN EDIT', edited.read('word/document.xml'))
+        valid = self.call('validate-docx', str(first_doc))
+        self.assertEqual(valid.returncode, 0, valid.stdout + valid.stderr)
+
+        # A new source snapshot and output revision produce a separate file.
+        source_v2 = b'Fictional source revision two.'
+        (self.p / 'source.txt').write_bytes(source_v2)
+        self.input.update(
+            sourceSHA256=sha(source_v2),
+            source_snapshot='https://example.invalid/LC02-operator-request-TEST-REQUEST-2.json',
+            source_manifest='TEST-JOB-V2',
+            outputRevision='TEST-JOB-V2/revision2',
+            version='fictional-v2',
+            includedRecordIDs=['TEST-DOC-2'],
+        )
+        second = self.prepare(rows=2, name='draft-r2', revision=2,
+                              job_id='TEST-JOB-V2', request_id='TEST-REQUEST-2')
+        self.assertEqual(second.returncode, 0, second.stderr)
+
+        second_proof = json.loads((self.p / 'draft-r2.json').read_text())
+        self.assertEqual(second_proof['CaseUID'], first_proof['CaseUID'])
+        self.assertEqual(second_proof['occurrenceReference'], first_proof['occurrenceReference'])
+        self.assertEqual(second_proof['documentKind'], first_proof['documentKind'])
+        self.assertNotEqual(second_proof['jobId'], first_proof['jobId'])
+        self.assertNotEqual(second_proof['outputRevision'], first_proof['outputRevision'])
+        self.assertNotEqual(second_proof['outputSHA256'], first_proof['outputSHA256'])
+        self.assertEqual(second_proof['templateSHA256'], first_proof['templateSHA256'])
+        self.assertNotEqual(second_proof['originalSourceScope']['DocumentSHA256'],
+                            first_proof['originalSourceScope']['DocumentSHA256'])
+        self.assertEqual(second_proof['outputRevision'], 2)
+        populated = {entry['field']: entry.get('value') for entry in second_proof['populatedFields']}
+        self.assertEqual(populated['sourceSHA256'], self.input['sourceSHA256'])
+        self.assertEqual(populated['templateVersion'], 'review-template-v1')
+        self.assertEqual(populated['outputRevision'], 'TEST-JOB-V2/revision2')
+        self.assertEqual(populated['includedRecordIDs'], 'TEST-DOC-2')
+        with zipfile.ZipFile(self.p / 'draft-r2.docx') as current:
+            body = current.read('word/document.xml')
+        self.assertIn(b'TEST-DOC-2', body)
+        self.assertNotIn(b'FICTIONAL HUMAN EDIT', body)
+
+        self.assertEqual(first_doc.read_bytes(), first_edited)
+        self.assertEqual(first_receipt.read_bytes(), first_receipt_before)
+        self.assertEqual(issued_doc.read_bytes(), issued_before)
+        self.assertEqual(issued_receipt.read_bytes(), issued_receipt_before)
 
 
 if __name__ == '__main__':

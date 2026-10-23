@@ -16,7 +16,7 @@ class ReleaseCandidateTests(unittest.TestCase):
     def test_exact_source_generated_page_and_refusal_guards(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            for name in ['README.md', 'NOTICE.md', 'AGENTS.md']:
+            for name in ['README.md', 'NOTICE.md', 'AGENTS.md', 'requirements-xlsb.lock']:
                 (root / name).write_text('Fictional source fixture. No public licence is granted.\n')
             for name in ['scripts', 'tools/submission-package', 'templates', 'tests', '.github', 'config', 'docs']:
                 (root / name).mkdir(parents=True, exist_ok=True)
@@ -55,6 +55,7 @@ class ReleaseCandidateTests(unittest.TestCase):
                 self.assertEqual(bundle.read('PPG-submission-assembler.html'), (output / 'PPG-submission-assembler.html').read_bytes())
                 self.assertEqual(bundle.read('config/fixture.json'), (root / 'config/fixture.json').read_bytes())
                 self.assertEqual(bundle.read('NOTICE.md'), (root / 'NOTICE.md').read_bytes())
+                self.assertEqual(bundle.read('requirements-xlsb.lock'), (root / 'requirements-xlsb.lock').read_bytes())
                 self.assertEqual(bundle.read('templates/review-package.md'), (root / 'templates/review-package.md').read_bytes())
                 for name in ['.careops/module.json', 'conductor/index.md', 'conductor/suite-delivery.md', '.python-version', '.node-version']:
                     self.assertEqual(bundle.read(name), (root / name).read_bytes())

@@ -21,7 +21,7 @@ Do not create another track, chat, acceptance pack or status ledger for alignmen
 2. **runtime** — Test declared Python/Node runtimes and current authoring dependencies without changing the private scheduled runtime.
    Done when: Portable fixtures build and replay on exact pins; actual native qualification remains separate.
 3. **templates** — Qualify a maintained structured-document template for one fictional policy/review package.
-   Done when: Human edits, document identity, source/template revision and issued history survive regeneration.
+   Done when: Human edits and earlier outputs remain unchanged; a stable case/occurrence identity links immutable revisions with each output reference, source/template revision and issued history retained.
 
 ## Dependency and delivery defaults
 
@@ -46,10 +46,10 @@ checks affected by the change, with broad checks at an integration milestone.
 
 ## Qualified source delivery baseline
 
-The current development pins are Python 3.15.1 and Node 26.12.1. CI retains its
-Python 3.11 / Node 22 minimum compatibility lane and the qualified current lane;
-these runtime files do not raise the supported minimum. Shared security, actual
-source packages and canaries use immutable CareOps policy f0e8db2.
+The current development pins are Python 3.15.1 and Node 26.12.1. CI uses the
+qualified Python 3.15.1 runtime across its Node 22 and Node 26.12.1 lanes; no
+older Python compatibility runner remains active. Shared security, actual source
+packages and canaries use immutable CareOps policy f0e8db2.
 
 Existing weekly Dependabot owns GitHub Actions in this runtime-dependency-free
 toolkit. Renovate is restricted to custom.regex for the direct uv installer;
