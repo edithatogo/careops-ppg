@@ -41,3 +41,9 @@ security and package workflows pass on fca58a3; full source hashes, package
 recovery and preserved remote branch identities were checked before archival.
 The closing documentation change records only observed facts and stable public
 links; no source, fixture, dependency or native binding is changed by it.
+
+The closing PR also selects the already-qualified repo-local Python interpreter
+for package inventory and creates an isolated verification environment for the
+attestation job. Python remains3.15.1; permission scopes, policy revisions, schema,
+source selection, signature requirements and package-byte checks are unchanged.
+Actual hosted execution must verify this final CI-selection change.

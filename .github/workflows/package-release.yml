@@ -55,7 +55,7 @@ jobs:
       - name: Inventory exact package bytes
         env:
           SOURCE_COMMIT: ${{ github.sha }}
-        run: python .local/ci-release-policy/portfolio-scripts/artifact_sbom.py --artifact .local/release-candidate/careops-ppg-portable.zip --name careops-ppg-portable --source-commit "$SOURCE_COMMIT" --created-epoch "$(git show -s --format=%ct "$SOURCE_COMMIT")" --output .local/release-candidate/careops-ppg.spdx.json
+        run: .venv/bin/python .local/ci-release-policy/portfolio-scripts/artifact_sbom.py --artifact .local/release-candidate/careops-ppg-portable.zip --name careops-ppg-portable --source-commit "$SOURCE_COMMIT" --created-epoch "$(git show -s --format=%ct "$SOURCE_COMMIT")" --output .local/release-candidate/careops-ppg.spdx.json
       - name: Retain the package and inventory without granting a public licence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -88,7 +88,9 @@ jobs:
         env:
           SOURCE_COMMIT: ${{ github.sha }}
         run: |
-          python - <<'PYCODE'
+          python -m venv .venv
+          .venv/bin/python --version
+          .venv/bin/python - <<'PYCODE'
           import hashlib, json, os, zipfile
           from pathlib import Path
           package = Path('candidate/careops-ppg-portable.zip')
