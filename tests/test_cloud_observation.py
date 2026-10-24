@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import unittest
+from uuid import UUID
 
 from scripts.ppg_cloud_observation import build,validate,API,PINS
 from scripts.ppg_integrated_acquisition import build as build_integrated
@@ -17,6 +18,8 @@ def canonical(value):
 
 
 def fixture():
+    # Deterministic generated fixture IDs; never copied from a native object.
+    uid=lambda number:str(UUID(int=number,version=4))
     p=profile();r=runtime();site='https://example.sharepoint.com/sites/Fictional'
     folder='/sites/Fictional/Evidence/SourceReceipts'
     binding={'publicationKey':'pub:fictional','editionKey':'edition:fictional','captureKey':'capture:fictional',
@@ -25,7 +28,7 @@ def fixture():
     records=[]
     for index,name in enumerate(('publicationKey','editionKey','captureKey')):
         text=canonical({'key':binding[name],'title':'Fictional café source'})
-        records.append({'key':binding[name],'listId':'11111111-2222-4333-8444-555555555555',
+        records.append({'key':binding[name],'listId':uid(1),
                         'itemId':index+1,'recordJSON':text,'payloadSHA256':hashlib.sha256(text.encode()).hexdigest(),
                         'reviewState':'Unreviewed'})
     original_url=site+'/Evidence/retained.pdf'
@@ -38,12 +41,12 @@ def fixture():
                                    'UIVersionLabel':'1.0','ServerRelativeUrl':path}
     b={'site':site,'folder':folder,'connectionReference':{'id':API,'connectionName':'fictional-sharepoint','source':'Embedded'},
        'replayKey':key,'binding':binding,'retainedOriginalURL':original_url,
-       'originalPin':pin('22222222-2222-4333-8444-555555555555','/sites/Fictional/Evidence/retained.pdf',p['expectedBytes']),
+       'originalPin':pin(uid(2),'/sites/Fictional/Evidence/retained.pdf',p['expectedBytes']),
        'sourceMetadata':{'Id':'fictional-stage-id','ETag':'"fictional,1"','Size':p['expectedBytes'],'IsFolder':False},
-       'sourceFile':{'uniqueId':'33333333-2222-4333-8444-555555555555','nativeVersion':'1.0','etag':'"fictional,1"',
+       'sourceFile':{'uniqueId':uid(3),'nativeVersion':'1.0','etag':'"fictional,1"',
                      'url':site+'/Staging/source.pdf','bytes':p['expectedBytes']},
        'records':records,'claimName':claim_name,'claimJSON':claim_text,
-       'claimPin':pin('44444444-2222-4333-8444-555555555555',folder+'/'+claim_name,len(claim_text.encode())),
+       'claimPin':pin(uid(4),folder+'/'+claim_name,len(claim_text.encode())),
        'scriptPath':'/Fictional runtime/hash.osts','scriptMetadata':{'ETag':'"fictional-script,1"','Size':123,'IsFolder':False,'Name':'hash.osts'},
        'resumeRunIdDefault':''}
     return p,r,b
