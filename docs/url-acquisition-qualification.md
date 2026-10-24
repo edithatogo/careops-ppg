@@ -44,9 +44,13 @@ use the exact existing OneDrive reference with automatic retries disabled.
    rather than a folder, and nonempty identity/ETag. A pending 404 may be observed
    again; other failures set the error flag and stop polling. Those are configured
    limits, not a native timing guarantee established by source tests.
-3. Read metadata, content and metadata again. Identity/ETag must be unchanged, both
-   sizes must match the expected size, and both observations must describe a file.
-   Wrong-sized or changed existing objects are held and never overwritten.
+3. Read metadata and require the expected size, a file and nonempty identity/ETag
+   before requesting any content. Then read content and metadata again.
+   Identity/ETag must be unchanged, both sizes must match the expected size, and
+   both observations must describe a file. Known wrong-sized or folder targets
+   stop before a content request; changed objects are held and never overwritten.
+   A hard transfer-byte ceiling under concurrent mutation remains a native
+   transport requirement, not something the metadata check proves by itself.
 4. Report content and its two metadata observations as **awaiting independent
    verification**. The expected digest is retained separately from the null actual
    digest. Byte integrity, representation, redirects, final source URL, checkpoint

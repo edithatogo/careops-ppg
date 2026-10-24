@@ -144,8 +144,14 @@ class URLQualificationTests(unittest.TestCase):
         self.assertIn("variables('acquisition_error')", loop['expression'])
 
     def test_content_is_bracketed_by_id_etag_size_checks_not_digest_assertions(self):
-        actions = source_actions(build(profile()))['Require_ready']['actions']
-        self.assertEqual(actions['Read_content']['runAfter'], {'Metadata_before': ['Succeeded']})
+        gate = source_actions(build(profile()))['Require_ready']['actions']['Require_expected_metadata']
+        self.assertEqual(gate['runAfter'], {'Metadata_before': ['Succeeded']})
+        for field in ['Id', 'ETag', 'Size', 'IsFolder']:
+            self.assertIn("['"+field+"']", gate['expression'])
+        self.assertEqual(gate['else']['actions']['Hold_before_content']['type'], 'Terminate')
+        self.assertFalse(any(x['type'] == 'OpenApiConnection' for x in nodes(gate['else'])))
+        actions = gate['actions']
+        self.assertEqual(actions['Read_content']['runAfter'], {})
         self.assertEqual(actions['Metadata_after']['runAfter'], {'Read_content': ['Succeeded']})
         guard = actions['Require_stable_metadata']
         for field in ['Id', 'ETag', 'Size', 'IsFolder']:

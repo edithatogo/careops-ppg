@@ -167,13 +167,18 @@ def build(profile):
         'pollAttempts': "@variables('acquisition_attempts')", 'runName': "@workflow()?['run']?['name']",
         'catalogueWrites': 0, 'checkpointAdvanced': False, 'nativeAcquisitionQualified': False,
         'clinicalApplicabilityAccepted': False, 'notificationsEnabled': False}}
-    readback = {
-        'Metadata_before': metadata(),
+    pre_read = "@and(not(empty(body('Metadata_before')?['Id'])),not(empty(body('Metadata_before')?['ETag'])),equals(body('Metadata_before')?['Size']," + str(p['expectedBytes']) + "),equals(body('Metadata_before')?['IsFolder'],false))"
+    content_readback = {
         'Read_content': operation('GetFileContentByPath', {'path': stage, 'inferContentType': False},
-                                  _after('Metadata_before')),
+                                  {}),
         'Metadata_after': metadata(_after('Read_content')),
         'Require_stable_metadata': _if(stable, {'Report_candidate': result},
             {'Hold_changed_stage': _hold('StageChangedOrWrongSize')}, _after('Metadata_after')),
+    }
+    readback = {
+        'Metadata_before': metadata(),
+        'Require_expected_metadata': _if(pre_read, content_readback,
+            {'Hold_before_content': _hold('StageMetadataNotExpected')}, _after('Metadata_before')),
     }
     branch['Require_ready'] = _if("@and(equals(actions('Resolve_stage')?['status'],'Succeeded'),variables('acquisition_ready'),not(variables('acquisition_error')))",
         readback, {'Hold_incomplete': _hold('TransferNotVerified')},
