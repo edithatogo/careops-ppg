@@ -1,6 +1,7 @@
 name: External catalogue qualification
 on:
   push:
+    branches: [main]
     paths:
       - 'scripts/ppg_external_catalogue.py'
       - 'tools/external-catalogue/**'
