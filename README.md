@@ -201,3 +201,11 @@ The [Power Automate reader guide](docs/power-automate-cited-reader.md) describes
 fixed-source, read-only Standard SharePoint graph generator. Raw native reads,
 independent hash/extraction, caller permissions and conversational assistant
 qualification remain separate. Existing CLI evidence/citation tools remain usable.
+
+## URL acquisition qualification
+
+The [fixed-source qualification builder](docs/url-acquisition-qualification.md)
+prepares a stopped OneDrive URL-upload experiment with overwrite disabled, bounded
+completion polling and content readback. It performs no deployment or invocation.
+The experiment requires a native owner, empty run history and actual alert-Off
+readback; durable claims, byte verification and production replay remain separate.
