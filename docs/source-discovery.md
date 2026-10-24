@@ -27,6 +27,9 @@ origins and retain the returned source hash with the original capture.
   excludes navigation/script/template links and refuses observed access/error
   representations, password inputs and off-origin PDF links. Download labels and
   preceding headings remain publisher assertions, not identity/edition decisions.
+  Navigation subtrees inside the main region are also excluded. A document with
+  a `base href` is an unsupported layout and is refused; its relative links are
+  never silently resolved against a different base.
 
 Relative link resolution removes dot segments while preserving empty path
 segments, including doubled slashes. The original `href`, observed URL, fetch URL

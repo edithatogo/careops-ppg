@@ -238,6 +238,8 @@ class _Publication(HTMLParser):
         self.in_main = False
         self.main_closed = False
         self.ignore = None
+        self.ignore_depth = 0
+        self.base_url_present = False
         self.heading = None
         self.heading_text = []
         self.headings = []
@@ -249,15 +251,22 @@ class _Publication(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == 'base' and 'href' in attrs:
+            self.base_url_present = True
+        if self.ignore:
+            if tag == self.ignore:
+                self.ignore_depth += 1
+            return
         if tag == 'main':
             self.main_count += 1
             if self.in_main or self.main_count != 1:
                 raise ValueError('one publication main region required')
             self.in_main = True
-        if not self.in_main or self.ignore:
+        if not self.in_main:
             return
-        if tag in ('script', 'style', 'template'):
+        if tag in ('script', 'style', 'template', 'nav'):
             self.ignore = tag
+            self.ignore_depth = 1
             return
         if tag == 'input' and attrs.get('type', '').lower() == 'password':
             self.password = True
@@ -283,7 +292,9 @@ class _Publication(HTMLParser):
     def handle_endtag(self, tag):
         if self.ignore:
             if tag == self.ignore:
-                self.ignore = None
+                self.ignore_depth -= 1
+                if self.ignore_depth == 0:
+                    self.ignore = None
             return
         if not self.in_main:
             return
@@ -312,7 +323,7 @@ def parse_publication(data, source_url, allowed_origins, expected_title):
     titles = [t for tag, t in parser.headings if tag == 'h1']
     normalize = lambda x: ' '.join(x.split()).casefold()
     main = ' '.join(' '.join(parser.text).split())
-    if (parser.main_count != 1 or not parser.main_closed or parser.ignore
+    if (parser.base_url_present or parser.main_count != 1 or not parser.main_closed or parser.ignore
             or parser.link is not None or parser.heading or len(titles) != 1
             or normalize(titles[0]) != normalize(expected_title)
             or parser.password or re.search(r'access denied|verify you are human|page not found|captcha', main[:500], re.I)):

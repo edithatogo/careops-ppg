@@ -153,6 +153,26 @@ class SourceDiscoveryTests(unittest.TestCase):
         r = parse_publication(raw, BASE+'/page', ORIGINS, 'Fictional framework')
         self.assertEqual([x['fetchURL'] for x in r['downloads']], [BASE+'/real.pdf'])
 
+    def test_navigation_inside_main_is_excluded_through_nested_subtrees(self):
+        nav = ('<nav><h2>Navigation</h2><div><a href="/other.pdf">Other PDF</a></div>'
+               '<nav><span><a href="/nested.pdf">Nested PDF</a></span></nav>'
+               '<a href="/still-navigation.pdf">Still navigation</a></nav>')
+        raw = publication(nav+'<h2>Downloads</h2><a href="/actual.pdf">Actual PDF</a>')
+        r = parse_publication(raw, BASE+'/page', ORIGINS, 'Fictional framework')
+        self.assertEqual([x['fetchURL'] for x in r['downloads']], [BASE+'/actual.pdf'])
+        with self.assertRaisesRegex(ValueError, 'no publication PDF'):
+            parse_publication(publication(nav), BASE+'/page', ORIGINS, 'Fictional framework')
+
+    def test_base_urls_are_an_explicit_unsupported_layout(self):
+        raw = publication('<a href="edition.pdf">PDF</a>')
+        for href in [BASE+'/files/', 'https://other.example/files/', '/files/', '']:
+            with self.assertRaisesRegex(ValueError, 'shape'):
+                parse_publication(raw.replace(b'<html>', ('<html><head><base href="'+href+'"></head>').encode()),
+                                  BASE+'/resources/page', ORIGINS, 'Fictional framework')
+        r = parse_publication(raw.replace(b'<html>', b'<html><head><base target="_blank"></head>'),
+                              BASE+'/resources/page', ORIGINS, 'Fictional framework')
+        self.assertEqual(r['downloads'][0]['fetchURL'], BASE+'/resources/edition.pdf')
+
     def test_layout_error_login_title_and_missing_download_refuse(self):
         good = publication('<a href="/real.pdf">PDF</a>')
         for raw in [good.replace(b'<main>', b'<section>').replace(b'</main>', b'</section>'),
