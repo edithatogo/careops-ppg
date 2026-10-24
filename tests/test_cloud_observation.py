@@ -141,6 +141,11 @@ class CloudObservation(unittest.TestCase):
             with self.subTest(field=field):self.assertFalse(evaluate(expr,changed,outputs))
         changed=copy.deepcopy(bodies);changed['Read_final_observation_content']['$content']=base64.b64encode(raw.replace(b'Fictional',b'HUMANEDIT')).decode()
         self.assertFalse(evaluate(expr,changed,outputs))
+        for field,value in [('UniqueId',None),('UniqueId',''),('ETag',None),('ETag',''),('ETag','*')]:
+            changed=copy.deepcopy(bodies)
+            for name in ['Read_saved_observation_pin','Read_saved_observation_after','Read_final_observation_pin','Read_final_observation_after']:
+                changed[name][field]=value
+            with self.subTest(incompleteField=field,value=value):self.assertFalse(evaluate(expr,changed,outputs))
         self.assertEqual(a['Read_final_observation_pin']['runAfter'],{'Require_context_final':['Succeeded']})
         self.assertEqual(a['Read_final_observation_content']['runAfter'],{'Read_final_observation_pin':['Succeeded']})
         self.assertEqual(a['Read_final_observation_after']['runAfter'],{'Read_final_observation_content':['Succeeded']})

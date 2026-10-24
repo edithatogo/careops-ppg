@@ -32,7 +32,8 @@ connections, native-object owners and the catalogue's writer remain authoritativ
   the source context, then repeat metadata/content/metadata receipt readback.
   Compare the earlier and final receipt pins and bytes before reporting the
   final native pin. An edit, deletion or replacement during the source checks
-  must stop completion. An existing receipt must stay
+  must stop completion. Missing IDs, empty ETags and wildcard ETags also hold;
+  equality between incomplete metadata snapshots is insufficient. An existing receipt must stay
   at version 1.0 and retain its prior pins. Human-edited or different bytes hold.
 
 Each new invocation normally retains its own observation. The selected capture

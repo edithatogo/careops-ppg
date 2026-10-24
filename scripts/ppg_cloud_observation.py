@@ -277,6 +277,9 @@ def build(profile, runtime, persistence):
     byte_length="sub(div(mul(length("+encoded+"),3),4),if(endsWith("+encoded+",'=='),2,if(endsWith("+encoded+",'='),1,0)))"
     checks=["equals(body('Read_saved_observation_content')?['$content'],base64(string(outputs('Expected_observation'))))",
             "equals(body('Read_final_observation_content')?['$content'],base64(string(outputs('Expected_observation'))))",
+            "not(empty(body('Read_final_observation_after')?['UniqueId']))",
+            "not(empty(body('Read_final_observation_after')?['ETag']))",
+            "not(equals(body('Read_final_observation_after')?['ETag'],'*'))",
             "equals(body('Read_final_observation_after')?['UIVersionLabel'],'1.0')",
             "equals(body('Read_final_observation_after')?['ServerRelativeUrl'],concat("+lit(b['folder']+'/')+",outputs('Observation_filename')))",
             "equals(int(body('Read_final_observation_after')?['Length']),"+byte_length+")"]
