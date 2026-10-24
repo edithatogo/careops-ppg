@@ -79,3 +79,12 @@ insufficient. Drafts and previews remain allowed. Do not create mail connections
 or send test email. Inspect actual owned send/approval-notification paths before
 execution; keep unapproved delivery Off or fail-closed. Static source checks do
 not establish a complete native audit.
+
+## Project-owned code licensing
+
+Use Apache-2.0 for project-owned code and include its complete licence and current
+notices in source packages. Preserve existing copyright, upstream and third-party
+licences and attribution. Do not relabel external code, fixtures or dependencies.
+The code licence grants no rights over external documents, manuscripts, policies,
+datasets, private evidence or history, and no visibility change or publication.
+Qualify source/package changes before merge and preserve current owners/runtimes.

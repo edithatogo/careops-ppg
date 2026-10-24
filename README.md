@@ -117,7 +117,8 @@ scanner result is evidence about the committed material, not a guarantee about
 future files. Keep source records, credentials, real correspondence, private
 bindings and receipts outside Git, including for private repositories.
 
-No public licence is granted by this repository.
+Project-owned code uses [Apache-2.0](LICENSE). [Notices and exclusions](NOTICE.md)
+preserve upstream terms and exclude external documents, private data and history.
 
 
 ## Source CI and updates
@@ -148,8 +149,9 @@ exact committed scripts, source, templates and fictional test fixtures. It
 refuses dirty source and existing output revisions. An independent unpacked
 consumer runs the Python and JavaScript suites and rebuilds the identical HTML.
 The actual archive receives an SPDX file inventory; main-only OIDC jobs download
-the same bytes and verify exact source, workflow and signer attestations. No
-public licence is granted, no release is published, and no policy content or
+the same bytes and verify exact source, workflow and signer attestations. The
+package includes the project-owned code licence and retained third-party notices;
+no release is published, and no policy content or
 native service is processed. SharePoint remains the preferred structured-document
 route; packaging does not replace that preference or establish its availability.
 
