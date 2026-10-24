@@ -22,20 +22,21 @@ For modular source delivery, read `conductor/suite-delivery.md` and the ordered
 queue in `.careops/module.json`. Preserve the portable boundaries above, qualified
 CI and current native/file owners. Source guidance does not authorise deployment.
 
-## Runtime preference and qualified exceptions — 24 October 2026
+## Required runtime — latest supplied user instructions
 
-Prefer the newest suitable runtime/dependencies; the working default remains
-Python3.15.1. The user's later instruction permits another version when needed.
-Record the concrete reason/scope, select an explicit repo-local interpreter,
-verify its actual version and qualify its dependencies and behavior. Preserve
-working latest-version environments and in-flight operations. A scoped alternate
-is not an implicit older default or a reason to weaken functional/security gates.
+Use Python 3.15 at the newest qualified patch, currently 3.15.1, across all active
+repository development, builds, tests, automation, CI, containers and helpers.
+Explicitly select a repo-local interpreter and verify its actual version; align
+constraints, locks and current setup guidance. Qualify dependencies in isolation.
+Preserve working environments and native bindings until in-flight operations
+reach a terminal handover; report genuine blockers without downgrading.
 
-The pinned Atlas source requires Python below3.15, while the newer source contract
-has an unresolved unknown-evidence scenario. Its explicit compatibility profile
-uses .python-version-atlas, .venv-atlas and requirements-atlas.lock. This exception
-applies only to the optional read-only Atlas qualification; the PPG default,
-builds and core CI remain on3.15.1. Never select an external ATLAS/.venv implicitly.
+This supersedes the earlier scoped-exception policy. The Atlas 3.14 profile is
+remaining migration work, not current requirement satisfaction. Preserve its
+historical evidence while qualifying a compatible source/contract on 3.15.1;
+retire older active runners after a safe handover. Older literals may remain in
+immutable history or synthetic version-handling tests. See the existing plan's
+current requirements checklist; no new track or native operation is implied.
 
 PyYAML6.0.3 currently has no Linux CPython3.15 wheel. CI tool qualification permits
 its hash-verified source distribution explicitly; other tool dependencies retain
@@ -59,7 +60,7 @@ and reason; xfail needs a known issue/reason and strict=True. Neither is for spe
 Never retry native mutations, sends or real external effects through test plugins.
 Difftest0.3.0 failed actual3.15.1 qualification (PyO3 maximum3.14); do not install
 it with a compatibility override or change a working runtime just to adopt this
-optional selector. Necessary runtime exceptions follow the policy above.
+optional selector. Do not downgrade the required runtime to adopt an optional plugin.
 Rerunfailures16.7 is opt-in
 for bounded, diagnosed fictional/read-only transient cases with first failure
 visible; it must not turn flaky outcomes into clean acceptance.

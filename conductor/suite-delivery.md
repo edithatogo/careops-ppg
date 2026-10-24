@@ -245,3 +245,12 @@ production suitability, native Git and deployment-pipeline qualification separat
 A temporary Developer target does not become a durable production destination.
 Retain the working source runtime and immutable recovery packages. This portable
 procedure contains no tenant bindings or claim that a reader's target is qualified.
+
+
+## Latest supplied project instructions
+
+The [current requirements checklist](tracks/python315_qualification_20261023/plan.md#current-user-requirements--plan-amendment-24-october-2026)
+supersedes earlier runtime-exception guidance. Complete the active Atlas profile
+migration on Python 3.15.1 before claiming all-runtime compliance. Continue the
+selected no-additional-premium library-column route and qualify each structured
+output, preservation and recovery behavior before replacing its working output.
