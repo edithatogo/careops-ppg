@@ -120,8 +120,9 @@ def main():
 def build_qualification_flow(existing_flow, site, library_id, template, output_path, values):
     """Prepare an isolated copy/property probe. No API calls or package acceptance.
 
-    Reusing a destination is deliberately refused by SharePoint copyto. Recovery
-    reads and validates that file; it must never overwrite it on a blind retry.
+    CopyFileAsync preserves the ordinary template's filename in a fresh folder.
+    Existing destinations fail closed. Metadata writes require the actual item
+    response ETag and exact value readback; none of this refreshes Word body text.
     """
     import copy
     from urllib.parse import urlsplit
@@ -129,31 +130,44 @@ def build_qualification_flow(existing_flow, site, library_id, template, output_p
     from uuid import UUID
     library_id = str(UUID(library_id))
     origin = urlsplit(site)
-    if origin.scheme != 'https' or origin.query or origin.fragment or origin.username:
+    if origin.scheme != 'https' or not origin.hostname or origin.query or origin.fragment or origin.username:
         raise ValueError('invalid_site')
     source_path = template['ServerRelativeUrl']
     for path in (source_path, output_path):
-        if not path.startswith(origin.path + '/') or any(x in path for x in ("'", '?', '#', '..')):
+        if not path.startswith(origin.path + '/') or any(x in path for x in ("'", '?', '#', '..', '%', '\\', '\r', '\n')):
             raise ValueError('invalid_cover_path')
     if source_path == output_path:
         raise ValueError('preserve_template')
+    if '/forms/' in source_path.lower():
+        raise ValueError('ordinary_execution_template_required')
+    if not source_path.lower().endswith('.docx') or source_path.rsplit('/', 1)[-1] != output_path.rsplit('/', 1)[-1]:
+        raise ValueError('copy_requires_same_docx_filename')
+    template_uid = str(UUID(template['UniqueId']))
+    if not isinstance(template['ETag'], str) or not template['ETag'].strip() or any(c in template['ETag'] for c in '\r\n'):
+        raise ValueError('template_etag_required')
     props = existing_flow['properties']
     refs = props['connectionReferences']
     sp = refs.get('shared_sharepointonline', {})
-    if sp.get('tier') != 'Standard' or not sp.get('id', '').endswith('/shared_sharepointonline'):
+    sharepoint_api = '/providers/Microsoft.PowerApps/apis/shared_sharepointonline'
+    if sp.get('tier') != 'Standard' or sp.get('id') != sharepoint_api:
         raise ValueError('standard_sharepoint_binding_required')
     definition = copy.deepcopy(props['definition'])
     primitives = [x for x in definition['actions'].values()
                   if x.get('type') == 'OpenApiConnection'
                   and isinstance(x.get('inputs'), dict)
                   and isinstance(x['inputs'].get('host'), dict)
+                  and x['inputs']['host'].get('apiId') == sharepoint_api
                   and x['inputs']['host'].get('operationId') == 'HttpRequest'
                   and x['inputs']['host'].get('connectionName') == 'shared_sharepointonline']
     if not primitives:
         raise ValueError('qualified_sharepoint_primitive_required')
     def action(method, uri, after=None, body=None):
-        result = copy.deepcopy(primitives[0])
-        result['runAfter'] = {} if after is None else {after: ['Succeeded']}
+        # Native readbacks include API-injected authentication. Reuse the exact
+        # connector host/reference, not that transport annotation or old action
+        # settings. The supported Flow API supplies authentication on save.
+        result = {'type': 'OpenApiConnection', 'inputs': {
+            'host': copy.deepcopy(primitives[0]['inputs']['host'])},
+            'runAfter': {} if after is None else {after: ['Succeeded']}}
         params = {'dataset': site, 'parameters/method': method, 'parameters/uri': uri,
                   'parameters/headers': {'Accept': 'application/json;odata=nometadata',
                                          'Content-Type': 'application/json;odata=nometadata'}}
@@ -167,17 +181,53 @@ def build_qualification_flow(existing_flow, site, library_id, template, output_p
     actions = {'Read_template': action('GET', source + '?$select=UniqueId,ETag,Length')}
     actions['Require_pinned_template'] = {
         'type': 'If', 'runAfter': {'Read_template': ['Succeeded']},
-        'expression': {'and': [{'equals': ["@body('Read_template')?['UniqueId']", template['UniqueId']]},
+        'expression': {'and': [{'equals': ["@body('Read_template')?['UniqueId']", template_uid]},
                                {'equals': ["@body('Read_template')?['ETag']", template['ETag']]}]},
         'actions': {}, 'else': {'actions': {'Refuse_template_drift': {
             'type': 'Terminate', 'runAfter': {}, 'inputs': {'runStatus': 'Failed',
             'runError': {'code': 'TEMPLATE_CHANGED', 'message': 'Refresh the frozen template selection.'}}}}}}
-    actions['Copy_cover'] = action('POST', source + "/copyto(strnewurl='" + output_path + "',boverwrite=false)", 'Require_pinned_template', {})
-    actions['Read_cover_item'] = action('GET', target + '/ListItemAllFields', 'Copy_cover')
+    def connector_action(operation, parameters, after):
+        result = action('GET', '', after)
+        result['inputs']['host']['operationId'] = operation
+        result['inputs']['parameters'] = parameters
+        return result
+    actions['Read_template_metadata'] = connector_action('GetFileMetadataByPath',
+        {'dataset': site, 'path': source_path[len(origin.path):]}, 'Require_pinned_template')
+    actions['Copy_cover'] = connector_action('CopyFileAsync', {
+        'dataset': site,
+        'parameters/sourceFileId': "@body('Read_template_metadata')?['Id']",
+        'parameters/destinationDataset': site,
+        'parameters/destinationFolderPath': output_path[len(origin.path):].rsplit('/', 1)[0],
+        'parameters/nameConflictBehavior': 0}, 'Read_template_metadata')
+    actions['Read_template_after_copy'] = action('GET', source + '?$select=UniqueId,ETag,Length', 'Copy_cover')
+    actions['Require_same_template_revision'] = copy.deepcopy(actions['Require_pinned_template'])
+    again = actions['Require_same_template_revision']
+    again['runAfter'] = {'Read_template_after_copy': ['Succeeded']}
+    for condition in again['expression']['and']:
+        condition['equals'][0] = condition['equals'][0].replace("body('Read_template')", "body('Read_template_after_copy')")
+    again['else']['actions']['Refuse_template_drift_after_copy'] = again['else']['actions'].pop('Refuse_template_drift')
+    actions['Read_cover_item'] = action('GET', target + '/ListItemAllFields', 'Require_same_template_revision')
+    def refuse(code, message):
+        return {'type': 'Terminate', 'runAfter': {}, 'inputs': {'runStatus': 'Failed',
+                'runError': {'code': code, 'message': message}}}
+    actions['Require_cover_item_etag'] = {
+        'type': 'If', 'runAfter': {'Read_cover_item': ['Succeeded']},
+        'expression': {'and': [{'not': {'equals': [
+            "@coalesce(outputs('Read_cover_item')?['headers']?['ETag'],'')", '']}}]},
+        'actions': {}, 'else': {'actions': {'Refuse_missing_etag': refuse(
+            'READ_ETAG_MISSING', 'No metadata write without the actual response ETag.')}}}
     actions['Populate_cover_properties'] = action('POST',
-        "@concat('_api/web/lists(guid''" + library_id + "'')/items(',string(body('Read_cover_item')?['Id']),')/ValidateUpdateListItem')",
-        'Read_cover_item', {'formValues': [{'FieldName': k, 'FieldValue': v} for k, v in values.items()], 'bNewDocumentUpdate': False})
+        "@concat('_api/web/lists(guid''" + library_id + "'')/items(',string(body('Read_cover_item')?['Id']),')')",
+        'Require_cover_item_etag', values)
+    actions['Populate_cover_properties']['inputs']['parameters']['parameters/headers'].update({
+        'IF-MATCH': "@outputs('Read_cover_item')?['headers']?['ETag']", 'X-HTTP-Method': 'MERGE'})
     actions['Read_saved_properties'] = action('GET', target + '/ListItemAllFields', 'Populate_cover_properties')
+    actions['Require_saved_values'] = {
+        'type': 'If', 'runAfter': {'Read_saved_properties': ['Succeeded']},
+        'expression': {'and': [{'equals': ["@body('Read_saved_properties')?['" + name + "']", values[name]]}
+                               for name in FIELDS]},
+        'actions': {}, 'else': {'actions': {'Refuse_metadata_mismatch': refuse(
+            'METADATA_MISMATCH', 'Readback must match the accepted values.')}}}
     definition['actions'] = actions
     # This is a manually invoked qualification graph, never an automatic schedule.
     definition['triggers'] = {'manual': {'type': 'Request', 'kind': 'Button',

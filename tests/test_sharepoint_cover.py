@@ -30,14 +30,18 @@ class CoverTests(unittest.TestCase):
         base={'properties':{'displayName':'Fictional','connectionReferences':{'shared_sharepointonline':{'tier':'Standard','id':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline'}},'definition':{'actions':{
             'Compose':{'type':'Compose','inputs':'@triggerBody()'},
             'Empty':{'type':'Compose','inputs':None},
-            'Read':{'type':'OpenApiConnection','inputs':{'host':{'operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'parameters':{}}}}}}}
+            'Read':{'type':'OpenApiConnection','inputs':{'host':{'apiId':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline','operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'authentication':"@parameters('$authentication')",'parameters':{}}}}}}}
         before=copy.deepcopy(base)
-        pin={'ServerRelativeUrl':'/sites/test/template.docx','UniqueId':'fictional','ETag':'"1"'}
-        args=('https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',pin,'/sites/test/new.docx',values)
+        pin={'ServerRelativeUrl':'/sites/test/template.docx','UniqueId':'22222222-2222-4222-8222-222222222222','ETag':'"1"'}
+        args=('https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',pin,'/sites/test/outputs/template.docx',values)
         result=build_qualification_flow(base,*args)
         self.assertEqual(base,before)
         self.assertNotIn('Compose',result['properties']['definition']['actions'])
         self.assertEqual(result['properties']['definition']['actions']['Read_template']['inputs']['host']['operationId'],'HttpRequest')
+        self.assertNotIn('authentication',result['properties']['definition']['actions']['Read_template']['inputs'])
+        base['properties']['definition']['actions']['Read']['inputs']['host']['apiId']='/providers/Microsoft.PowerApps/apis/other_connector'
+        with self.assertRaisesRegex(ValueError,'qualified_sharepoint_primitive_required'):
+            build_qualification_flow(base,*args)
         del base['properties']['definition']['actions']['Read']
         with self.assertRaisesRegex(ValueError,'qualified_sharepoint_primitive_required'):
             build_qualification_flow(base,*args)
@@ -62,13 +66,51 @@ class CoverTests(unittest.TestCase):
         v['PPGCoverTitle']='x'*256
         with self.assertRaises(ValueError):inspect_cover(raw,v)
     def test_probe_is_standard_copy_only_and_preserves_template(self):
-        _,values=fixture();base={'properties':{'displayName':'Fictional','connectionReferences':{'shared_sharepointonline':{'tier':'Standard','id':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline'}},'definition':{'actions':{'Read':{'type':'OpenApiConnection','inputs':{'host':{'operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'parameters':{}}}}}}}
-        pin={'ServerRelativeUrl':'/sites/test/template.docx','UniqueId':'fictional','ETag':'"1"'}
-        flow=build_qualification_flow(base,'https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',pin,'/sites/test/new.docx',values)
+        _,values=fixture();base={'properties':{'displayName':'Fictional','connectionReferences':{'shared_sharepointonline':{'tier':'Standard','id':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline'}},'definition':{'actions':{'Read':{'type':'OpenApiConnection','inputs':{'host':{'apiId':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline','operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'parameters':{}}}}}}}
+        pin={'ServerRelativeUrl':'/sites/test/template.docx','UniqueId':'22222222-2222-4222-8222-222222222222','ETag':'"1"'}
+        flow=build_qualification_flow(base,'https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',pin,'/sites/test/outputs/template.docx',values)
         self.assertEqual(flow['properties']['state'],'Stopped')
         copy=flow['properties']['definition']['actions']['Copy_cover']['inputs']
-        self.assertIn('boverwrite=false',copy['parameters']['parameters/uri'])
+        self.assertEqual(copy['host']['operationId'],'CopyFileAsync')
+        self.assertEqual(copy['parameters']['parameters/nameConflictBehavior'],0)
+        self.assertEqual(copy['parameters']['parameters/destinationFolderPath'],'/outputs')
         self.assertEqual(copy['retryPolicy'],{'type':'none'})
+        actions=flow['properties']['definition']['actions']
+        self.assertEqual(actions['Read_template_metadata']['inputs']['parameters']['path'],'/template.docx')
+        self.assertEqual(actions['Copy_cover']['runAfter'],{'Read_template_metadata':['Succeeded']})
+        self.assertEqual(actions['Read_template_after_copy']['runAfter'],{'Copy_cover':['Succeeded']})
+        self.assertEqual(actions['Read_cover_item']['runAfter'],{'Require_same_template_revision':['Succeeded']})
+        self.assertEqual(actions['Require_same_template_revision']['expression']['and'][1]['equals'],
+            ["@body('Read_template_after_copy')?['ETag']",pin['ETag']])
+        write=actions['Populate_cover_properties']
+        self.assertEqual(write['runAfter'],{'Require_cover_item_etag':['Succeeded']})
+        headers=write['inputs']['parameters']['parameters/headers']
+        self.assertEqual(headers['IF-MATCH'],"@outputs('Read_cover_item')?['headers']?['ETag']")
+        self.assertEqual(headers['X-HTTP-Method'],'MERGE')
+        import json
+        self.assertEqual(json.loads(write['inputs']['parameters']['parameters/body']),values)
+        self.assertIn('Refuse_missing_etag',actions['Require_cover_item_etag']['else']['actions'])
+        self.assertIn('Refuse_metadata_mismatch',actions['Require_saved_values']['else']['actions'])
+        self.assertEqual(len(actions['Require_saved_values']['expression']['and']),len(FIELDS))
+        self.assertEqual(actions['Require_saved_values']['runAfter'],{'Read_saved_properties':['Succeeded']})
+        for a in actions.values():
+            if a['type']=='OpenApiConnection':
+                self.assertEqual(a['inputs']['retryPolicy'],{'type':'none'})
+                self.assertEqual(a['inputs']['host']['connectionName'],'shared_sharepointonline')
+        self.assertEqual(flow['properties']['connectionReferences'],base['properties']['connectionReferences'])
+        self.assertEqual(list(flow['properties']['definition']['triggers']),['manual'])
         with self.assertRaisesRegex(ValueError,'preserve_template'):build_qualification_flow(base,'https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',pin,pin['ServerRelativeUrl'],values)
+        for source,target,error in [
+            ('/sites/test/Forms/template.docx','/sites/test/outputs/template.docx','ordinary_execution_template_required'),
+            ('/sites/test/template.docx','/sites/test/outputs/renamed.docx','copy_requires_same_docx_filename'),
+            ('/sites/test/template.pdf','/sites/test/outputs/template.pdf','copy_requires_same_docx_filename'),
+            ('/sites/test/template.docx','/sites/other/template.docx','invalid_cover_path'),
+            ('/sites/test/%27template.docx','/sites/test/outputs/%27template.docx','invalid_cover_path'),
+            ('/sites/test/template.docx','/sites/test/%2e%2e/outputs/template.docx','invalid_cover_path')]:
+            with self.subTest(source=source,target=target):
+                with self.assertRaisesRegex(ValueError,error):
+                    build_qualification_flow(base,'https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',dict(pin,ServerRelativeUrl=source),target,values)
+        with self.assertRaisesRegex(ValueError,'template_etag_required'):
+            build_qualification_flow(base,'https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',dict(pin,ETag=''),'/sites/test/outputs/template.docx',values)
 
 if __name__=='__main__':unittest.main()
