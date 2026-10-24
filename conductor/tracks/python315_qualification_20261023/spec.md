@@ -2,19 +2,20 @@
 
 ## Objective and acceptance
 
-The user's 24 October clarification supersedes the earlier mandatory-version rule:
-prefer the latest suitable dependency/runtime, but another version is permitted
-when needed. Keep the working Python 3.15.1 default for development, builds,
-core tests and CI. Inventory every active use and any explicit compatibility
-profile; verify actual repo-local interpreters and align constraints, hash locks,
-dependencies and current instructions. Record the concrete reason and scope of
-each exception, qualify its real behavior and preserve working latest-version
-environments/in-flight operations. Do not introduce an implicit older default.
+The latest supplied project instructions require Python 3.15 at the newest
+qualified patch, currently 3.15.1, for every active repository use, including
+optional compatibility runners. Explicitly select and verify repo-local
+interpreters; align constraints, locks, dependencies, CI, containers and current
+setup guidance. Qualify changes in isolation and preserve in-flight operations
+until terminal handover. Older active runners remain migration work; historical
+qualification does not make them current exceptions. Preserve historical/version
+fixtures and report genuine blockers without downgrading or claiming completion.
 
-Reuse [merged runtime evidence](https://github.com/edithatogo/careops-ppg/pull/25);
-test gaps and changed behavior. Require affected structure/privacy checks,
-current-head qualification and post-merge main verification. Necessary scoped
-version exceptions are not policy blockers; functionality/security gates remain.
+Reuse unchanged merged runtime evidence, then qualify changed behavior and gaps.
+Follow the current requirements checklist in [the plan](plan.md#current-user-requirements--plan-amendment-24-october-2026),
+including structured-output preservation and targeted testing. Require affected
+structure/privacy checks and exact-head hosted results. Native acceptance and
+runtime migration remain separate from a planning PR's successful CI.
 
 ## Preservation
 

@@ -1,5 +1,9 @@
 # Plan
 
+The latest supplied project requirements below supersede conflicting runtime
+exception language in dated checkpoints. Completed historical trials remain
+evidence for their original scope, not acceptance of the revised requirement.
+
 ## Phase 1 — Inventory
 
 - [x] P1.1 Inventory every active Python surface and distinguish historical/version-test fixtures.
@@ -225,3 +229,77 @@ is a separate cited-evidence increment. Its source graph/fictional controls do n
 close native retrieval, per-caller permission, extraction/hash, citation or
 conversational-assistant acceptance. Retain native receipts with their existing
 owner and preserve the Studio draft. No new runtime or goal is inferred.
+
+
+## Current user requirements — plan amendment, 24 October 2026
+
+This amendment incorporates the newly supplied project instructions. It plans
+remaining work; unchecked items are not implementation or native acceptance.
+Preserve existing file/native-object owners and finish in-flight operations
+before handing over an environment or replacing an output.
+
+### Structured outputs and library columns
+
+- [x] Keep the no-additional-premium alternatives in Phase 4. Evaluate preferred
+  SharePoint structured document generation first for each selected output;
+  record the specific entitlement or behavior gap before using the simplest
+  supported fallback. Microsoft's current documentation requires a Copilot
+  licence for form creators; ordinary library columns and the Standard
+  SharePoint connector are separate capabilities. No subscription, billing,
+  consent or tenant-settings change is authorised by this plan.
+- [ ] For the next selected document shape, reuse maintained Word templates and
+  structured inputs from the existing authority. Keep calculations, record
+  selection, identity and business decisions in their current layers. Reuse
+  existing columns/content types and verify exact internal names and types.
+- [ ] Retain document kind, source/occurrence/period identity, source and template
+  versions, included record identities and generated output revision in existing
+  records. Preserve unresolved content, human edits and issued history. Do not
+  create a duplicate register or approval workflow to satisfy this requirement.
+- [ ] Complete P4.3–P4.5 for the selected output: inspect actual saved output and
+  links, variable-length/repeating content, optional sections, desktop/browser
+  editing, access and interrupted retry/recovery. Check metadata persistence and
+  visible Word-body rendering separately. Record unsupported behavior and retain
+  the working fallback. A valid template, successful flow or source CI is not
+  proof of the generated result.
+- [ ] Migrate each existing output only after demonstrated parity and recovery;
+  keep its working predecessor and in-flight operations until then. Generation
+  supplies no substantive review, approval, circulation or status change.
+
+### Python 3.15 across active repository uses
+
+- [ ] Reconcile every active Python surface to Python 3.15 at the newest qualified
+  patch, currently 3.15.1: development, build, test, automation, CI matrices,
+  containers and helper scripts. Select a repo-local interpreter explicitly and
+  record its actual version; align constraints, locks and current setup guidance.
+- [ ] Resolve the optional Atlas integration under that requirement. The earlier
+  Python 3.14 compatibility trial remains historical evidence only. Its current
+  runner/profile is an outstanding migration item, not an accepted exception or
+  completion proof. Qualify the compatible Atlas candidate and its dependencies
+  in isolation, including the unresolved unknown-evidence scenario, before
+  promoting source/contract pins or retiring the older active runner.
+- [ ] Remove older active defaults and compatibility runners at a safe terminal
+  handover. Preserve private work, source history and native bindings. Older
+  literals may remain in immutable historical evidence or deliberate version
+  tests. Report genuine incompatibilities without downgrading or claiming the
+  migration complete. Do not send email or messages to perform the migration.
+
+### Verification and PR completion
+
+- [ ] During implementation, use exact affected test files/nodes or native runner
+  selectors and reuse unchanged evidence. Preserve pytest cacheprovider per
+  worktree/environment. For failure-only reruns use `--lf
+  --last-failed-no-failures=none`; an empty selection verifies no tests. Do not
+  put selection flags in global addopts or present partial coverage as full.
+- [ ] Retain full integration, clean-package, coverage, security and release gates
+  at coherent milestones. Qualify optional test plugins on repo-local 3.15 first;
+  do not bypass the recorded pytest-difftest 0.3.0 PyO3 incompatibility. Default
+  to zero retries; never retry native mutations or email through test runners.
+  Capability skips need a real condition/reason; known-issue xfails need a reason
+  and strict=True. Other test frameworks keep meaningful focused selectors.
+- [ ] Open this plan amendment as a PR and verify GitHub Actions against its exact
+  head. Report plan/source verification separately from pending runtime migration
+  and native output qualification. Keep private operational evidence outside Git.
+
+References checked for this amendment: [structured document prerequisites](https://learn.microsoft.com/en-us/sharepoint/copilot-in-sharepoint-structured-document-generation#prerequisites),
+[Standard SharePoint connector and actions](https://learn.microsoft.com/en-us/connectors/sharepointonline/),
+[library column types](https://support.microsoft.com/en-us/sharepoint/lists/data-and-lists/list-and-library-column-types-and-options).
