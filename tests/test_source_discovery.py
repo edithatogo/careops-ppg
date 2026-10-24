@@ -73,6 +73,17 @@ class SourceDiscoveryTests(unittest.TestCase):
         self.assertEqual(result['links'][1]['fetchURL'], BASE+'/files//resource.pdf')
         self.assertEqual(result['links'][1]['fragment'], 'page=2')
 
+    def test_resource_index_interactive_controls_are_retained_without_becoming_acquisition_targets(self):
+        for attrs in ['role="button"', 'aria-controls="feedback-form"',
+                      'data-ajax-target="#feedback-form"', 'data-dialog-type="modal"']:
+            raw = publication('<a href="/feedback?target=form" '+attrs+'>Feedback</a>'
+                              '<a href="/resource">Resource</a>')
+            result = parse_resource_index(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+            self.assertEqual(result['linkOccurrenceCount'], 2)
+            self.assertEqual(result['links'][0]['status'], 'interaction-control')
+            self.assertEqual(result['links'][0]['fetchURL'], BASE+'/feedback?target=form')
+            self.assertEqual(result['links'][1]['status'], 'allowed-link-observation')
+
     def test_resource_index_refuses_shape_access_and_navigation_errors(self):
         good = publication('<a href="/resource">Resource</a>')
         for raw in [good.replace(b'<h1>Fictional framework</h1>', b'<h1>Different title</h1>'),

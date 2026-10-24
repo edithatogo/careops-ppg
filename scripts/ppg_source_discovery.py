@@ -381,7 +381,9 @@ class _Publication(HTMLParser):
             if self.include_navigation:
                 self.link.update(inNavigation=self.navigation_depth > 0,
                                  relRaw=attrs.get('rel'),
-                                 relTokens=(attrs.get('rel') or '').lower().split())
+                                 relTokens=(attrs.get('rel') or '').lower().split(),
+                                 roleRaw=attrs.get('role'), ariaControls=attrs.get('aria-controls'),
+                                 ajaxTarget=attrs.get('data-ajax-target'), dialogType=attrs.get('data-dialog-type'))
 
     def handle_data(self, data):
         if not self.in_main or self.ignore:
@@ -452,8 +454,12 @@ def parse_resource_index(data, source_url, allowed_origins, expected_title):
             except ValueError as exc:
                 observed.update(status='held-locator', reason=str(exc))
             else:
-                observed.update(**resolved, status=('same-page-navigation'
-                    if resolved['fetchURL'] == source_url else 'allowed-link-observation'))
+                interactive = ((link['roleRaw'] or '').strip().lower() == 'button'
+                               or any(link[k] for k in ('ariaControls', 'ajaxTarget', 'dialogType')))
+                observed.update(**resolved, status=('interaction-control' if interactive else
+                    'same-page-navigation' if resolved['fetchURL'] == source_url else 'allowed-link-observation'))
+                if interactive:
+                    observed['reason'] = 'anchor declares an interaction role or controlled UI target; do not acquire automatically'
         links.append(observed)
     if not links:
         raise ValueError('no resource-index link observations found')

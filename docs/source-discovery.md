@@ -67,8 +67,11 @@ origins and retain the returned source hash with the original capture.
   Main-region navigation remains visible with an `inNavigation` marker; `rel`
   values and next/previous hints are retained without following them. Scripts,
   styles, templates and outside-main navigation cannot supply resource entries.
-  Same-page anchors, allowed links, missing locators and held external/unsupported
-  locators are distinct observations. A held link is retained with its reason;
+  Same-page anchors, allowed links, missing locators, interactive controls and held
+  external/unsupported locators are distinct observations. Anchors declaring a
+  button role, controlled UI target, Ajax target or dialog are interaction controls;
+  retain their attributes and resolved locator for review instead of automatically
+  acquiring feedback forms or modal endpoints. A held link is retained with its reason;
   it is never requested or silently dropped. Keep original href, text, heading,
   ordinal and resolved URL/fragment provenance. Pagination completeness and
   publication coverage remain false, even when no pagination hint is found;
