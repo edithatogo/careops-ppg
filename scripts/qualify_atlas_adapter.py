@@ -1,11 +1,9 @@
-"""Qualify the fictional Atlas -> PPG package using the repo Python runtime.
+"""Qualify the fictional Atlas -> PPG package on repo-local Python 3.15.1.
 
-Run with .venv-atlas/bin/python scripts/qualify_atlas_adapter.py
---atlas-root ATLAS --atlas-compatibility. The maintained source pin requires
-Python >=3.14,<3.15; the explicit compatibility profile preserves that contract
-while the default PPG runtime remains Python 3.15.1. Install requirements-atlas.lock
-into that repo-local environment. ATLAS/.venv is never selected implicitly.
-Atlas code/data are not modified. All fixture DBs and jobs use a temporary folder.
+Run .venv-atlas/bin/python scripts/qualify_atlas_adapter.py --atlas-root ATLAS
+--atlas-profile after installing requirements-atlas.lock. The default selects
+.venv; both explicitly selected profiles require the same current Python pin.
+Atlas source/contracts/data are not modified. All fixture DBs/jobs are temporary.
 """
 from __future__ import annotations
 import argparse
@@ -18,19 +16,19 @@ import tempfile
 import tomllib
 import zipfile
 from pathlib import Path
-from ppg_atlas_adapter import AdapterError, ATLAS_COMMIT, CONTRACT_SHA256, capture, digest, encoded, supporting_files, query_parameters
+from ppg_atlas_adapter import AdapterError, ATLAS_COMMIT, CONTRACT_SHA256, capture, digest, encoded, supporting_files, query_parameters, capture_comparison, supporting_comparison_files
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def require_atlas_runtime(metadata, *, atlas_compatibility=False):
+def require_atlas_runtime(metadata):
     """Refuse unsupported pinned source before importing or executing Atlas."""
-    expected = '>=3.14,<3.15' if atlas_compatibility else '>=3.15,<3.16'
+    expected = '>=3.15,<3.16'
     if metadata.get('project', {}).get('requires-python') != expected:
         raise AdapterError('consumer_runtime_constraint_unqualified')
 
-def require_repo_runtime(version=None, executable=None, *, atlas_compatibility=False):
-    pin = '.python-version-atlas' if atlas_compatibility else '.python-version'
-    environment = '.venv-atlas' if atlas_compatibility else '.venv'
+def require_repo_runtime(version=None, executable=None, *, atlas_profile=False):
+    pin = '.python-version-atlas' if atlas_profile else '.python-version'
+    environment = '.venv-atlas' if atlas_profile else '.venv'
     expected = tuple(int(part) for part in (ROOT / pin).read_text().strip().split('.'))
     actual = tuple(sys.version_info[:3]) if version is None else tuple(version)
     expected_executable = (ROOT / environment / ('Scripts/python.exe' if sys.platform == 'win32'
@@ -44,24 +42,23 @@ def require_repo_runtime(version=None, executable=None, *, atlas_compatibility=F
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--atlas-root', required=True, type=Path)
-    parser.add_argument('--atlas-compatibility', action='store_true',
-                        help='Use only the explicit repo-local Atlas compatibility runtime.')
+    parser.add_argument('--atlas-profile', action='store_true',
+                        help='Use only the explicit repo-local Atlas isolated Python 3.15 runtime.')
     args = parser.parse_args(); atlas = args.atlas_root.resolve()
-    require_repo_runtime(atlas_compatibility=args.atlas_compatibility)
+    require_repo_runtime(atlas_profile=args.atlas_profile)
     def git(*args):
         return subprocess.check_output(['git', '-C', str(atlas), *args], text=True).strip()
     if git('rev-parse', 'HEAD') != ATLAS_COMMIT:
         raise AdapterError('consumer_commit_drift')
-    if git('status', '--porcelain', '--', 'src', 'tests/test_query_service.py', 'contracts/openapi-readonly-v1.json', 'pyproject.toml'):
+    if git('status', '--porcelain', '--', 'src', 'tests', 'contracts/openapi-readonly-v1.json', 'pyproject.toml'):
         raise AdapterError('consumer_working_source_drift')
-    require_atlas_runtime(tomllib.loads((atlas/'pyproject.toml').read_text()),
-                          atlas_compatibility=args.atlas_compatibility)
+    require_atlas_runtime(tomllib.loads((atlas/'pyproject.toml').read_text()))
     if digest((atlas/'contracts/openapi-readonly-v1.json').read_bytes()) != CONTRACT_SHA256:
         raise AdapterError('consumer_contract_drift')
-    sys.path.insert(0, str(atlas/'src'))
+    sys.path[:0] = [str(atlas/'src'), str(atlas)]
     from fastapi.testclient import TestClient
     from global_medicines_atlas.api import create_app
-    from global_medicines_atlas.product_contracts import EvidenceResponse
+    from global_medicines_atlas.product_contracts import EvidenceResponse, ComparisonResponse
     from global_medicines_atlas.query_service import ReadOnlyQueryService
     fixture_spec = importlib.util.spec_from_file_location('atlas_existing_fictional_fixture', atlas/'tests/test_query_service.py')
     fixture = importlib.util.module_from_spec(fixture_spec); fixture_spec.loader.exec_module(fixture)
@@ -84,6 +81,29 @@ def main():
             files = supporting_files(raw, query, case, 'fictional-v1', EvidenceResponse, captured['sha256'])
             missing = capture(client, {**query, 'concept_id': 'fictional-missing-concept'})['bytes']
             refuse(missing, 'no_evidence_no_conclusion')
+            comparison_query = {**query, 'jurisdictions': ['NZ', 'AU', 'US'],
+                                'dimensions': ['regulatory', 'funding']}
+            compared = capture_comparison(client, comparison_query)
+            comparison_files = supporting_comparison_files(
+                compared['bytes'], comparison_query, case, 'fictional-v1',
+                ComparisonResponse, compared['sha256'])
+            conclusions = json.loads(compared['bytes'])['conclusions']
+            states = {(x['jurisdiction'], x['dimension']): (x['state'], x['status_code'])
+                      for x in conclusions}
+            assert states['US', 'regulatory'] == ('unknown', None)
+            assert states['AU', 'funding'] == ('not_covered', None)
+            assert ('US', 'funding') not in states
+            missing_comparison_query = {**comparison_query, 'concept_id': 'fictional-missing-concept'}
+            absent = capture_comparison(client, missing_comparison_query)
+            try:
+                supporting_comparison_files(absent['bytes'], missing_comparison_query, case,
+                                            'fictional-v1', ComparisonResponse, absent['sha256'])
+            except AdapterError as exc:
+                assert str(exc) == 'no_evidence_no_conclusion'
+            else:
+                raise AssertionError('Missing comparison inferred as a negative')
+            checks.extend(['actual_comparison_api_200', 'unknown_preserved',
+                           'not_covered_preserved', 'missing_coverage_not_inferred'])
         value = json.loads(raw)
         assert len(value['evidence']) == 3
         assert {x['dimension'] for x in value['evidence']} == {'regulatory', 'funding'}
@@ -123,10 +143,52 @@ def main():
             else:
                 raise AssertionError('Private/ambiguous/incomplete query accepted')
         checks.append('private_ambiguous_incomplete_queries_refused')
-        # Unknown is retained as unknown, never inferred into a negative assertion.
-        unknown = copy.deepcopy(value); unknown['evidence'][0]['state'] = 'unknown'
-        unknown_files = adapt(encoded(unknown)); assert json.loads(unknown_files[0]['bytes'])['evidence'][0]['state'] == 'unknown'
-        checks.append('unknown_preserved')
+        # An evidence row carrying a positive status cannot be relabelled unknown.
+        refuse(altered(lambda v: v['evidence'][0].update(state='unknown')), 'schema_drift')
+        comparison_receipt = json.loads(comparison_files[1]['bytes'])
+        assert comparison_receipt['conclusions'] == conclusions
+        assert comparison_receipt['sourceBytesVerified'] is False
+        assert comparison_receipt['missingCellsInferred'] is False
+        files += comparison_files
+
+        def refuse_comparison(edit, code):
+            changed = copy.deepcopy(json.loads(compared['bytes'])); edit(changed)
+            body = encoded(changed)
+            try:
+                supporting_comparison_files(body, comparison_query, case, 'fictional-v1',
+                                            ComparisonResponse, digest(body))
+            except AdapterError as exc:
+                assert str(exc) == code, (str(exc), code)
+            else:
+                raise AssertionError('Invalid comparison accepted: ' + code)
+            checks.append('comparison_' + code)
+        refuse_comparison(lambda v: v.update(new_schema_field=True), 'schema_drift')
+        refuse_comparison(lambda v: v['metadata'].update(evidence_version='999'), 'schema_drift')
+        refuse_comparison(lambda v: v['metadata']['page'].update(next_cursor='abcdefghijklmnop'), 'incomplete_page')
+        refuse_comparison(lambda v: v['metadata']['clocks'].update(valid_at='2026-07-30T00:00:00Z'), 'query_clock_mismatch')
+        refuse_comparison(lambda v: v['conclusions'][0].update(concept_id='another-concept'), 'lookup_identity_mismatch')
+        refuse_comparison(lambda v: v['conclusions'][0].update(jurisdiction='GB'), 'comparison_filter_mismatch')
+        refuse_comparison(lambda v: v['conclusions'][0].update(status_code='not_approved'), 'schema_drift')
+        def duplicate_conclusion(v):
+            v['conclusions'].append(copy.deepcopy(v['conclusions'][0]))
+            v['metadata']['page']['returned'] += 1
+        refuse_comparison(duplicate_conclusion, 'duplicate_conclusion')
+        def contradictory_comparison(v):
+            pinned = next(x for x in v['conclusions'] if x['provenance'] and
+                          x['provenance'][0].get('source_version') and
+                          x['provenance'][0].get('source_sha256'))
+            other = next(x for x in v['conclusions'] if x is not pinned and x['provenance'])
+            other['provenance'] = copy.deepcopy(pinned['provenance'])
+            other['provenance'][0]['source_sha256'] = 'b' * 64
+        refuse_comparison(contradictory_comparison, 'contradictory_provenance')
+        try:
+            supporting_comparison_files(compared['bytes'] + b' ', comparison_query, case,
+                                        'fictional-v1', ComparisonResponse, compared['sha256'])
+        except AdapterError as exc:
+            assert str(exc) == 'response_hash_mismatch'
+        else:
+            raise AssertionError('Tampered comparison accepted')
+        checks.append('comparison_response_hash_mismatch')
         class DeniedClient:
             base_url = 'http://testserver'
             def get(self, path, **kwargs):
@@ -198,7 +260,7 @@ def main():
         response_path = evidence/('atlas-response-' + digest(raw) + '.json')
         response_path.write_bytes(raw)
         (evidence/('package-' + digest(package_bytes) + '.zip')).write_bytes(package_bytes)
-        proof = {'atlasCommit': ATLAS_COMMIT, 'contractSHA256': CONTRACT_SHA256, 'responseSHA256': digest(raw), 'packageSHA256': digest(package_bytes), 'checks': checks, 'runtimeProfile': 'atlas-compatibility' if args.atlas_compatibility else 'default', 'pythonVersion': '.'.join(map(str,sys.version_info[:3])), 'scope': 'Actual local Atlas API with fictional database -> existing PPG assembler; no hosted/native deployment, real data or clinical acceptance', 'sourceWrites': False, 'caseWrites': False}
+        proof = {'atlasCommit': ATLAS_COMMIT, 'contractSHA256': CONTRACT_SHA256, 'responseSHA256': digest(raw), 'comparisonResponseSHA256': compared['sha256'], 'packageSHA256': digest(package_bytes), 'checks': checks, 'runtimeProfile': 'atlas-python315' if args.atlas_profile else 'default', 'pythonVersion': '.'.join(map(str,sys.version_info[:3])), 'scope': 'Actual local Atlas API with fictional database -> existing PPG assembler; no hosted/native deployment, real data or clinical acceptance', 'sourceWrites': False, 'caseWrites': False}
         (evidence/('qualification-' + digest(encoded(proof)) + '.json')).write_bytes(encoded(proof))
         print(json.dumps(proof))
 

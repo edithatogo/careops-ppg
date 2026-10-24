@@ -31,12 +31,11 @@ constraints, locks and current setup guidance. Qualify dependencies in isolation
 Preserve working environments and native bindings until in-flight operations
 reach a terminal handover; report genuine blockers without downgrading.
 
-This supersedes the earlier scoped-exception policy. The Atlas 3.14 profile is
-remaining migration work, not current requirement satisfaction. Preserve its
-historical evidence while qualifying a compatible source/contract on 3.15.1;
-retire older active runners after a safe handover. Older literals may remain in
-immutable history or synthetic version-handling tests. See the existing plan's
-current requirements checklist; no new track or native operation is implied.
+This supersedes the earlier scoped-exception policy. The optional Atlas profile
+uses the same Python 3.15.1 pin and preserves actual unknown/not-covered results
+through its existing comparison API. Older compatibility trials remain historical
+evidence, not active runners. Keep runtime/source/contract qualification and
+native acceptance separate; no new track or native operation is implied.
 
 PyYAML6.0.3 currently has no Linux CPython3.15 wheel. CI tool qualification permits
 its hash-verified source distribution explicitly; other tool dependencies retain

@@ -19,18 +19,15 @@ class PythonRuntimeTests(unittest.TestCase):
             with self.subTest(metadata=metadata):
                 with self.assertRaisesRegex(AdapterError, 'consumer_runtime_constraint_unqualified'):
                     require_atlas_runtime(metadata)
-        require_atlas_runtime({'project': {'requires-python': '>=3.14,<3.15'}}, atlas_compatibility=True)
-        with self.assertRaisesRegex(AdapterError, 'consumer_runtime_constraint_unqualified'):
-            require_atlas_runtime({'project': {'requires-python': '>=3.15,<3.16'}}, atlas_compatibility=True)
-
-    def test_atlas_compatibility_is_explicit_and_uses_its_own_pin_and_environment(self):
+    def test_isolated_atlas_profile_requires_the_same_current_python(self):
         version = tuple(int(part) for part in (ROOT / '.python-version-atlas').read_text().strip().split('.'))
+        self.assertEqual(version, (3, 15, 1))
         executable = (ROOT / '.venv-atlas' / ('Scripts/python.exe' if sys.platform == 'win32' else 'bin/python')).absolute()
-        require_repo_runtime(version, executable, atlas_compatibility=True)
+        require_repo_runtime(version, executable, atlas_profile=True)
         with self.assertRaisesRegex(RuntimeError, 'Requires repository Python'):
-            require_repo_runtime(version, executable)
+            require_repo_runtime((3, 14, 9), executable, atlas_profile=True)
         with self.assertRaisesRegex(RuntimeError, 'Requires repository interpreter'):
-            require_repo_runtime(version, ROOT / 'ATLAS/.venv/bin/python', atlas_compatibility=True)
+            require_repo_runtime(version, ROOT / 'ATLAS/.venv/bin/python', atlas_profile=True)
 
     def test_atlas_helper_accepts_only_the_repo_python_pin_and_interpreter(self):
         version = tuple(int(part) for part in (ROOT / '.python-version').read_text().strip().split('.'))

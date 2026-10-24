@@ -27,16 +27,12 @@ evidence for their original scope, not acceptance of the revised requirement.
 
 A track or prompt is not an armed goal or completed runtime migration. Shared chat goal creation was rejected due to its unfinished goal.
 
-The library-column route below is the selected next implementation approach. The
-earlier Atlas upstream blocker is superseded: Atlas PR #1295 merged its Python
-3.15.1 migration. Qualification of PPG's pinned Atlas integration remains a
-separate task; the existing consumer pin is retained pending full qualification.
-
-The later integration probe below retains the existing Atlas pin: the migrated
-candidate has not passed the full consumer qualification. Runtime checks now
-refuse source that does not match the explicitly selected runtime profile before
-importing it. The user's later clarification permits the qualified Atlas
-compatibility profile below; the default remains Python 3.15.1.
+The library-column route remains the selected document implementation approach.
+The current Atlas integration amendment below supersedes the earlier runtime and
+unknown-evidence holds: the pinned migrated source supports absence conclusions
+through its existing comparisons API. Earlier evidence-row trials remain dated
+history; no schema/validator change or invented negative status is required.
+Native output qualification and the full-repository goal remain separate.
 
 ## Evidence checkpoint — 2026-10-24
 
@@ -271,12 +267,11 @@ before handing over an environment or replacing an output.
   patch, currently 3.15.1: development, build, test, automation, CI matrices,
   containers and helper scripts. Select a repo-local interpreter explicitly and
   record its actual version; align constraints, locks and current setup guidance.
-- [ ] Resolve the optional Atlas integration under that requirement. The earlier
-  Python 3.14 compatibility trial remains historical evidence only. Its current
-  runner/profile is an outstanding migration item, not an accepted exception or
-  completion proof. Qualify the compatible Atlas candidate and its dependencies
-  in isolation, including the unresolved unknown-evidence scenario, before
-  promoting source/contract pins or retiring the older active runner.
+- [x] Resolve the optional Atlas integration under that requirement. The earlier
+  Python 3.14 compatibility trial remains historical evidence only. The new
+  repo-local 3.15.1 profile qualifies the migrated source, hash-locked dependencies
+  and actual unknown/not-covered comparisons before retiring the older runner.
+  Preserve the existing evidence assertion contract and refuse invalid relabelling.
 - [ ] Remove older active defaults and compatibility runners at a safe terminal
   handover. Preserve private work, source history and native bindings. Older
   literals may remain in immutable historical evidence or deliberate version
@@ -303,3 +298,27 @@ before handing over an environment or replacing an output.
 References checked for this amendment: [structured document prerequisites](https://learn.microsoft.com/en-us/sharepoint/copilot-in-sharepoint-structured-document-generation#prerequisites),
 [Standard SharePoint connector and actions](https://learn.microsoft.com/en-us/connectors/sharepointonline/),
 [library column types](https://support.microsoft.com/en-us/sharepoint/lists/data-and-lists/list-and-library-column-types-and-options).
+
+
+## Atlas comparison-route migration — 24 October 2026
+
+- [x] Select migrated Atlas source `21f7721a8971ca6c9e704924503eebdd75356dce`
+  and unchanged v1 contract `b73e35c727fdedce6b8da729a0d9c3939368c2bfb47cbc52012ca004af80d141`.
+  The existing `/api/v1/comparisons` route returns explicit unknown/not-covered
+  conclusions with null statuses. An absent coverage cell remains absent.
+- [x] Retain the assertion-only evidence route and add bounded comparison
+  filters, response/clock/identity/page guards, provenance consistency and raw
+  response/receipt preservation. The prior unknown trial changed a status-bearing
+  evidence row, so its rejection did not prove the comparison route unavailable.
+  No upstream schema, compatibility gate or validator is changed.
+- [x] Use Python 3.15.1 in both explicit local profiles and the Atlas CI job;
+  regenerate the universal hash lock, align setup/current guidance and retire the
+  older active runner after its terminal handover. Its historical evidence stays.
+- [x] Qualify actual fictional API responses through the existing package runner:
+  preserve both raw response pairs, unknown/not-covered state, null source pins,
+  no inferred missing cells, ZIP hashes/CRCs, same-job replay, edited-output
+  refusal, a new revision preserving edits and an unchanged fixture database.
+
+Hosted integration gate: verify the final PR head and merged-main checks before
+reporting integration complete. This does not close native output, hosted transport,
+real medicine/policy identity mapping, source-byte integrity or clinical gates.
