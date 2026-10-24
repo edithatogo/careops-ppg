@@ -144,7 +144,10 @@ def build_qualification_flow(existing_flow, site, library_id, template, output_p
         raise ValueError('standard_sharepoint_binding_required')
     definition = copy.deepcopy(props['definition'])
     primitives = [x for x in definition['actions'].values()
-                  if x.get('inputs', {}).get('host', {}).get('operationId') == 'HttpRequest'
+                  if x.get('type') == 'OpenApiConnection'
+                  and isinstance(x.get('inputs'), dict)
+                  and isinstance(x['inputs'].get('host'), dict)
+                  and x['inputs']['host'].get('operationId') == 'HttpRequest'
                   and x['inputs']['host'].get('connectionName') == 'shared_sharepointonline']
     if not primitives:
         raise ValueError('qualified_sharepoint_primitive_required')
