@@ -62,6 +62,12 @@ Native output qualification and the full-repository goal remain separate.
 
 ### Selected alternatives
 
+The eligible list below means no **additional** premium subscription or usage
+billing. Existing Microsoft 365 entitlement, permissions and action availability
+still require exact-target verification. Ordinary library columns can be entered
+manually or populated from authoritative records; AI Autofill is a separately
+licensed/billed capability and is excluded from this selected route.
+
 1. **Library columns and content types — first choice:** store structured metadata, required fields and document-kind templates; support filtering, grouping and routing without relying on Word-body generation.
 2. **Maintained Word library/content-type templates:** create documents from an approved layout; link supported scalar document properties where verified, and keep manual content entry for narrative, conditional sections and variable-length tables until their behavior is qualified.
 3. **Power Automate with standard SharePoint actions:** copy/create files and update library properties using existing qualified connections and entitlement. No automatic Word-body merge is implied by a successful metadata update.
@@ -76,6 +82,37 @@ indicator where applicable. Keep source edition and capture date distinct from
 SharePoint file-history version. Retain distinguishable copies of different
 source editions; file history records edits to each copy. Preserve the existing
 register as the source of identity and status rather than creating another register.
+
+### Library-column mapping and acceptance checklist
+
+Use this semantic mapping within P4.3–P4.5, recording the actual existing internal
+names and types privately before a write. These are meanings, not instructions
+to create columns with these display names.
+
+| Meaning | Authoritative input | Required check |
+| --- | --- | --- |
+| Document identity and register/case link | Existing catalogue/review record | Exact persistent identity and working link; no title-only identity decision |
+| Document kind and source occurrence/period | Existing source or generation record | Preserve distinct occurrences; do not substitute capture classification |
+| Printed source edition and capture time | Source document and acquisition receipt respectively | Retain both independently of native file-history version |
+| Template revision and included records | Maintained template and frozen selection | Resolve exact template revision and complete record identities |
+| Output revision, unresolved items and review status | Existing generation receipt and review record | Preserve human edits and unresolved content; generation cannot advance approval |
+
+- [ ] Read back existing column types, internal names and content-type mappings;
+  leave unmatched semantics in their existing authoritative records/receipt.
+- [ ] Verify saved metadata independently from visible Word-body rendering;
+  inspect links, optional sections and variable-length content for the selected
+  shape. A column update alone does not merge narrative into a document.
+- [ ] Retain earlier and newer source editions, original bytes and provenance.
+  Inspect actual native version limits/expiry and recoverability; native history
+  alone does not establish the user's all-versions requirement. Record any
+  retention gap without changing settings or deleting history under this plan.
+- [ ] Verify interrupted recovery and an unchanged repeat without duplicate
+  revisions or loss of edits; retain a recoverable preimage and the working output
+  until parity is established. Reuse completed evidence for unchanged behavior.
+
+Reference: [ordinary library columns](https://support.microsoft.com/en-us/sharepoint/lists/data-and-lists/create-a-column-in-a-list-or-library),
+[Copilot and Autofill prerequisites](https://learn.microsoft.com/en-us/sharepoint/ai-in-sharepoint-get-started),
+[native version history](https://learn.microsoft.com/en-us/sharepoint/version-overview).
 
 ### Inventory outcome and implementation constraints
 
@@ -277,6 +314,20 @@ before handing over an environment or replacing an output.
   literals may remain in immutable historical evidence or deliberate version
   tests. Report genuine incompatibilities without downgrading or claiming the
   migration complete. Do not send email or messages to perform the migration.
+
+### Project-owned code licensing
+
+- [ ] Apply Apache-2.0 to project-owned code, retaining the complete licence and
+  existing copyright notices. Align active package declarations, source-package
+  licence/notice files and current repository instructions. Reuse the existing
+  licensing change rather than creating another licensing implementation.
+- [ ] Preserve upstream and third-party licences, notices, attribution and
+  inherited terms. Do not relabel third-party code or treat the code licence as
+  redistribution authority for external documents, manuscripts, policies,
+  datasets, private evidence or operational history.
+- [ ] Qualify the affected source and actual package contents before merge.
+  Preserve active source/native ownership and in-flight work. This requirement
+  authorises no repository visibility change or publication of external content.
 
 ### Verification and PR completion
 
