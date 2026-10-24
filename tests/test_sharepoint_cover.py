@@ -24,6 +24,24 @@ def fixture(rendered=True,changed=False):
     return stream.getvalue(),values
 
 class CoverTests(unittest.TestCase):
+    def test_existing_expression_actions_do_not_break_primitive_selection(self):
+        import copy
+        _,values=fixture()
+        base={'properties':{'displayName':'Fictional','connectionReferences':{'shared_sharepointonline':{'tier':'Standard','id':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline'}},'definition':{'actions':{
+            'Compose':{'type':'Compose','inputs':'@triggerBody()'},
+            'Empty':{'type':'Compose','inputs':None},
+            'Read':{'type':'OpenApiConnection','inputs':{'host':{'operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'parameters':{}}}}}}}
+        before=copy.deepcopy(base)
+        pin={'ServerRelativeUrl':'/sites/test/template.docx','UniqueId':'fictional','ETag':'"1"'}
+        args=('https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',pin,'/sites/test/new.docx',values)
+        result=build_qualification_flow(base,*args)
+        self.assertEqual(base,before)
+        self.assertNotIn('Compose',result['properties']['definition']['actions'])
+        self.assertEqual(result['properties']['definition']['actions']['Read_template']['inputs']['host']['operationId'],'HttpRequest')
+        del base['properties']['definition']['actions']['Read']
+        with self.assertRaisesRegex(ValueError,'qualified_sharepoint_primitive_required'):
+            build_qualification_flow(base,*args)
+
     def test_metadata_alone_not_admitted(self):
         raw,v=fixture(False);r=inspect_cover(raw,v)
         self.assertTrue(r['propertiesVerified']);self.assertFalse(r['packageEligible'])
