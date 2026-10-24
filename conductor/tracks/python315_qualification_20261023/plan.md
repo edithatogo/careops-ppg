@@ -315,6 +315,20 @@ before handing over an environment or replacing an output.
   tests. Report genuine incompatibilities without downgrading or claiming the
   migration complete. Do not send email or messages to perform the migration.
 
+### Project-owned code licensing
+
+- [ ] Apply Apache-2.0 to project-owned code, retaining the complete licence and
+  existing copyright notices. Align active package declarations, source-package
+  licence/notice files and current repository instructions. Reuse the existing
+  licensing change rather than creating another licensing implementation.
+- [ ] Preserve upstream and third-party licences, notices, attribution and
+  inherited terms. Do not relabel third-party code or treat the code licence as
+  redistribution authority for external documents, manuscripts, policies,
+  datasets, private evidence or operational history.
+- [ ] Qualify the affected source and actual package contents before merge.
+  Preserve active source/native ownership and in-flight work. This requirement
+  authorises no repository visibility change or publication of external content.
+
 ### Verification and PR completion
 
 - [ ] During implementation, use exact affected test files/nodes or native runner
