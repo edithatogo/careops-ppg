@@ -36,6 +36,7 @@ class VariantBundleTests(unittest.TestCase):
             manifest = json.loads(archive.read('manifest.json'))
             self.assertEqual(manifest, result['manifest'])
             self.assertEqual(len(archive.namelist()), 3)
+            self.assertTrue(all(info.create_system == 3 for info in archive.infolist()))
             self.assertEqual(manifest['variantOrder'], 'unresolved')
             self.assertIsNone(manifest['canonicalVariant'])
             self.assertFalse(manifest['authorityAsserted'])

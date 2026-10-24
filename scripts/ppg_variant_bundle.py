@@ -98,6 +98,7 @@ def build_variant_bundle(records, capsule_bytes):
     with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_STORED) as archive:
         for name, content in entries:
             info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.create_system = 3  # Stable ZIP headers on Unix and Windows.
             info.external_attr = 0o100600 << 16
             archive.writestr(info, content)
     raw = output.getvalue()
