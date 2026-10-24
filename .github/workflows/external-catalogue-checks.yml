@@ -1,0 +1,67 @@
+name: External catalogue qualification
+on:
+  push:
+    paths:
+      - 'scripts/ppg_external_catalogue.py'
+      - 'tools/external-catalogue/**'
+      - 'tests/test_external_catalogue*'
+      - 'config/external-publication.schema.json'
+      - 'requirements-external-catalogue*'
+      - '.github/workflows/external-catalogue-checks.yml'
+  pull_request:
+    paths:
+      - 'scripts/ppg_external_catalogue.py'
+      - 'tools/external-catalogue/**'
+      - 'tests/test_external_catalogue*'
+      - 'config/external-publication.schema.json'
+      - 'requirements-external-catalogue*'
+      - '.github/workflows/external-catalogue-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: external-catalogue-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: .python-version
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26.12.1'
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: tools/native-document-template/global.json
+      - name: Restore the existing native document kernel from its lock
+        run: dotnet restore tools/native-document-template/TemplateBuilder.csproj --locked-mode
+      - name: Verify repo-local Python and install hash-locked libraries
+        run: |
+          python -m venv .venv
+          .venv/bin/python -c 'import sys; from pathlib import Path; assert sys.version_info[:3] == tuple(map(int,Path(".python-version").read_text().strip().split("."))); assert sys.version_info[:2] == (3,15) and sys.version_info.releaselevel == "final"'
+          .venv/bin/python -m pip install --require-hashes -r requirements-external-catalogue.lock -r requirements-external-catalogue-ci.lock
+          .venv/bin/python -c 'from jsonschema import FormatChecker; assert {"date-time", "uri"} <= FormatChecker.checkers.keys()'
+      - name: Contract, provenance and recovery refusal tests
+        run: .venv/bin/python scripts/run_portable_tests.py --python-only tests.test_external_catalogue tests.test_relationship_context tests.test_pair_review tests.test_retained_coverage tests.test_native_standards tests.test_workbench_cli
+      - name: Full Python integration milestone
+        env:
+          PYTHONPATH: tools/policy-editions:tests:.
+        run: .venv/bin/python scripts/run_portable_tests.py --python-only
+      - name: Exactly-once adapter and uncertain-result tests
+        run: |
+          node --check tools/external-catalogue/native.mjs
+          node --test tests/test_external_catalogue.mjs
+      - name: Lint changed catalogue modules
+        run: .venv/bin/ruff check --select E9,F scripts/ppg_external_catalogue.py tests/test_external_catalogue.py
+      - name: Audit workflow and locked runtime dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .venv/bin/zizmor --no-progress --format plain .github/workflows/external-catalogue-checks.yml
+          .venv/bin/pip-audit --strict --disable-pip --no-deps -r requirements-external-catalogue.lock -r requirements-external-catalogue-ci.lock

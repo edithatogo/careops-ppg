@@ -47,6 +47,13 @@ jobs:
           .venv/bin/python scripts/run_portable_tests.py
           .venv/bin/python scripts/build_submission_assembler.py --output rebuilt.html
           cmp PPG-submission-assembler.html rebuilt.html
+      - name: Exercise the optional catalogue from the packaged hash lock
+        run: |
+          cd "$RUNNER_TEMP/ppg-consumer" || exit 1
+          .venv/bin/python -m pip install --require-hashes -r requirements-external-catalogue.lock
+          .venv/bin/python -c 'from jsonschema import FormatChecker; assert {"date-time", "uri"} <= FormatChecker.checkers.keys()'
+          .venv/bin/python scripts/run_portable_tests.py --python-only tests.test_external_catalogue
+          node --test tests/test_external_catalogue.mjs
       - name: Read immutable qualified inventory tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
