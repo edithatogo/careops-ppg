@@ -4,15 +4,25 @@ import re
 import uuid
 
 
+_DOCUMENT_IDENTIFIER = re.compile(
+    r'Document\s+(?:Number|No\.?)\s*:?\s*([A-Za-z][A-Za-z0-9./_-]+)', re.I
+)
+
+
 def propose(header, catalogue):
     # Caller supplies freshly extracted first-page text from hash-verified bytes.
     first_page = header
     header = first_page[:1500]
-    aliases = set(re.findall(r'Document\s+(?:Number|No\.?)\s*:?\s*([A-Za-z][A-Za-z0-9./_-]+)', header, re.I))
+    aliases = set(_DOCUMENT_IDENTIFIER.findall(header))
     editions = set(re.findall(r'Version\s*(?:No\.?|Number)?\s*:?\s*([0-9]+(?:\.[0-9]+)*)', header, re.I))
     if len(aliases) != 1:
         return {'state': 'unresolved', 'reason': 'missing_or_ambiguous_document_header'}
     alias = next(iter(aliases))
+    # The header window establishes eligibility, but must not hide another
+    # identifier later on the supplied first page or truncate one at its edge.
+    if set(_DOCUMENT_IDENTIFIER.findall(first_page)) != {alias}:
+        return {'state': 'unresolved', 'sourceAlias': alias,
+                'reason': 'document_identifiers_conflict_on_first_page'}
     matches = [r for r in catalogue if r.get('sourceDocumentId') == alias]
     if len(matches) != 1:
         return {'state': 'unresolved', 'sourceAlias': alias, 'reason': 'catalogue_alias_not_unique_or_absent'}
