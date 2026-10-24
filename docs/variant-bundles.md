@@ -14,6 +14,12 @@ hashes, lengths and CRCs are verified with bounded input/output sizes before a
 result is returned. Unknown identities, mixed labels, missing bytes and repeated
 identical-only inputs fail closed.
 
+Distinct capture receipts may reference identical capsule bytes: keep each
+receipt/path while storing one original member per byte hash. Canonical receipt
+sorting makes replay stable even when such occurrences arrive in a different
+order. Enforce the distinct-original budget before reading or CRC-scanning the
+next original, so oversized inputs do not accumulate decompressed members first.
+
 For an established family with two distinct printed editions, the existing
 native-history writer can retain one observed edition followed by an unordered
 variant bundle for another observed edition. Each native version then represents
