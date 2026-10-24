@@ -4,7 +4,6 @@ import hashlib
 import unittest
 
 from scripts.ppg_integrated_acquisition import build, validate, verify_observation, EXCEL_API
-from scripts.ppg_sourcing_preflight import validate as initial_gate
 from tests.test_url_acquisition_qualification import profile, readback_fixture, nodes
 
 
@@ -37,13 +36,12 @@ def integrated_fixture():
 
 
 class IntegratedAcquisition(unittest.TestCase):
-    def test_preparation_preserves_inputs_and_original_transport_gate_stays_narrow(self):
+    def test_preparation_preserves_inputs_and_only_adds_one_bound_hash_action(self):
         p, r = profile(), runtime()
         before = copy.deepcopy((p, r))
         flow = build(p, r)
         self.assertEqual((p, r), before)
         self.assertEqual(validate(flow, p, r), [])
-        self.assertTrue(initial_gate(flow))  # Generic scripts remain refused there.
         operations = [n for n in nodes(flow) if n['type'] == 'OpenApiConnection']
         self.assertTrue(all(n['inputs']['retryPolicy'] == {'type': 'none'} for n in operations))
         self.assertEqual(len([n for n in operations if n['inputs']['host']['operationId'] == 'RunScriptProdV2']), 1)

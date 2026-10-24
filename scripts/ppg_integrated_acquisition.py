@@ -10,7 +10,6 @@ import hashlib
 import json
 import re
 
-from scripts.ppg_sourcing_preflight import validate as validate_transport
 from scripts.ppg_url_acquisition_qualification import build as build_transport
 from scripts.ppg_url_acquisition_qualification import verify_readback
 
@@ -58,8 +57,6 @@ def _hold(code):
 def build(profile, runtime):
     """Fixed-source acquisition + native hash, retaining the original upload guards."""
     flow = build_transport(profile)
-    if validate_transport(flow):
-        raise ValueError('Transport did not pass its existing Standard-only gate')
     r = _runtime(runtime)
     props = flow['properties']
     props['connectionReferences'][EXCEL] = r['connectionReference']

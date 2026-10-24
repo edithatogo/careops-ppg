@@ -19,8 +19,8 @@ exact bytes to the hash action, parses its result and re-reads file metadata.
 Changed identity, ETag, size, digest, hash-request identity or acceptance flags
 hold the run before the integrated report. Connector retry policies remain None.
 
-The general sourcing preflight still rejects arbitrary script actions. The
-integrated validator accepts only the exact graph reconstructed from the selected
+The integration does not widen a generic connector allowlist. Its validator
+accepts only the exact graph reconstructed from the selected
 profile and qualified runtime. It checks action expressions and bindings, allows
 only the existing native authentication annotation, and requires Stopped plus
 actual owner failure alerts Off. Creator, run history and native side effects
