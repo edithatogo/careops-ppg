@@ -23,6 +23,7 @@ receipts/
 __pycache__/
 *.pyc
 .venv/
+.venv-atlas/
 node_modules/
 .DS_Store
 

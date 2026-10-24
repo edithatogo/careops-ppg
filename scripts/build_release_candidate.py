@@ -24,7 +24,8 @@ def package(output):
     archive = output / 'careops-ppg-portable.zip'
     subprocess.run(['git', 'archive', '--format=zip', '--output', str(archive.resolve()),
                     revision, 'README.md', 'NOTICE.md', 'AGENTS.md', '.gitattributes', '.gitignore', '.github', '.careops', 'conductor', 'docs',
-                    '.python-version', '.node-version', 'requirements-xlsb.lock', 'config', 'scripts', 'tools', 'templates', 'tests'],
+                    '.python-version', '.python-version-atlas', '.node-version', 'requirements-xlsb.lock',
+                    'requirements-atlas.lock', 'requirements-atlas-qualification.in', 'config', 'scripts', 'tools', 'templates', 'tests'],
                    cwd=ROOT, check=True)
     page = output / 'PPG-submission-assembler.html'
     build(page)

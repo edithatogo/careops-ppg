@@ -1,0 +1,2 @@
+# Combine with the exact pinned Atlas pyproject.toml; runtime dependencies stay upstream.
+pytest>=9.1

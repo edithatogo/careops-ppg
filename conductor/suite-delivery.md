@@ -79,6 +79,39 @@ Metadata readback and visible body rendering are separate checks. The Clinical t
 
 Reference: https://learn.microsoft.com/sharepoint/dev/business-apps/power-automate/sharepoint-connector-actions-triggers
 
+### Selected route without additional premium subscriptions — 24 October 2026
+
+Use library columns/content types first, with maintained Word library templates
+and supported scalar document-property controls where actual rendering is
+qualified. Use standard SharePoint Power Automate actions only for the necessary
+file and metadata operations through existing qualified connections. Verify
+entitlement and action-specific requirements; a Standard connector label does not
+qualify separately licensed document-generation actions.
+
+Do not add columns to a shared evidence/issued-document library merely to bind
+a template: Office metadata propagation can change stored document bytes, and
+a folder does not isolate the library schema. Reuse existing fields. Qualify a
+dedicated generation library with a stable schema before pinning outputs if new
+fields are required; preserve the current library and its retained history.
+
+Where scalar property refresh fails, reuse the existing Standard Office Script
+fixed-cover snapshot/packaging route at its qualified shape. It uses the existing
+Excel Online runtime and SharePoint storage; OneDrive conversion remains
+separately qualified. It does not establish general narrative, repeating-table
+or conditional-section generation. Keep review status in its existing authority
+and do not infer it from policy currency or source capture classification.
+
+The implementation alternatives exclude Copilot document-generation forms,
+Premium Word Online (Business) template/PDF actions, paid content assembly/Syntex
+and third-party paid generators. Keep manual template entry for unsupported body
+behavior and retain working outputs. Different source editions remain retained
+copies with provenance; native file history records edits to each copy rather
+than substituting for source edition or capture date.
+
+Execute the bounded inventory, template/client checks, standard-action trial and
+preservation/recovery checks in [the existing plan, Phase 4](tracks/python315_qualification_20261023/plan.md#phase-4--library-columns-and-document-templates-without-additional-premium-subscriptions).
+This planning change neither configures a tenant nor claims native qualification.
+
 
 ## Solution admission and recovery
 
@@ -135,8 +168,8 @@ and Microsoft's [existing-flow solution guidance](https://learn.microsoft.com/en
 
 ## Runtime receipt and selected-pin consistency — 24 October 2026
 
-All active PPG Python entry points use the repository's explicit Python 3.15.1
-environment. CI verifies the actual interpreter after setup, and the full test
+Default PPG Python entry points use the repository's explicit Python 3.15.1
+environment. CI verifies the actual interpreter after setup, and the core test
 matrix runs Python 3.15.1 with Node 22 and 26.12.1. The development canary uses
 separate Python 3.15.1 environments for its optional XLSB parser and CI tools;
 the hash-locked `pyxlsb` candidate is parsed against a small attributed workbook
@@ -147,9 +180,14 @@ evidence mismatch, runtime mismatch or invalid evidence after saving its receipt
 Tests cover success, failed/cancelled/skipped stages, missing lock, old runtime,
 malformed evidence and exit status. The receipt proves a qualified source tool
 candidate only; it does not promote native tools or qualify SharePoint document
-generation. The Atlas qualification helper also requires the PPG `.venv`; its
-pinned upstream source currently declares Python below 3.15, so that cross-repo
-integration remains unqualified rather than using an older Atlas environment.
+generation. The user's 24 October clarification permits necessary scoped version
+exceptions while preferring the latest suitable dependencies. The Atlas helper
+uses an explicit `.venv-atlas` profile pinned by `.python-version-atlas` and
+`requirements-atlas.lock`: its source/contract pin requires Python below 3.15 and
+the newer contract's unknown-evidence scenario remains unresolved. This profile
+does not replace `.venv` or select an external Atlas environment implicitly.
+Qualify actual API/package behavior, exact source/contract and hosted checks;
+neither a runtime pin nor dependency installation alone proves integration.
 
 The canary bootstraps uv from its official checksum-pinned Linux x86_64 release
 asset because the default setup-uv mirror manifest omitted uv 0.13.5. Platform,

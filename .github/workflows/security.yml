@@ -9,6 +9,33 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  atlas-compatibility:
+    name: Atlas pinned-source integration (Python 3.14 compatibility)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: edithatogo/global-medicines-atlas
+          ref: d75e8d06cd3d772cfa1fee4fe150eab318ef231b
+          path: .local/atlas-original-pin
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: .python-version-atlas
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - name: Qualify the explicit Atlas compatibility profile
+        run: |
+          python -m venv .venv-atlas
+          .venv-atlas/bin/python -VV
+          .venv-atlas/bin/python -c 'import pathlib,sys; assert sys.version_info[:3] == tuple(map(int,pathlib.Path(".python-version-atlas").read_text().strip().split("."))), sys.version'
+          .venv-atlas/bin/python -m pip install --require-hashes --only-binary=:all: -r requirements-atlas.lock
+          .venv-atlas/bin/python scripts/qualify_atlas_adapter.py --atlas-root .local/atlas-original-pin --atlas-compatibility
   source-security:
     name: Shared source security
     uses: edithatogo/careops/.github/workflows/reusable-source-security.yml@5cf006bce6c37c0c15db5d35055e302701a500ad
