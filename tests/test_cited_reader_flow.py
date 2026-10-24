@@ -100,6 +100,21 @@ class ReaderFlowTests(unittest.TestCase):
         comparisons = actions['Require_expected_source']['expression']['and']
         self.assertIn({'equals': ["@string(body('Metadata_before')?['ETag'])", '@@malicious()']}, comparisons)
 
+    def test_embedded_workflow_interpolation_is_rejected_before_graph_preparation(self):
+        for field in ('sourceId', 'Name', 'ServerRelativeUrl', 'ETag',
+                      'TimeLastModified', 'siteUrl', 'folder'):
+            selected = binding()
+            marker = "prefix@{parameters('secret')}"
+            if field in ('Name', 'ServerRelativeUrl'):
+                selected['pin']['Name'] = marker + '.txt'
+                selected['pin']['ServerRelativeUrl'] = selected['folder'] + '/' + selected['pin']['Name']
+            elif field in ('sourceId', 'siteUrl', 'folder'):
+                selected[field] += marker
+            else:
+                selected['pin'][field] = marker
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'workflow_interpolation'):
+                build_flow(existing(), selected)
+
     def test_site_and_folder_cannot_redirect_or_escape(self):
         for site in ['http://example.sharepoint.com/sites/ppg', 'https://example.invalid/sites/ppg',
                      'https://example.sharepoint.com.evil.invalid/sites/ppg',

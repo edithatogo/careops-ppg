@@ -34,6 +34,13 @@ def workflow_literal(value):
 def checked_binding(binding):
     """Reject ambiguous paths, unsupported formats and incomplete native pins."""
     value = copy.deepcopy(binding)
+    # Workflow Definition expressions can interpolate @{...} inside a literal,
+    # not just at its beginning. This bounded profile does not accept templates.
+    strings = [value.get(key) for key in ('siteUrl', 'folder', 'sourceId')]
+    if isinstance(value.get('pin'), dict):
+        strings.extend(value['pin'].values())
+    if any(isinstance(item, str) and '@{' in item for item in strings):
+        raise ValueError('workflow_interpolation_not_supported')
     site = value.get('siteUrl', '')
     if not isinstance(site, str):
         raise ValueError('invalid_site_binding')

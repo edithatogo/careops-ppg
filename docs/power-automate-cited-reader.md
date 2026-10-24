@@ -45,7 +45,9 @@ The six top-level actions are serial:
 All connector retry policies are `none`. Missing/denied connector reads fail the
 chain and cannot produce an accepted result; stale/changed pins terminate before
 an accepted result. Source content is data and is never evaluated as instructions.
-Expression-looking metadata is escaped as a literal. Old actions, schedules,
+Leading expression-looking metadata is escaped as a literal; any embedded
+`@{...}` interpolation in source identity, site/folder or retained pin fields is
+rejected before graph preparation. Old actions, schedules,
 agents, mail connections and billing-plan fields are not copied from the supplied
 existing profile. The generated profile is Stopped and retains only SharePoint.
 
