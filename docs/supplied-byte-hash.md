@@ -62,3 +62,28 @@ consent, send, schedule or native mutation is introduced by this source incremen
 Native runtime hash, authenticated provenance, redirect/final-URL evidence,
 durable replay/concurrency, conditional persistence and recovery remain separate
 FS-03/04 requirements. None is closed by the offline helper.
+
+## Native checkpoint — 24 October 2026
+
+The separately owned Standard OneDrive/Excel flow completed one manual run on the
+retained 2,794,382-byte public original. Native action records prove that its
+actual Base64 content became the script request, and the hosted script returned
+the same SHA-256 as the independently downloaded original. Exact script source,
+hosted packaging, connection bindings and saved source metadata were verified.
+The run succeeded in about 18 seconds. The test flow is Off, actual owner failure
+alerts are disabled, and its graph/bindings and single-run history are preserved.
+This qualifies the supplied-byte helper for that selected positive native case;
+it does not qualify every payload size or the native negative-case matrix.
+
+Excel saved a normalised workbook revision even though the script made no workbook
+calls. The new workbook is version 2.0 and remains empty, without external links
+or macros. Native version 1.0 was downloaded and hash-verified against the original
+local fixture; both native versions and both local byte streams are retained.
+The hosted script, existing PDF and destination rules/settings/subscriptions are
+unchanged. Operational bindings and full native receipts remain private.
+
+The earlier preparation requirements above remain applicable to another target.
+This checkpoint closes the selected native hash gap only. Redirect/final-URL
+observability, the consumer promotion contract, durable replay/concurrency,
+conditional persistence, recovery and broader error cases remain unqualified.
+No catalogue row, source-register field, checkpoint or clinical status changed.
