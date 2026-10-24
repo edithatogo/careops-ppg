@@ -180,12 +180,12 @@ evidence mismatch, runtime mismatch or invalid evidence after saving its receipt
 Tests cover success, failed/cancelled/skipped stages, missing lock, old runtime,
 malformed evidence and exit status. The receipt proves a qualified source tool
 candidate only; it does not promote native tools or qualify SharePoint document
-generation. The user's 24 October clarification permits necessary scoped version
-exceptions while preferring the latest suitable dependencies. The Atlas helper
-uses an explicit `.venv-atlas` profile pinned by `.python-version-atlas` and
-`requirements-atlas.lock`: its source/contract pin requires Python below 3.15 and
-the newer contract's unknown-evidence scenario remains unresolved. This profile
-does not replace `.venv` or select an external Atlas environment implicitly.
+generation. Every active Python profile now requires Python 3.15.1. The Atlas
+helper selects
+an explicit `.venv-atlas` profile pinned by `.python-version-atlas` and
+`requirements-atlas.lock`; it does not select an external environment implicitly.
+Its existing comparison API supplies unknown/not-covered conclusions without
+status assertions, while the evidence API remains the assertion-only route.
 Qualify actual API/package behavior, exact source/contract and hosted checks;
 neither a runtime pin nor dependency installation alone proves integration.
 
@@ -250,7 +250,7 @@ procedure contains no tenant bindings or claim that a reader's target is qualifi
 ## Latest supplied project instructions
 
 The [current requirements checklist](tracks/python315_qualification_20261023/plan.md#current-user-requirements--plan-amendment-24-october-2026)
-supersedes earlier runtime-exception guidance. Complete the active Atlas profile
-migration on Python 3.15.1 before claiming all-runtime compliance. Continue the
+supersedes earlier runtime-exception guidance. Retain the qualified Atlas Python 3.15.1 profile and exact source/contract pins;
+old compatibility trials remain historical evidence, not active runners. Continue the
 selected no-additional-premium library-column route and qualify each structured
 output, preservation and recovery behavior before replacing its working output.
