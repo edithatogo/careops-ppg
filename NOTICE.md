@@ -1,8 +1,12 @@
-# Reuse and publication boundary
+# Licence, attribution and content boundary
 
-The repository contains portable implementation code and fictional fixtures,
-curated into a fresh history. Operational data, source-register layouts, native
-deployment adapters, bindings and delivery evidence are excluded.
+Project-owned code is licensed under Apache-2.0; see the complete [LICENSE](LICENSE).
+Existing copyright and attribution notices are preserved. Upstream and third-party
+code, fixtures and dependencies retain their own applicable licences and notices;
+they are not relicensed by this repository.
 
-No public licence has been selected. Private visibility does not permit committing
-credentials, personal records or protected source material.
+This code licence grants no redistribution rights over external standards,
+policies, manuscripts, datasets, private evidence or operational history. Those
+materials retain their existing rights and are excluded from the portable source
+package. Repository visibility, publication and native deployment remain separate
+from the code licence. Never commit credentials or protected operational content.
