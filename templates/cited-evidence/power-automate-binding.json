@@ -1,0 +1,16 @@
+{
+  "siteUrl": "https://example.sharepoint.com/sites/ppg",
+  "folder": "/sites/ppg/evidence",
+  "sourceId": "fictional-archive-v1",
+  "authorityLabel": "captured-reference-unconfirmed",
+  "pin": {
+    "UniqueId": "11111111-1111-4111-8111-111111111111",
+    "Name": "archive-v1.txt",
+    "Length": 220,
+    "ETag": "\"1\"",
+    "MajorVersion": 1,
+    "MinorVersion": 0,
+    "TimeLastModified": "2026-10-17T08:00:00Z",
+    "ServerRelativeUrl": "/sites/ppg/evidence/archive-v1.txt"
+  }
+}

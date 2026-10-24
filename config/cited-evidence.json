@@ -75,9 +75,32 @@
   "cliLookup": {
     "command": "scripts/ppg_evidence_cli.py",
     "mode": "deterministic-delegated-read-only",
-    "supportedFormats": ["UTF-8 TXT/Markdown", "DOCX body paragraphs", "text-bearing PDF through existing pdftotext"],
+    "supportedFormats": [
+      "UTF-8 TXT/Markdown",
+      "DOCX body paragraphs",
+      "text-bearing PDF through existing pdftotext"
+    ],
     "hashBoundary": "sha256 is UTF-8 extracted text; binarySHA256 is original native file bytes",
     "paidAIRuntimeRequired": false,
     "nativeAssistantRuntimeQualified": false
+  },
+  "powerAutomateReader": {
+    "builder": "scripts/ppg_cited_reader_flow.py",
+    "guide": "docs/power-automate-cited-reader.md",
+    "mode": "fixed-selected-source-read-backend",
+    "maximumFixedSourcesPerProfile": 1,
+    "qualification": "source-and-fictional-tests-only; native owner retains actual run receipts separately",
+    "supportedFormats": [
+      "UTF-8 TXT",
+      "Markdown"
+    ],
+    "runtimeHashesComputed": false,
+    "textExtractionQualified": false,
+    "callerPermissionTrimmingQualified": false,
+    "nativeAssistantRuntimeQualified": false,
+    "resultStatus": "selected-source-read",
+    "requiresPremiumConnector": false,
+    "deploymentState": "generated-stopped; actual native state requires readback",
+    "originalStudioDraft": "preserve unchanged; no conversion or billing change"
   }
 }
