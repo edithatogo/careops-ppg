@@ -1,0 +1,129 @@
+{
+  "kind": "ppg-acquisition-existing-capture-handoff-v1",
+  "state": "reuse-existing-capture",
+  "binding": {
+    "publicationKey": "pub:fictional",
+    "editionKey": "edition:fictional-1",
+    "captureKey": "capture:fictional-original",
+    "requestedSourceURL": "https://publisher.example/a//source.pdf",
+    "sha256": "051cd9a217dc416abf923681fc3efb28280d47f09a01eccecfe3cdddb70a41ac"
+  },
+  "observation": {
+    "observedAt": "2026-10-24T02:00:00Z",
+    "workflowId": "fictional-flow",
+    "runId": "fictional-run-2",
+    "receiptSHA256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "sourceFile": {
+      "uniqueId": "fictional-native-file",
+      "nativeVersion": "1.0",
+      "etag": "\"fictional,1\"",
+      "url": "https://example.sharepoint.com/sites/Fictional/Staging/source.pdf",
+      "bytes": 43
+    }
+  },
+  "catalogueSourceURL": "https://publisher.example/a//source.pdf",
+  "existingRetainedOriginalURL": "https://example.sharepoint.com/sites/Fictional/Evidence/retained.pdf",
+  "sourceLocatorExact": true,
+  "providedURLByteEvidence": [],
+  "selectedRecords": {
+    "publication": {
+      "key": "pub:fictional",
+      "kind": "Publication",
+      "title": "Fictional publication",
+      "issuer": "Fictional issuer",
+      "publicationKey": "pub:fictional",
+      "editionKey": null,
+      "frameworkKeys": [],
+      "sourceStatus": "Unknown",
+      "role": "Normative",
+      "requiredCapture": true,
+      "assertions": [
+        {
+          "field": "edition",
+          "value": "Fictional edition one",
+          "sourceURL": "https://publisher.example/a//source.pdf",
+          "sourceSHA256": "051cd9a217dc416abf923681fc3efb28280d47f09a01eccecfe3cdddb70a41ac",
+          "locator": "Fictional cover",
+          "observedAt": "2026-10-24T01:00:00Z"
+        }
+      ],
+      "data": {}
+    },
+    "edition": {
+      "key": "edition:fictional-1",
+      "kind": "Edition",
+      "title": "Fictional publication",
+      "issuer": "Fictional issuer",
+      "publicationKey": "pub:fictional",
+      "editionKey": "edition:fictional-1",
+      "frameworkKeys": [
+        "fictional-1"
+      ],
+      "sourceStatus": "Unknown",
+      "role": "Normative",
+      "requiredCapture": true,
+      "assertions": [
+        {
+          "field": "edition",
+          "value": "Fictional edition one",
+          "sourceURL": "https://publisher.example/a//source.pdf",
+          "sourceSHA256": "051cd9a217dc416abf923681fc3efb28280d47f09a01eccecfe3cdddb70a41ac",
+          "locator": "Fictional cover",
+          "observedAt": "2026-10-24T01:00:00Z"
+        }
+      ],
+      "data": {}
+    },
+    "capture": {
+      "key": "capture:fictional-original",
+      "kind": "Capture",
+      "title": "Fictional publication",
+      "issuer": "Fictional issuer",
+      "publicationKey": "pub:fictional",
+      "editionKey": "edition:fictional-1",
+      "frameworkKeys": [
+        "fictional-1"
+      ],
+      "sourceStatus": "Unknown",
+      "role": "Normative",
+      "requiredCapture": true,
+      "assertions": [
+        {
+          "field": "edition",
+          "value": "Fictional edition one",
+          "sourceURL": "https://publisher.example/a//source.pdf",
+          "sourceSHA256": "051cd9a217dc416abf923681fc3efb28280d47f09a01eccecfe3cdddb70a41ac",
+          "locator": "Fictional cover",
+          "observedAt": "2026-10-24T01:00:00Z"
+        }
+      ],
+      "data": {
+        "sha256": "051cd9a217dc416abf923681fc3efb28280d47f09a01eccecfe3cdddb70a41ac",
+        "bytes": 43,
+        "sourceURL": "https://publisher.example/a//source.pdf",
+        "nativeURL": "https://example.sharepoint.com/sites/Fictional/Evidence/retained.pdf",
+        "acquiredAt": "2026-10-23T01:00:00Z",
+        "editionResolution": "source-asserted",
+        "acquisitionRoute": "Earlier independent retained original"
+      }
+    },
+    "knownFrameworkKeys": [
+      "fictional-1"
+    ]
+  },
+  "selectedRecordSHA256": {
+    "pub:fictional": "b16d36b0c4b3b501661b30c4a55556dbf8f7abb7cff605fd56fc7a4aeb5889a9",
+    "capture:fictional-original": "b97a35f710b83007c4202db5dd2820a2562bae9d2ab327e569e011efeb03c520",
+    "edition:fictional-1": "9673d163ade2ae7cd3167c66dc678d0fcb87c8a54cf8d4c785380ca63624b0ec"
+  },
+  "suppliedHashResultMatchesIndependentBytes": true,
+  "providedEvidenceAuthenticated": false,
+  "nativeMutationAllowed": false,
+  "checkpointAllowed": false,
+  "fullAcquisitionQualified": false,
+  "catalogueEdits": [],
+  "originalFilesToCreate": [],
+  "clinicalApplicabilityAccepted": false,
+  "expectedReplaySHA256": "196b617ed7342437309d061cdea2954a569d21f909ea198a2bbb7280fc30c134",
+  "expectedOccurrenceSHA256": "816598382e54235c4ed1dc8b1ab461e1eb8f23bcbbb63300cbf2c129f9a93ac5"
+}
