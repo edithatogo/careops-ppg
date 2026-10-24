@@ -148,13 +148,15 @@ def build_qualification_flow(existing_flow, site, library_id, template, output_p
     props = existing_flow['properties']
     refs = props['connectionReferences']
     sp = refs.get('shared_sharepointonline', {})
-    if sp.get('tier') != 'Standard' or not sp.get('id', '').endswith('/shared_sharepointonline'):
+    sharepoint_api = '/providers/Microsoft.PowerApps/apis/shared_sharepointonline'
+    if sp.get('tier') != 'Standard' or sp.get('id') != sharepoint_api:
         raise ValueError('standard_sharepoint_binding_required')
     definition = copy.deepcopy(props['definition'])
     primitives = [x for x in definition['actions'].values()
                   if x.get('type') == 'OpenApiConnection'
                   and isinstance(x.get('inputs'), dict)
                   and isinstance(x['inputs'].get('host'), dict)
+                  and x['inputs']['host'].get('apiId') == sharepoint_api
                   and x['inputs']['host'].get('operationId') == 'HttpRequest'
                   and x['inputs']['host'].get('connectionName') == 'shared_sharepointonline']
     if not primitives:

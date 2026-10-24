@@ -30,7 +30,7 @@ class CoverTests(unittest.TestCase):
         base={'properties':{'displayName':'Fictional','connectionReferences':{'shared_sharepointonline':{'tier':'Standard','id':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline'}},'definition':{'actions':{
             'Compose':{'type':'Compose','inputs':'@triggerBody()'},
             'Empty':{'type':'Compose','inputs':None},
-            'Read':{'type':'OpenApiConnection','inputs':{'host':{'operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'authentication':"@parameters('$authentication')",'parameters':{}}}}}}}
+            'Read':{'type':'OpenApiConnection','inputs':{'host':{'apiId':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline','operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'authentication':"@parameters('$authentication')",'parameters':{}}}}}}}
         before=copy.deepcopy(base)
         pin={'ServerRelativeUrl':'/sites/test/template.docx','UniqueId':'22222222-2222-4222-8222-222222222222','ETag':'"1"'}
         args=('https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',pin,'/sites/test/outputs/template.docx',values)
@@ -39,6 +39,9 @@ class CoverTests(unittest.TestCase):
         self.assertNotIn('Compose',result['properties']['definition']['actions'])
         self.assertEqual(result['properties']['definition']['actions']['Read_template']['inputs']['host']['operationId'],'HttpRequest')
         self.assertNotIn('authentication',result['properties']['definition']['actions']['Read_template']['inputs'])
+        base['properties']['definition']['actions']['Read']['inputs']['host']['apiId']='/providers/Microsoft.PowerApps/apis/other_connector'
+        with self.assertRaisesRegex(ValueError,'qualified_sharepoint_primitive_required'):
+            build_qualification_flow(base,*args)
         del base['properties']['definition']['actions']['Read']
         with self.assertRaisesRegex(ValueError,'qualified_sharepoint_primitive_required'):
             build_qualification_flow(base,*args)
@@ -63,7 +66,7 @@ class CoverTests(unittest.TestCase):
         v['PPGCoverTitle']='x'*256
         with self.assertRaises(ValueError):inspect_cover(raw,v)
     def test_probe_is_standard_copy_only_and_preserves_template(self):
-        _,values=fixture();base={'properties':{'displayName':'Fictional','connectionReferences':{'shared_sharepointonline':{'tier':'Standard','id':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline'}},'definition':{'actions':{'Read':{'type':'OpenApiConnection','inputs':{'host':{'operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'parameters':{}}}}}}}
+        _,values=fixture();base={'properties':{'displayName':'Fictional','connectionReferences':{'shared_sharepointonline':{'tier':'Standard','id':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline'}},'definition':{'actions':{'Read':{'type':'OpenApiConnection','inputs':{'host':{'apiId':'/providers/Microsoft.PowerApps/apis/shared_sharepointonline','operationId':'HttpRequest','connectionName':'shared_sharepointonline'},'parameters':{}}}}}}}
         pin={'ServerRelativeUrl':'/sites/test/template.docx','UniqueId':'22222222-2222-4222-8222-222222222222','ETag':'"1"'}
         flow=build_qualification_flow(base,'https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',pin,'/sites/test/outputs/template.docx',values)
         self.assertEqual(flow['properties']['state'],'Stopped')
