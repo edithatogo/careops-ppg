@@ -25,6 +25,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   offline-contracts:
+    name: External catalogue contract and recovery qualification
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
