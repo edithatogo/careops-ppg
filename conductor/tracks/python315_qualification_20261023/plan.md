@@ -209,3 +209,19 @@ References: [SharePoint column types](https://support.microsoft.com/en-us/sharep
 [OneDrive connector classification](https://learn.microsoft.com/en-us/connectors/onedriveforbusinessconnector/),
 [content assembly billing](https://learn.microsoft.com/en-us/microsoft-365/documentprocessing/content-assembly),
 [Atlas Python migration](https://github.com/edithatogo/global-medicines-atlas/pull/1295).
+
+### Current qualification boundary — 24 October 2026
+
+The native owner completed controlled saved-body post-claim interruption,
+same-revision recovery and unchanged replay for the selected maintained DOCX
+shape, retaining the exact saved bytes, claims and edited prior revision. The
+normal isolated trial was restored Off. That private native result supersedes the
+interruption hold in the dated checkpoints above; it does not establish all
+library/property/body-rendering requirements in P4.3–P4.5. Reconcile each remaining
+acceptance item against its exact route instead of repeating the completed trial.
+
+The [selected-source Power Automate reader](../../../docs/power-automate-cited-reader.md)
+is a separate cited-evidence increment. Its source graph/fictional controls do not
+close native retrieval, per-caller permission, extraction/hash, citation or
+conversational-assistant acceptance. Retain native receipts with their existing
+owner and preserve the Studio draft. No new runtime or goal is inferred.

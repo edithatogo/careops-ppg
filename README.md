@@ -187,3 +187,10 @@ portable repository does not contain tenant exports or establish deployment.
 See [consolidation](docs/consolidation.md), the [guided CLI](docs/guided-cli.md)
 and [technical assurance report](docs/cli-assurance-report.md). Native evidence,
 source policy texts and historical delivery records remain outside this toolkit.
+
+## Standard selected-source evidence reader
+
+The [Power Automate reader guide](docs/power-automate-cited-reader.md) describes a
+fixed-source, read-only Standard SharePoint graph generator. Raw native reads,
+independent hash/extraction, caller permissions and conversational assistant
+qualification remain separate. Existing CLI evidence/citation tools remain usable.
