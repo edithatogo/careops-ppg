@@ -70,6 +70,12 @@ Stopped, read back the exact graph/bindings/state, and verify the **actual** own
 failure-alert setting is false. The generated desired setting is not native proof.
 Use the existing strict email preflight on the actual native readback. There is no
 outbound action or scheduler in this graph, and no new mail connection is needed.
+Inspect the selected destination's existing alerts, modern rules, subscriptions,
+receivers and relevant file-triggered flows as well. An alert on the containing
+library can cover a newly allocated folder. An empty modern-rule collection does
+not prove alerts absent. If an existing alert's delivery effects are unresolved,
+hold the write experiment and continue independent preparation; do not disable or
+alter somebody's existing notification or sync configuration to clear the check.
 
 Invoke once through the supported web surface, retain the exact run handle and
 complete actions, then stop the qualification flow. Do not automatically resubmit
@@ -92,6 +98,35 @@ Only after those steps, the agreed FS/EC field ownership and the required
 persistence/readback/replay/recovery checks may the full acquisition task close.
 This component supplies no catalogue writer, source-register change, approval,
 publication, schedule, subscription, notification or production readiness.
+
+## Independent readback verification
+
+Save the evaluated `Report_candidate` object from the retained run and download
+the staged file separately using the qualified native route. Preserve those raw
+inputs and the complete run/action receipts; this verifier does not authenticate
+their origin or query the service. It accepts only the explicit binary envelope
+`{"$content-type":"application/octet-stream","$content":"BASE64"}` shape.
+An unobserved or different connector representation is held for qualification,
+not guessed or converted from a text string.
+
+```sh
+.venv/bin/python -m scripts.ppg_url_acquisition_qualification \
+  --profile .local/sourcing/allocated-qualification-profile.json \
+  --report .local/sourcing/evaluated-report.json \
+  --download .local/sourcing/independent-download.bin \
+  --output .local/sourcing/independent-byte-verification.json
+```
+
+The verifier binds the report to the fixed qualification/source/edition/staging
+profile, checks stable file ID/ETag/size/nonfolder metadata, decodes bounded strict
+canonical Base64, compares both byte streams and computes the actual SHA256.
+Both streams must match the pinned source digest. It refuses premature producer
+acceptance assertions and never replaces an existing receipt or original file.
+The receipt establishes **supplied readback byte parity** only. A claimed MIME
+type, PDF signature or matching digest alone does not validate document meaning.
+Native run provenance, final URL/redirects, representation semantics, recovery,
+replay, catalogue promotion and checkpoints remain separate qualification gates.
+No catalogue field is written or clinical decision inferred.
 
 Focused offline check:
 
