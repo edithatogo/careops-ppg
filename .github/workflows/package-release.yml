@@ -66,7 +66,7 @@ jobs:
         env:
           SOURCE_COMMIT: ${{ github.sha }}
         run: .venv/bin/python .local/ci-release-policy/portfolio-scripts/artifact_sbom.py --artifact .local/release-candidate/careops-ppg-portable.zip --name careops-ppg-portable --source-commit "$SOURCE_COMMIT" --created-epoch "$(git show -s --format=%ct "$SOURCE_COMMIT")" --output .local/release-candidate/careops-ppg.spdx.json
-      - name: Retain the package and inventory without granting a public licence
+      - name: Retain the Apache-2.0 source package and inventory
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: careops-ppg-portable

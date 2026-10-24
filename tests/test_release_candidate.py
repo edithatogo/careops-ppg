@@ -20,9 +20,10 @@ class ReleaseCandidateTests(unittest.TestCase):
                          'requirements-atlas.lock', 'requirements-atlas-qualification.in',
                          'requirements-external-catalogue.in', 'requirements-external-catalogue.lock',
                          'requirements-external-catalogue-ci.in', 'requirements-external-catalogue-ci.lock']:
-                (root / name).write_text('Fictional source fixture. No public licence is granted.\n')
+                (root / name).write_text('Fictional source fixture. External content rights remain separate.\n')
             for name in ['scripts', 'tools/submission-package', 'templates', 'tests', '.github', 'config', 'docs']:
                 (root / name).mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / 'LICENSE', root / 'LICENSE')
             for name in ['build_release_candidate.py', 'build_submission_assembler.py']:
                 shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
             for name in ['page.html', 'assembler.js', 'prefill.js']:
@@ -53,10 +54,13 @@ class ReleaseCandidateTests(unittest.TestCase):
             self.assertEqual(receipt['sourceCommit'], git('rev-parse', 'HEAD').decode().strip())
             self.assertEqual(receipt['archiveSha256'], hashlib.sha256(archive.read_bytes()).hexdigest())
             self.assertEqual(archive.read_bytes(), (root / '.local/two/careops-ppg-portable.zip').read_bytes())
-            self.assertFalse(receipt['nativeWrites']); self.assertFalse(receipt['publicLicenceGranted'])
+            self.assertFalse(receipt['nativeWrites'])
+            self.assertEqual(receipt['projectOwnedCodeLicense'], 'Apache-2.0')
+            self.assertFalse(receipt['externalContentRedistributionRightsGranted'])
             with zipfile.ZipFile(archive) as bundle:
                 self.assertEqual(bundle.read('PPG-submission-assembler.html'), (output / 'PPG-submission-assembler.html').read_bytes())
                 self.assertEqual(bundle.read('config/fixture.json'), (root / 'config/fixture.json').read_bytes())
+                self.assertEqual(bundle.read('LICENSE'), (ROOT / 'LICENSE').read_bytes())
                 self.assertEqual(bundle.read('NOTICE.md'), (root / 'NOTICE.md').read_bytes())
                 self.assertEqual(bundle.read('requirements-xlsb.lock'), (root / 'requirements-xlsb.lock').read_bytes())
                 for name in ['requirements-atlas.lock', 'requirements-atlas-qualification.in', '.python-version-atlas']:
