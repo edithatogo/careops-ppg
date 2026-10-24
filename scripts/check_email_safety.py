@@ -1,4 +1,4 @@
-"""Refuse email-capable actions in a supplied native flow definition; no network."""
+"""Refuse email actions and enabled returned owner-alert subscriptions; no network."""
 from __future__ import annotations
 import argparse
 import json
@@ -10,8 +10,17 @@ MAIL_URL = re.compile(r'(?:/sendMail(?:[/?#\s]|$)|smtp[s]?://|api\.(?:sendgrid|m
 
 
 def email_actions(flow):
-    """Inventory concrete actions recursively; do not infer safety from flow name/state."""
+    """Inventory actions and supplied owner-alert metadata; never infer safety from state."""
     findings = []
+    properties = flow.get('properties', {}) if isinstance(flow, dict) else {}
+    if isinstance(properties, dict) and 'flowFailureAlertSubscribed' in properties:
+        subscribed = properties['flowFailureAlertSubscribed']
+        if subscribed is not False:
+            findings.append({
+                'actionPath': 'properties/flowFailureAlertSubscribed',
+                'operationId': 'PowerAutomateOwnerFailureAlert',
+                'reason': ('owner-failure-email-subscription-enabled' if subscribed is True
+                           else 'owner-failure-email-subscription-unverified')})
     def visit(value, path):
         if isinstance(value, list):
             for i, child in enumerate(value): visit(child, path + [str(i)])
@@ -39,13 +48,24 @@ def email_actions(flow):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--flow', type=Path, required=True)
+    p.add_argument('--require-native-alerts-off', action='store_true',
+                   help='Require returned properties.flowFailureAlertSubscribed to be boolean false')
     args = p.parse_args()
     flow = json.loads(args.flow.read_text())
     if not isinstance(flow, dict) or not flow:
         raise ValueError('Complete nonempty flow object required')
     findings = email_actions(flow)
+    properties = flow.get('properties', {})
+    alert_off = isinstance(properties, dict) and properties.get('flowFailureAlertSubscribed') is False
+    if args.require_native_alerts_off and not alert_off and not any(
+            x['operationId'] == 'PowerAutomateOwnerFailureAlert' for x in findings):
+        findings.append({'actionPath': 'properties/flowFailureAlertSubscribed',
+                         'operationId': 'PowerAutomateOwnerFailureAlert',
+                         'reason': 'owner-failure-email-subscription-unknown'})
     print(json.dumps({'emailCapableActions': findings, 'automaticEmailAllowed': False,
-                      'scope': 'Supplied definition only; no native state or external code audit',
+                      'nativeOwnerAlertsVerifiedOff': alert_off,
+                      'strictNativePreflight': args.require_native_alerts_off,
+                      'scope': 'Supplied definition and returned owner-alert metadata only; absent subscription metadata is unknown, not Off; no external code audit',
                       'writesPerformed': 0}))
     return 1 if findings else 0
 
