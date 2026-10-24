@@ -191,6 +191,12 @@ source policy texts and historical delivery records remain outside this toolkit.
 
 ## Standard selected-source evidence reader
 
+The [offline source discovery parser](docs/source-discovery.md) observes RSS,
+sitemap occurrences and known publication download links. It preserves duplicate
+discovery provenance and refuses incomplete/error inputs without assigning
+publication identity, advancing a baseline or making native writes. Native remote
+acquisition and persistence require separate qualification.
+
 The [Power Automate reader guide](docs/power-automate-cited-reader.md) describes a
 fixed-source, read-only Standard SharePoint graph generator. Raw native reads,
 independent hash/extraction, caller permissions and conversational assistant
