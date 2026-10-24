@@ -190,6 +190,53 @@ def parse_sitemap(data, source_url, allowed_origins):
     return result
 
 
+def reconcile_rss(previous_bytes, current_bytes, source_url, allowed_origins):
+    """Compare retained same-feed observations, without accepting a baseline or identity.
+
+    GUIDs are scoped to this feed. Missing GUIDs use the exact observed locator;
+    neither key is a publication identity. Keep every occurrence, including duplicates.
+    """
+    previous = (parse_rss(previous_bytes, source_url, allowed_origins)
+                if previous_bytes is not None else None)
+    current = parse_rss(current_bytes, source_url, allowed_origins)
+
+    def group(snapshot):
+        result = {}
+        for row in snapshot['items'] if snapshot else []:
+            key = ('feed-guid', row['guid']) if row['guid'] else ('observed-locator', row['observedURL'])
+            result.setdefault(key, []).append(row)
+        return result
+
+    before, after = group(previous), group(current)
+    comparisons = []
+    for kind, value in sorted(before.keys() | after.keys()):
+        old, new = before.get((kind, value), []), after.get((kind, value), [])
+        old_hashes, new_hashes = ({row['itemSHA256'] for row in rows} for rows in (old, new))
+        # A reused GUID/locator with simultaneous variants is ambiguous, even when
+        # the same ambiguous group is present in both snapshots. Never pick one.
+        if len(old_hashes) > 1 or len(new_hashes) > 1:
+            status = 'conflicting-observations'
+        elif not new:
+            status = 'not-observed-in-current-feed'
+        elif not old:
+            status = 'first-observed'
+        elif old_hashes == new_hashes:
+            status = 'unchanged'
+        else:
+            status = 'changed-observation'
+        comparisons.append({'keyKind': kind, 'keyValue': value, 'status': status,
+                            'previousOccurrences': old, 'currentOccurrences': new})
+    return {'kind': 'rss-observation-reconciliation-v1', 'sourceURL': source_url,
+            'previous': previous, 'current': current, 'comparisons': comparisons,
+            'groupCount': len(comparisons),
+            'previousOccurrenceCount': previous['itemCount'] if previous else 0,
+            'currentOccurrenceCount': current['itemCount'],
+            'baselineSupplied': previous is not None,
+            'feedHistoryComplete': False, 'removalDecisionsAllowed': False,
+            'identityEstablished': False, 'applicabilityAccepted': False,
+            'checkpointAdvanced': False, 'sourceWrites': False}
+
+
 def reconcile_sitemaps(index_bytes, child_bytes, index_url, allowed_origins):
     """Keep occurrences; a failed/missing child cannot establish removals."""
     index = parse_sitemap(index_bytes, index_url, allowed_origins)

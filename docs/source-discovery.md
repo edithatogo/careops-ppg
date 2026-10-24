@@ -15,6 +15,23 @@ origins and retain the returned source hash with the original capture.
   dates remain visible; neither ordering nor an empty feed establishes complete
   history or the absence of changes. The item fingerprint hashes parsed XML
   serialization; the envelope hash separately identifies the exact raw bytes.
+- `reconcile_rss(previous_raw, current_raw, source_url, allowed_origins)` compares
+  two retained captures of the same feed, with `None` permitted only for the first
+  capture's missing predecessor. Groups use feed-scoped GUIDs or, when absent,
+  the exact observed locator including any fragment. Reordering and repeated
+  identical occurrences do not create another group; every ordinal/occurrence
+  remains available. These keys never assign publication or edition identity.
+  Changed item fingerprints are candidates even when the publication date is old
+  or unchanged. Simultaneous differing variants for a GUID/locator in either
+  capture are held as `conflicting-observations`; no variant is selected.
+  Disappearing entries are `not-observed-in-current-feed`, never deleted,
+  retired or classified as withdrawn. New GUIDs at the same URL remain separate
+  discovery observations for the catalogue owner to reconcile. A failed parse
+  refuses comparison; an empty feed cannot prove complete history. Parsed XML
+  formatting changes may change an item fingerprint and require inspection.
+  The result retains both raw-capture hashes and all prior/current occurrences;
+  it does not persist a checkpoint or accept a baseline. Use existing capture
+  storage and explicitly selected prior receipts rather than a new source ledger.
 - `parse_sitemap(raw, source_url, allowed_origins)` retains locator and raw
   last-modification assertions. Those dates do not establish source editions.
 - `reconcile_sitemaps(index_raw, child_payloads, index_url, allowed_origins)`
