@@ -141,6 +141,9 @@ class ReaderProofTests(unittest.TestCase):
         self.rejects(lambda b, e: b['pin'].__setitem__('Length', 1))
 
     def test_malformed_container_types_fail_closed(self):
+        binding, source, bundle = sample()
+        with self.assertRaises(ValueError):verify_evidence([], source, bundle)
+        self.rejects(lambda b, e: e['refusal']['run']['properties'].__setitem__('error', []))
         self.rejects(lambda b, e: e['first']['run'].__setitem__('properties', []))
         self.rejects(lambda b, e: e['first'].__setitem__('outputs', []))
         def broken_row(b, e):
@@ -160,6 +163,10 @@ class ReaderProofTests(unittest.TestCase):
             (p/'binding.json').write_text('PRIVATE-CORRUPT-BINDING')
             run=subprocess.run(args,capture_output=True,text=True,check=False)
             self.assertEqual(run.returncode,1);self.assertNotIn('PRIVATE-CORRUPT-BINDING',run.stdout+run.stderr)
+            self.assertFalse(json.loads(run.stdout)['offlineEvidenceConsistent'])
+            (p/'binding.json').write_text('[]')
+            run=subprocess.run(args,capture_output=True,text=True,check=False)
+            self.assertEqual(run.returncode,1);self.assertNotIn('Traceback',run.stdout+run.stderr)
             self.assertFalse(json.loads(run.stdout)['offlineEvidenceConsistent'])
 
 

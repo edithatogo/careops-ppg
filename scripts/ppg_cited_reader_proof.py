@@ -88,6 +88,7 @@ def action_statuses(history, run):
 
 
 def verify_evidence(binding, retained_bytes, bundle):
+    require(isinstance(binding, dict), 'invalid_binding')
     binding = checked_binding(binding)
     pin = pin_values(binding['pin'])
     require(isinstance(retained_bytes, bytes) and 0 < len(retained_bytes) <= MAX_BYTES
@@ -127,8 +128,9 @@ def verify_evidence(binding, retained_bytes, bundle):
         expected_statuses = {key: 'Succeeded' for key in ACTIONS}
         expected_statuses.update(Refuse_SOURCE_PIN='Skipped', Refuse_SOURCE_CHANGED='Skipped')
         if label == 'refusal':
-            require(properties.get('status') == 'Failed'
-                    and properties.get('error', {}).get('code') == 'SOURCE_PIN',
+            error = properties.get('error')
+            require(properties.get('status') == 'Failed' and isinstance(error, dict)
+                    and error.get('code') == 'SOURCE_PIN',
                     'expected_source_pin_refusal_missing')
             expected_statuses = {key: 'Skipped' for key in ACTIONS}
             expected_statuses.update(Metadata_before='Succeeded', Refuse_SOURCE_PIN='Succeeded',
