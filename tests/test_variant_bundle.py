@@ -3,8 +3,10 @@ import hashlib
 import io
 import json
 import unittest
+from unittest import mock
 import zipfile
 
+from scripts import ppg_variant_bundle
 from scripts.ppg_variant_bundle import build_variant_bundle
 
 
@@ -98,3 +100,43 @@ class VariantBundleTests(unittest.TestCase):
         self.assertEqual(len(result['manifest']['sourceCaptures']), 3)
         with zipfile.ZipFile(io.BytesIO(result['bytes'])) as archive:
             self.assertEqual(len(archive.namelist()), 3)
+
+    def test_same_capsule_hash_keeps_distinct_occurrence_receipts(self):
+        extra = copy.deepcopy(self.records[0])
+        extra['sourcePath'] = '/fictional/another-retained-copy.zip'
+        extra['identityEvidence'] = {'existingReceipt': 'another-occurrence'}
+        records = [*self.records, extra]
+        result = build_variant_bundle(records, self.bodies)
+        self.assertEqual(result['bytes'], build_variant_bundle(list(reversed(records)), self.bodies)['bytes'])
+        captured = result['manifest']['sourceCaptures']
+        self.assertEqual(len(captured), 3)
+        self.assertEqual({r['sourcePath'] for r in captured}, {r['sourcePath'] for r in records})
+        self.assertEqual(len({r['bundleMember'] for r in captured}), 2)
+        with zipfile.ZipFile(io.BytesIO(result['bytes'])) as archive:
+            self.assertIsNone(archive.testzip())
+            self.assertEqual(len(archive.namelist()), 3)
+
+    def test_aggregate_budget_refuses_before_reading_the_next_original(self):
+        reads = []
+        crc_checks = []
+        original_read = zipfile.ZipFile.read
+        original_testzip = zipfile.ZipFile.testzip
+
+        def observe_read(archive, member, *args, **kwargs):
+            reads.append(member)
+            return original_read(archive, member, *args, **kwargs)
+
+        def observe_crc(archive):
+            crc_checks.append(True)
+            return original_testzip(archive)
+
+        # The first original fits exactly; the next distinct original must be
+        # refused before even a streaming CRC/decompression scan of its bytes.
+        limit = sorted(self.records, key=lambda r: r['sha256'])[0]['sourceCapsule']['memberBytes']
+        with mock.patch.object(ppg_variant_bundle, 'MAX_BUNDLE_BYTES', limit):
+            with mock.patch.object(zipfile.ZipFile, 'read', observe_read):
+                with mock.patch.object(zipfile.ZipFile, 'testzip', observe_crc):
+                    with self.assertRaisesRegex(ValueError, 'variant_bundle_oversize'):
+                        build_variant_bundle(self.records, self.bodies)
+        self.assertEqual(len(reads), 1)
+        self.assertEqual(len(crc_checks), 1)

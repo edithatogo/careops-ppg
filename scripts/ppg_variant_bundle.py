@@ -19,6 +19,17 @@ MAX_ORIGINAL_BYTES = 64 * 1024 * 1024
 MAX_BUNDLE_BYTES = 256 * 1024 * 1024
 
 
+class _BundleLimit(ValueError):
+    """Refuse additional decompression before exceeding the distinct-byte budget."""
+
+
+def _occurrence_key(record):
+    try:
+        return record['sha256'], json.dumps(record, sort_keys=True, allow_nan=False)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError('unverified_variant_capture') from exc
+
+
 def build_variant_bundle(records, capsule_bytes):
     """Return deterministic bytes and a manifest for one evidenced edition set."""
     if (not isinstance(records, list) or not 2 <= len(records) <= 500
@@ -27,7 +38,8 @@ def build_variant_bundle(records, capsule_bytes):
         raise ValueError('require_two_or_more_captured_variants')
     identities, editions, sources, originals = set(), set(), {}, {}
     retained = []
-    for record in sorted(records, key=lambda row: row['sha256']):
+    original_bytes = 0
+    for record in sorted(records, key=_occurrence_key):
         try:
             uid = UUID(record['documentUID'])
             if not uid.int or not record['identityEvidence']:
@@ -38,7 +50,7 @@ def build_variant_bundle(records, capsule_bytes):
             sha = record['sha256']
             if not isinstance(sha, str) or not re.fullmatch(r'[a-f0-9]{64}', sha):
                 raise ValueError()
-            if sha in sources or not isinstance(record['sourcePath'], str) or not record['sourcePath']:
+            if not isinstance(record['sourcePath'], str) or not record['sourcePath']:
                 raise ValueError()
             raw = capsule_bytes[sha]
             if not isinstance(raw, bytes) or not 0 < len(raw) <= MAX_CAPSULE_BYTES or len(raw) != record['bytes'] or hashlib.sha256(raw).hexdigest() != sha:
@@ -53,12 +65,17 @@ def build_variant_bundle(records, capsule_bytes):
                         or capsule.getinfo(name).file_size != member['memberBytes']
                         or sum(info.file_size for info in capsule.infolist()) > MAX_ORIGINAL_BYTES + 2 * 1024 * 1024):
                     raise ValueError()
+                if (member['memberSHA256'] not in originals
+                        and original_bytes + member['memberBytes'] > MAX_BUNDLE_BYTES):
+                    raise _BundleLimit('variant_bundle_oversize')
                 if capsule.testzip() is not None or len(capsule.namelist()) != len(set(capsule.namelist())):
                     raise ValueError()
                 content = capsule.read(name)
             original_sha = hashlib.sha256(content).hexdigest()
             if original_sha != member['memberSHA256'] or len(content) != member['memberBytes']:
                 raise ValueError()
+        except _BundleLimit:
+            raise
         except (KeyError, TypeError, ValueError, AttributeError, zipfile.BadZipFile) as exc:
             raise ValueError('unverified_variant_capture') from exc
         identities.add(str(uid))
@@ -69,6 +86,7 @@ def build_variant_bundle(records, capsule_bytes):
         prior = originals.get(original_sha)
         if prior is None:
             originals[original_sha] = (archive_name, content)
+            original_bytes += len(content)
         else:
             archive_name = prior[0]
         retained.append({**copy.deepcopy(record), 'bundleMember': archive_name})
@@ -78,12 +96,10 @@ def build_variant_bundle(records, capsule_bytes):
         raise ValueError('no_distinct_original_variants')
     if set(capsule_bytes) != set(sources):
         raise ValueError('unaccounted_capsule_bytes')
-    if sum(len(content) for _, content in originals.values()) > MAX_BUNDLE_BYTES:
-        raise ValueError('variant_bundle_oversize')
     manifest = {
         'schemaVersion': 1, 'representation': 'unordered-source-variant-set',
         'documentUID': next(iter(identities)), 'sourceEdition': next(iter(editions)),
-        'sourceCaptures': sorted(retained, key=lambda row: row['sha256']),
+        'sourceCaptures': sorted(retained, key=_occurrence_key),
         'variantOrder': 'unresolved', 'canonicalVariant': None,
         'authorityAsserted': False, 'newSourceCapture': False,
         'originalsMustRemainSeparatelyRetained': True,
