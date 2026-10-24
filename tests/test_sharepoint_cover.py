@@ -104,7 +104,9 @@ class CoverTests(unittest.TestCase):
             ('/sites/test/Forms/template.docx','/sites/test/outputs/template.docx','ordinary_execution_template_required'),
             ('/sites/test/template.docx','/sites/test/outputs/renamed.docx','copy_requires_same_docx_filename'),
             ('/sites/test/template.pdf','/sites/test/outputs/template.pdf','copy_requires_same_docx_filename'),
-            ('/sites/test/template.docx','/sites/other/template.docx','invalid_cover_path')]:
+            ('/sites/test/template.docx','/sites/other/template.docx','invalid_cover_path'),
+            ('/sites/test/%27template.docx','/sites/test/outputs/%27template.docx','invalid_cover_path'),
+            ('/sites/test/template.docx','/sites/test/%2e%2e/outputs/template.docx','invalid_cover_path')]:
             with self.subTest(source=source,target=target):
                 with self.assertRaisesRegex(ValueError,error):
                     build_qualification_flow(base,'https://example.sharepoint.com/sites/test','11111111-1111-4111-8111-111111111111',dict(pin,ServerRelativeUrl=source),target,values)

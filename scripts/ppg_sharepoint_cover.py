@@ -134,7 +134,7 @@ def build_qualification_flow(existing_flow, site, library_id, template, output_p
         raise ValueError('invalid_site')
     source_path = template['ServerRelativeUrl']
     for path in (source_path, output_path):
-        if not path.startswith(origin.path + '/') or any(x in path for x in ("'", '?', '#', '..')):
+        if not path.startswith(origin.path + '/') or any(x in path for x in ("'", '?', '#', '..', '%', '\\', '\r', '\n')):
             raise ValueError('invalid_cover_path')
     if source_path == output_path:
         raise ValueError('preserve_template')
