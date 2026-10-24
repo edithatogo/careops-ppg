@@ -89,7 +89,7 @@
     "guide": "docs/power-automate-cited-reader.md",
     "mode": "fixed-selected-source-read-backend",
     "maximumFixedSourcesPerProfile": 1,
-    "qualification": "source-and-fictional-tests-only; native owner retains actual run receipts separately",
+    "qualification": "source tested; separately authored native semantic variant qualified for one fictional TXT source under the owner",
     "supportedFormats": [
       "UTF-8 TXT",
       "Markdown"
@@ -101,6 +101,31 @@
     "resultStatus": "selected-source-read",
     "requiresPremiumConnector": false,
     "deploymentState": "generated-stopped; actual native state requires readback",
-    "originalStudioDraft": "preserve unchanged; no conversion or billing change"
+    "originalStudioDraft": "preserve unchanged; no conversion or billing change",
+    "nativeQualification": {
+      "verifiedOn": "2026-10-24",
+      "scope": "owner-only fictional fixed-source TXT byte reader",
+      "sourceCount": 1,
+      "qualifiedFormats": ["TXT"],
+      "successfulCases": ["initial-read", "unchanged-replay", "restored-recovery"],
+      "pinMismatchRefusal": "SOURCE_PIN; content retrieval and result skipped",
+      "verifiedOutputBytes": 220,
+      "beforeAfterPinFields": 8,
+      "sourcePreserved": true,
+      "studioDraftPreserved": true,
+      "finalState": "Stopped",
+      "flowType": "Instant",
+      "plan": "The user who runs the flow",
+      "representation": "UI-authored semantic variant; not byte-exact generator deployment",
+      "unqualifiedCases": [
+        "native missing or denied source",
+        "native source change during retrieval",
+        "other files and formats",
+        "caller permission trimming",
+        "native hash computation and citation locators",
+        "conversational assistant publication",
+        "clinical and operational acceptance"
+      ]
+    }
   }
 }

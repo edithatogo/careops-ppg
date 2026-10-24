@@ -7,10 +7,26 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from ppg_cited_reader_flow import build_flow, checked_binding
+from ppg_cited_reader_flow import build_flow, checked_binding, PIN_FIELDS
 
 
 class ShippedReaderContract(unittest.TestCase):
+    def test_native_qualification_retains_its_single_source_and_unqualified_boundaries(self):
+        backend = json.loads((ROOT / 'config/cited-evidence.json').read_text())['powerAutomateReader']
+        native = backend['nativeQualification']
+        self.assertEqual(native['sourceCount'], 1)
+        self.assertEqual(native['qualifiedFormats'], ['TXT'])
+        self.assertEqual(native['beforeAfterPinFields'], len(PIN_FIELDS))
+        self.assertEqual(native['finalState'], 'Stopped')
+        self.assertEqual(native['successfulCases'], ['initial-read', 'unchanged-replay', 'restored-recovery'])
+        self.assertIn('not byte-exact', native['representation'])
+        self.assertIn('caller permission trimming', native['unqualifiedCases'])
+        self.assertIn('conversational assistant publication', native['unqualifiedCases'])
+        self.assertFalse(backend['runtimeHashesComputed'])
+        self.assertFalse(backend['nativeAssistantRuntimeQualified'])
+        fixture = json.loads((ROOT / 'templates/cited-evidence/power-automate-binding.json').read_text())
+        self.assertEqual(native['verifiedOutputBytes'], int(checked_binding(fixture)['pin']['Length']))
+
     def test_example_pin_and_reference_fixture_have_exact_length_and_known_hash(self):
         selected = json.loads((ROOT / 'templates/cited-evidence/power-automate-binding.json').read_text())
         pin = checked_binding(selected)['pin']

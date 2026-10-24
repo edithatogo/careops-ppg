@@ -7,6 +7,46 @@ Source tests do not establish deployment, actual native readback, caller permiss
 trimming or assistant acceptance. Retain the original Studio draft and evidence;
 this increment does not convert, rebill, activate or delete it.
 
+## Native qualification — 24 October 2026
+
+A separate ordinary solution-aware Instant flow was authored through the supported
+native designer in the existing solution. Its Details page reports **The user who
+runs the flow** as its plan. The existing Standard SharePoint reference and
+Invoker authentication were retained; no connection, permission, licence or
+billing setting was added. Final native readback confirms **Stopped**. Flow
+checker reports zero errors and the expected off-state warning.
+
+Three actual successful cases—initial read, unchanged replay and recovery after
+restoration—returned the same original 220 bytes. Independent decoding/download
+and SHA-256 comparison verified those bytes against the retained fictional source;
+the flow itself continues to return null hash fields. Both metadata reads matched
+all eight expected fields in each successful case. A deliberately wrong expected
+ETag produced `SOURCE_PIN` and skipped content retrieval and result output without
+editing the source. The complete previously accepted native definition and
+reference were restored before the successful recovery case.
+
+Fresh source bytes and full source pin remained unchanged. The original Studio
+draft's definition, references and stopped state were preserved. A native Versions
+read returned no historical rows; this is not a separate history-restoration
+qualification. Complete run/action pages, outputs, raw graph snapshots and
+preservation evidence remain with the native owner outside Git.
+
+The UI-authored native graph is an explicitly audited **semantic variant** of the
+generator, not a byte-identical deployment: its eight-field guards compare a
+Boolean and-expression with true, and its Compose uses `json`/`setProperty` to
+return an object. The empty manual schema ignores extra inputs; none are used to
+select a source. The service emits the literal `undefined` content version and
+omits the outputs key. Publication resolves the existing Invoker connection and
+authentication fields, while stopped serialization removes runtime fields. These
+specific representations were retained and reviewed; no generic normalization
+discards unknown authentication or definition differences.
+
+This closes bounded owner-only selected-source byte retrieval, replay, pin refusal
+and restoration. Native missing/denied and changed-during-read cases, other files
+and formats, caller permission trimming, extraction, citation locators and the
+conversational assistant remain unqualified. The original CLI fallback remains
+available. Do not infer clinical, current-policy or operational acceptance.
+
 ## Fixed contract
 
 The initial profile reads **one fixed operator-selected source**. It accepts no
