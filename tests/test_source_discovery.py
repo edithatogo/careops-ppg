@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import ppg_source_discovery as discovery
-from ppg_source_discovery import parse_rss, parse_sitemap, reconcile_sitemaps, reconcile_rss, parse_publication
+from ppg_source_discovery import parse_rss, parse_sitemap, reconcile_sitemaps, reconcile_rss, compare_sitemaps, parse_publication
 
 ORIGINS = ['https://publisher.example']
 BASE = ORIGINS[0]
@@ -33,6 +33,69 @@ def publication(body=''):
 
 
 class SourceDiscoveryTests(unittest.TestCase):
+    def test_scoped_sitemap_comparison_accounts_for_unchanged_and_new_observations(self):
+        child = BASE+'/map-1'; index = sitemap('sitemapindex', [child])
+        old = {child: sitemap('urlset', [BASE+'/topic/kept', BASE+'/topic/old', BASE+'/other'])}
+        new = {child: sitemap('urlset', [BASE+'/topic/kept', BASE+'/topic/new', BASE+'/other'])}
+        result = compare_sitemaps(index, old, index, new, BASE+'/maps', ORIGINS, ['topic/'])
+        statuses = {r['fetchURL'].rsplit('/', 1)[1]: r['status'] for r in result['comparisons']}
+        self.assertEqual(statuses, {'kept':'unchanged', 'old':'not-observed-in-current-index', 'new':'first-observed'})
+        self.assertEqual((result['previousScopedURLCount'], result['currentScopedURLCount']), (2, 2))
+        self.assertTrue(result['declaredScopeInventoryComparable'])
+        for key in ('catalogueCoverageComplete', 'editionDatesInferred', 'removalDecisionsAllowed',
+                    'identityEstablished', 'checkpointAdvanced', 'sourceWrites'):
+            self.assertIs(result[key], False)
+
+    def test_missing_child_cannot_prove_addition_or_omission(self):
+        a, b = BASE+'/map-1', BASE+'/map-2'; index = sitemap('sitemapindex', [a, b])
+        complete = {a: sitemap('urlset', [BASE+'/topic/first']), b: sitemap('urlset', [BASE+'/topic/second'])}
+        partial = {a: complete[a]}
+        for old, new, expected in [(complete, partial, 'current-scope-incomplete'),
+                                   (partial, complete, 'previous-scope-incomplete')]:
+            result = compare_sitemaps(index, old, index, new, BASE+'/maps', ORIGINS, ['topic/'])
+            row = next(r for r in result['comparisons'] if r['fetchURL'].endswith('/second'))
+            self.assertEqual(row['status'], expected)
+            self.assertFalse(result['declaredScopeInventoryComparable'])
+
+    def test_lastmod_changes_remain_publisher_assertions_and_variants_are_held(self):
+        a, b = BASE+'/map-1', BASE+'/map-2'; index = sitemap('sitemapindex', [a, b])
+        original = sitemap('urlset', [BASE+'/topic/item'])
+        changed = original.replace(b'publisher-raw-date', b'different-publisher-date')
+        old = {a: original, b: sitemap('urlset', [])}
+        for new, expected in [({a: changed, b: sitemap('urlset', [])}, 'publisher-metadata-changed'),
+                              ({a: original, b: changed}, 'conflicting-lastmod-assertions')]:
+            result = compare_sitemaps(index, old, index, new, BASE+'/maps', ORIGINS, ['topic/'])
+            self.assertEqual(result['comparisons'][0]['status'], expected)
+            self.assertFalse(result['editionDatesInferred'])
+
+    def test_same_locator_moving_between_maps_keeps_all_source_provenance(self):
+        a, b = BASE+'/map-1', BASE+'/map-2'; index = sitemap('sitemapindex', [a, b])
+        item, empty = sitemap('urlset', [BASE+'/topic/item']), sitemap('urlset', [])
+        result = compare_sitemaps(index, {a:item, b:empty}, index, {a:item, b:item},
+                                  BASE+'/maps', ORIGINS, ['topic/'])
+        row = result['comparisons'][0]
+        self.assertEqual(row['status'], 'discovery-provenance-changed')
+        self.assertEqual(len(row['previousOccurrences']), 1)
+        self.assertEqual({r['discoveredIn'] for r in row['currentOccurrences']}, {a, b})
+        self.assertEqual(result['currentScopedURLCount'], 1)
+
+    def test_scope_is_explicit_literal_path_matching_not_query_or_identity_matching(self):
+        a=BASE+'/map'; index=sitemap('sitemapindex', [a])
+        child=sitemap('urlset', [BASE+'/TOPIC/item', BASE+'/other?topic=yes',
+                                 BASE+'/topic/item?v=1', BASE+'/topic/item?v=2'])
+        result=compare_sitemaps(index, {a:child}, index, {a:child}, BASE+'/maps', ORIGINS, ['topic'])
+        self.assertEqual(result['currentScopedURLCount'], 3)
+        self.assertFalse(any('/other?' in r['fetchURL'] for r in result['comparisons']))
+        for terms in (None, [], [''], ['.*'], ['Topic'], ['topic']*2, ['x']*21, [True]):
+            with self.subTest(terms=terms), self.assertRaises(ValueError):
+                compare_sitemaps(index, {a:child}, index, {a:child}, BASE+'/maps', ORIGINS, terms)
+
+    def test_malformed_current_child_does_not_report_false_missing_source(self):
+        a=BASE+'/map'; index=sitemap('sitemapindex', [a]);old={a:sitemap('urlset',[BASE+'/topic/item'])}
+        result=compare_sitemaps(index,old,index,{a:b'<html>outage</html>'},BASE+'/maps',ORIGINS,['topic/'])
+        self.assertEqual(result['comparisons'][0]['status'],'current-scope-incomplete')
+        self.assertEqual(result['current']['failures'][0]['status'],'parse_failed')
+
     def test_rss_reconciliation_retains_repeats_without_creating_new_publications(self):
         raw = rss([('same', ''), ('same', '')])
         result = reconcile_rss(raw, raw, BASE+'/rss', ORIGINS)

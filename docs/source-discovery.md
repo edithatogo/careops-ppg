@@ -39,6 +39,20 @@ origins and retain the returned source hash with the original capture.
   parent/hash provenance, and reports missing or malformed children. A complete
   retrieval of declared children still does not prove catalogue completeness.
   This helper never authorises removals or withdrawal decisions.
+- `compare_sitemaps(previous_index_raw, previous_children, current_index_raw,
+  current_children, index_url, allowed_origins, path_terms)` compares the retained
+  inventories within one explicit scope. Supply one to twenty unique lowercase
+  literal path terms: matching is case-insensitive against the escaped URL path,
+  without decoding aliases or matching query strings. Queries remain part of each
+  exact locator. The returned scope records those terms; they select discovery
+  candidates and do not establish complete publication coverage.
+  First observations, index omissions, raw `lastmod` changes and changes to the
+  child-map occurrence sources are separate statuses. Every occurrence is retained.
+  Conflicting nonempty `lastmod` assertions remain held, not resolved by choosing
+  the latest-looking date. A missing/malformed current child reports an incomplete
+  scope instead of a missing URL; incomplete predecessor coverage also prevents a
+  confident first-observation conclusion. Even two complete declared inventories
+  do not authorise removal, infer an edition date or advance a checkpoint.
 - `parse_publication(raw, source_url, allowed_origins, expected_title)` requires
   one complete main region, the expected title and at least one PDF link. It
   excludes navigation/script/template links and refuses observed access/error

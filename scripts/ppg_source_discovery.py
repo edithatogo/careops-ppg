@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections import Counter
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from urllib.parse import urlsplit, urlunsplit, urldefrag
@@ -276,6 +277,53 @@ def reconcile_sitemaps(index_bytes, child_bytes, index_url, allowed_origins):
             'observations': [{'fetchURL': k, 'occurrences': v} for k, v in sorted(observations.items())],
             'catalogueCoverageComplete': False, 'removalDecisionsAllowed': False,
             'identityEstablished': False, 'sourceWrites': False}
+
+
+def compare_sitemaps(previous_index, previous_children, current_index, current_children,
+                     index_url, allowed_origins, path_terms):
+    """Compare a declared path-term scope; index omissions never authorise retirement."""
+    if (not isinstance(path_terms, list) or not 1 <= len(path_terms) <= 20
+            or any(not isinstance(term, str) or not re.fullmatch(r'[a-z0-9][a-z0-9/_-]{0,199}', term)
+                   for term in path_terms) or len(path_terms) != len(set(path_terms))):
+        raise ValueError('one to twenty unique lowercase literal path terms required')
+    previous = reconcile_sitemaps(previous_index, previous_children, index_url, allowed_origins)
+    current = reconcile_sitemaps(current_index, current_children, index_url, allowed_origins)
+
+    def selected(snapshot):
+        return {row['fetchURL']: row['occurrences'] for row in snapshot['observations']
+                if any(term in urlsplit(row['fetchURL']).path.lower() for term in path_terms)}
+
+    before, after = selected(previous), selected(current)
+    changes = []
+    for url in sorted(before.keys() | after.keys()):
+        old, new = before.get(url, []), after.get(url, [])
+        old_dates, new_dates = ({r['lastmodRaw'] for r in rows} for rows in (old, new))
+        if len(old_dates - {None}) > 1 or len(new_dates - {None}) > 1:
+            status = 'conflicting-lastmod-assertions'
+        elif not new:
+            status = ('not-observed-in-current-index' if current['allDeclaredChildrenParsed']
+                      else 'current-scope-incomplete')
+        elif not old:
+            status = ('first-observed' if previous['allDeclaredChildrenParsed']
+                      else 'previous-scope-incomplete')
+        elif old_dates != new_dates:
+            status = 'publisher-metadata-changed'
+        elif Counter(r['discoveredIn'] for r in old) != Counter(r['discoveredIn'] for r in new):
+            status = 'discovery-provenance-changed'
+        else:
+            status = 'unchanged'
+        changes.append({'fetchURL': url, 'status': status,
+                        'previousOccurrences': old, 'currentOccurrences': new})
+    return {'kind': 'scoped-sitemap-comparison-v1', 'indexURL': index_url,
+            'scope': {'pathTerms': list(path_terms),
+                      'matching': 'case-insensitive literal substring of escaped URL path; no query matching'},
+            'previous': previous, 'current': current, 'comparisons': changes,
+            'previousScopedURLCount': len(before), 'currentScopedURLCount': len(after),
+            'declaredScopeInventoryComparable': (previous['allDeclaredChildrenParsed']
+                                                 and current['allDeclaredChildrenParsed']),
+            'catalogueCoverageComplete': False, 'editionDatesInferred': False,
+            'removalDecisionsAllowed': False, 'identityEstablished': False,
+            'checkpointAdvanced': False, 'sourceWrites': False}
 
 
 class _Publication(HTMLParser):
