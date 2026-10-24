@@ -29,7 +29,10 @@ connections, native-object owners and the catalogue's writer remain authoritativ
   actual 404. No retry is configured for connector operations. An uncertain
   create stops the path; it is not converted into completion.
 - Read back exact UTF-8 bytes, native ID, ETag, version, length and path; recheck
-  the source context before reporting persistence. An existing receipt must stay
+  the source context, then repeat metadata/content/metadata receipt readback.
+  Compare the earlier and final receipt pins and bytes before reporting the
+  final native pin. An edit, deletion or replacement during the source checks
+  must stop completion. An existing receipt must stay
   at version 1.0 and retain its prior pins. Human-edited or different bytes hold.
 
 Each new invocation normally retains its own observation. The selected capture
@@ -60,16 +63,17 @@ publication currency, final-URL/redirect observation or whole-track recovery.
 
 ## Current evidence and next native operation
 
-Ten focused offline tests passed on actual repo-local Python 3.15.1. They exercise
+Eleven focused offline tests passed on actual repo-local Python 3.15.1. They exercise
 emitted guard predicates against changed records/script pins, failed reads,
 missing resume targets, UTF-8 byte lengths/padding, altered saved pins, unsafe
-bindings and unexpected actions. They do not authenticate or mutate native data.
+bindings, late receipt edits/replacements during source checks and unexpected
+actions. They do not authenticate or mutate native data.
 
 ```sh
 .venv/bin/python -m unittest -q tests.test_cloud_observation
 ```
 
-The selected private candidate has 95 actions, seven action nesting levels and a
+The selected private candidate has 98 actions, seven action nesting levels and a
 longest expression of 6,779 characters. It was prepared from retained qualification
 checkpoints. A fresh native preflight stopped at an expired resource token before
 any new native write. Supported renewal reached a user credential step. The new

@@ -118,11 +118,33 @@ class CloudObservation(unittest.TestCase):
             record={'observedAtUtc':'2026-10-24T00:00:00Z','note':text};raw=json.dumps(record,separators=(',',':'),ensure_ascii=False).encode()
             pin={'UniqueId':'fictional','ETag':'"fictional,1"','Length':str(len(raw)),'UIVersionLabel':'1.0','ServerRelativeUrl':b['folder']+'/source-native-run-Fictional.json'}
             bodies={'Read_saved_observation_content':{'$content':base64.b64encode(raw).decode()},'Read_saved_observation_pin':copy.deepcopy(pin),'Read_saved_observation_after':copy.deepcopy(pin)}
+            bodies.update({'Read_final_observation_pin':copy.deepcopy(pin),'Read_final_observation_after':copy.deepcopy(pin),'Read_final_observation_content':copy.deepcopy(bodies['Read_saved_observation_content'])})
             outputs={'Expected_observation':record,'Observation_filename':'source-native-run-Fictional.json','Read_observation_before':{'statusCode':404}}
             self.assertTrue(evaluate(expr,bodies,outputs))
             for field in ('Length','ETag','UniqueId','UIVersionLabel'):
                 changed=copy.deepcopy(bodies);changed['Read_saved_observation_after'][field]='2' if field=='Length' else 'changed'
                 with self.subTest(text=text,field=field):self.assertFalse(evaluate(expr,changed,outputs))
+
+    def test_edit_replacement_or_byte_change_during_final_source_checks_cannot_use_earlier_receipt(self):
+        p,r,b=fixture();a=persistence_actions(build(p,r,b));expr=a['Require_saved_observation']['expression']
+        record={'observedAtUtc':'2026-10-24T00:00:00Z','note':'Fictional saved receipt'}
+        raw=json.dumps(record,separators=(',',':'),ensure_ascii=False).encode()
+        pin={'UniqueId':'fictional','ETag':'"fictional,1"','Length':str(len(raw)),'UIVersionLabel':'1.0','ServerRelativeUrl':b['folder']+'/source-native-run-Fictional.json'}
+        bodies={name:copy.deepcopy(pin) for name in ['Read_saved_observation_pin','Read_saved_observation_after','Read_final_observation_pin','Read_final_observation_after']}
+        bodies.update({name:{'$content':base64.b64encode(raw).decode()} for name in ['Read_saved_observation_content','Read_final_observation_content']})
+        outputs={'Expected_observation':record,'Observation_filename':'source-native-run-Fictional.json','Read_observation_before':{'statusCode':404}}
+        self.assertTrue(evaluate(expr,bodies,outputs))
+        for field in ('UniqueId','ETag','Length','UIVersionLabel','ServerRelativeUrl'):
+            changed=copy.deepcopy(bodies)
+            for name in ('Read_final_observation_pin','Read_final_observation_after'):
+                changed[name][field]='2' if field=='Length' else 'changed'
+            with self.subTest(field=field):self.assertFalse(evaluate(expr,changed,outputs))
+        changed=copy.deepcopy(bodies);changed['Read_final_observation_content']['$content']=base64.b64encode(raw.replace(b'Fictional',b'HUMANEDIT')).decode()
+        self.assertFalse(evaluate(expr,changed,outputs))
+        self.assertEqual(a['Read_final_observation_pin']['runAfter'],{'Require_context_final':['Succeeded']})
+        self.assertEqual(a['Read_final_observation_content']['runAfter'],{'Read_final_observation_pin':['Succeeded']})
+        self.assertEqual(a['Read_final_observation_after']['runAfter'],{'Read_final_observation_content':['Succeeded']})
+        self.assertEqual(a['Report_persisted_observation']['inputs']['receiptPin'],"@body('Read_final_observation_after')")
 
     def test_existing_transport_hash_and_inputs_preserved_with_one_create_only_endpoint(self):
         p,r,b=fixture();before=copy.deepcopy((p,r,b));flow=build(p,r,b)
@@ -185,7 +207,7 @@ class CloudObservation(unittest.TestCase):
     def test_saved_byte_pin_version_and_late_context_checks_precede_completion(self):
         p,r,b=fixture();a=persistence_actions(build(p,r,b))
         self.assertEqual(a['Report_persisted_observation']['runAfter'],{'Require_saved_observation':['Succeeded']})
-        self.assertEqual(a['Require_saved_observation']['runAfter'],{'Require_context_final':['Succeeded']})
+        self.assertEqual(a['Require_saved_observation']['runAfter'],{'Read_final_observation_after':['Succeeded']})
         expression=a['Require_saved_observation']['expression']
         self.assertIn("['UIVersionLabel'],'1.0'",expression)
         for k in PINS:self.assertIn("Read_observation_before')?['"+k+"']",expression)

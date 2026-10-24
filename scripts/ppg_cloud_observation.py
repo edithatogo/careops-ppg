@@ -268,18 +268,26 @@ def build(profile, runtime, persistence):
     actions['Read_saved_observation_content']=content(path,'Read_saved_observation_pin')
     actions['Read_saved_observation_after']=http('GET',read_uri,'Read_saved_observation_content')
     prev=context('final','Read_saved_observation_after')
+    # Source checks can take several requests. Re-read the receipt afterwards,
+    # so an edit/deletion/replacement during those checks cannot use an old pin.
+    actions['Read_final_observation_pin']=http('GET',read_uri,prev)
+    actions['Read_final_observation_content']=content(path,'Read_final_observation_pin')
+    actions['Read_final_observation_after']=http('GET',read_uri,'Read_final_observation_content')
     encoded="base64(string(outputs('Expected_observation')))"
     byte_length="sub(div(mul(length("+encoded+"),3),4),if(endsWith("+encoded+",'=='),2,if(endsWith("+encoded+",'='),1,0)))"
     checks=["equals(body('Read_saved_observation_content')?['$content'],base64(string(outputs('Expected_observation'))))",
-            "equals(body('Read_saved_observation_after')?['UIVersionLabel'],'1.0')",
-            "equals(body('Read_saved_observation_after')?['ServerRelativeUrl'],concat("+lit(b['folder']+'/')+",outputs('Observation_filename')))",
-            "equals(int(body('Read_saved_observation_after')?['Length']),"+byte_length+")"]
+            "equals(body('Read_final_observation_content')?['$content'],base64(string(outputs('Expected_observation'))))",
+            "equals(body('Read_final_observation_after')?['UIVersionLabel'],'1.0')",
+            "equals(body('Read_final_observation_after')?['ServerRelativeUrl'],concat("+lit(b['folder']+'/')+",outputs('Observation_filename')))",
+            "equals(int(body('Read_final_observation_after')?['Length']),"+byte_length+")"]
     checks += ["equals(body('Read_saved_observation_pin')?['"+k+"'],body('Read_saved_observation_after')?['"+k+"'])" for k in PINS]
-    checks += ["or(equals(outputs('Read_observation_before')?['statusCode'],404),equals(body('Read_observation_before')?['"+k+"'],body('Read_saved_observation_after')?['"+k+"']))" for k in PINS]
-    actions['Require_saved_observation']=check('and('+','.join(checks)+')',prev,'Saved_observation_changed')
+    checks += ["equals(body('Read_final_observation_pin')?['"+k+"'],body('Read_final_observation_after')?['"+k+"'])" for k in PINS]
+    checks += ["equals(body('Read_saved_observation_after')?['"+k+"'],body('Read_final_observation_after')?['"+k+"'])" for k in PINS]
+    checks += ["or(equals(outputs('Read_observation_before')?['statusCode'],404),equals(body('Read_observation_before')?['"+k+"'],body('Read_final_observation_after')?['"+k+"']))" for k in PINS]
+    actions['Require_saved_observation']=check('and('+','.join(checks)+')','Read_final_observation_after','Saved_observation_changed')
     actions['Report_persisted_observation']=compose({'kind':'ppg-native-acquisition-persistence-result-v1',
         'currentRunId':"@workflow()?['run']?['name']",'originRunId':"@outputs('Observation_origin_run')",
-        'receiptPin':"@body('Read_saved_observation_after')",'captureKey':b['binding']['captureKey'],
+        'receiptPin':"@body('Read_final_observation_after')",'captureKey':b['binding']['captureKey'],
         'replayKey':b['replayKey'],'created':"@equals(outputs('Read_observation_before')?['statusCode'],404)",
         'resumed':"@not(empty(outputs('Observation_resume_input')))",'producerObservationPersisted':True,
         'catalogueRowsChanged':0,'originalCapturesCreated':0,'checkpointAdvanced':False,
