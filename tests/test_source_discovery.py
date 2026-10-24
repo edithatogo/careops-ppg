@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import ppg_source_discovery as discovery
-from ppg_source_discovery import parse_rss, parse_sitemap, reconcile_sitemaps, reconcile_rss, compare_sitemaps, parse_publication
+from ppg_source_discovery import parse_rss, parse_sitemap, reconcile_sitemaps, reconcile_rss, compare_sitemaps, parse_publication, parse_resource_index
 
 ORIGINS = ['https://publisher.example']
 BASE = ORIGINS[0]
@@ -33,6 +33,66 @@ def publication(body=''):
 
 
 class SourceDiscoveryTests(unittest.TestCase):
+    def test_resource_index_retains_duplicate_content_links_without_requiring_pdf(self):
+        raw = publication('<h2>Resources</h2><a href="/resource">First</a><a href="/resource">Repeated</a>')
+        result = parse_resource_index(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(result['linkOccurrenceCount'], 2)
+        self.assertEqual([r['ordinal'] for r in result['links']], [0, 1])
+        self.assertEqual({r['fetchURL'] for r in result['links']}, {BASE+'/resource'})
+        self.assertEqual({r['precedingHeading'] for r in result['links']}, {'Resources'})
+        for flag in ('paginationComplete','catalogueCoverageComplete','publicationIdentityAssigned',
+                     'checkpointAdvanced','identityEstablished','applicabilityAccepted','sourceWrites'):
+            self.assertIs(result[flag], False)
+
+    def test_resource_index_keeps_main_navigation_and_pagination_as_hints(self):
+        raw = publication('<a href="/real.pdf">PDF</a><nav><div><a rel="NEXT nofollow" href="?page=2">Next page</a></div></nav>')
+        result = parse_resource_index(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(len(result['paginationHints']), 1)
+        page = result['paginationHints'][0]
+        self.assertEqual(page['fetchURL'], BASE+'/index?page=2')
+        self.assertTrue(page['inNavigation'])
+        self.assertEqual(page['relRaw'], 'NEXT nofollow')
+        self.assertEqual(result['linkOccurrenceCount'], 2)  # Outside-main navigation is excluded.
+        original = parse_publication(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(len(original['downloads']), 1)
+
+    def test_resource_index_holds_unsupported_and_external_locators_without_dropping_them(self):
+        body = ''.join('<a href="'+href+'">Reference</a>' for href in
+                       ['https://other.example/item', 'mailto:person@example.test', 'javascript:alert(1)',
+                        'http://publisher.example/item']) + '<a>Missing locator</a>'
+        result = parse_resource_index(publication(body), BASE+'/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(result['linkOccurrenceCount'], 5)
+        self.assertEqual([r['status'] for r in result['links']], ['held-locator']*4+['missing-locator'])
+        self.assertTrue(all('fetchURL' not in r for r in result['links']))
+
+    def test_resource_index_same_page_fragment_and_doubled_paths_remain_distinct(self):
+        raw = publication('<a href="#section">Section</a><a href="../files//resource.pdf#page=2">Resource</a>')
+        result = parse_resource_index(raw, BASE+'/resources/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(result['links'][0]['status'], 'same-page-navigation')
+        self.assertEqual(result['links'][0]['fragment'], 'section')
+        self.assertEqual(result['links'][1]['fetchURL'], BASE+'/files//resource.pdf')
+        self.assertEqual(result['links'][1]['fragment'], 'page=2')
+
+    def test_resource_index_refuses_shape_access_and_navigation_errors(self):
+        good = publication('<a href="/resource">Resource</a>')
+        for raw in [good.replace(b'<h1>Fictional framework</h1>', b'<h1>Different title</h1>'),
+                    good.replace(b'</main>', b''), publication('<nav><a href="/resource">Resource</a>'),
+                    publication('</nav><a href="/resource">Resource</a>'),
+                    publication('<input type="password"><a href="/resource">Resource</a>'),
+                    good.replace(b'Publisher source observations.', b'Verify you are human'),
+                    good.replace(b'<main>', b'<base href="https://other.example/"><main>')]:
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                parse_resource_index(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+
+    def test_resource_index_scripts_templates_and_empty_pages_cannot_supply_entries(self):
+        for body in ['', '<script><a href="/fake">Fake</a></script>',
+                     '<template><a href="/fake">Fake</a></template>']:
+            with self.assertRaises(ValueError):
+                parse_resource_index(publication(body), BASE+'/index', ORIGINS, 'Fictional framework')
+        with patch.object(discovery, 'MAX_ENTRIES', 1), self.assertRaises(ValueError):
+            parse_resource_index(publication('<a href="/one">One</a><a href="/two">Two</a>'),
+                                 BASE+'/index', ORIGINS, 'Fictional framework')
+
     def test_scoped_sitemap_comparison_accounts_for_unchanged_and_new_observations(self):
         child = BASE+'/map-1'; index = sitemap('sitemapindex', [child])
         old = {child: sitemap('urlset', [BASE+'/topic/kept', BASE+'/topic/old', BASE+'/other'])}

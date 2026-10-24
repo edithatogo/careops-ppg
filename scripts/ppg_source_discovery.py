@@ -327,7 +327,7 @@ def compare_sitemaps(previous_index, previous_children, current_index, current_c
 
 
 class _Publication(HTMLParser):
-    def __init__(self):
+    def __init__(self, include_navigation=False):
         super().__init__(convert_charrefs=True)
         self.main_count = 0
         self.in_main = False
@@ -343,6 +343,8 @@ class _Publication(HTMLParser):
         self.links = []
         self.text = []
         self.password = False
+        self.include_navigation = include_navigation
+        self.navigation_depth = 0
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -359,10 +361,12 @@ class _Publication(HTMLParser):
             self.in_main = True
         if not self.in_main:
             return
-        if tag in ('script', 'style', 'template', 'nav'):
+        if tag in ('script', 'style', 'template') or (tag == 'nav' and not self.include_navigation):
             self.ignore = tag
             self.ignore_depth = 1
             return
+        if tag == 'nav':
+            self.navigation_depth += 1
         if tag == 'input' and attrs.get('type', '').lower() == 'password':
             self.password = True
         if tag in ('h1', 'h2', 'h3', 'h4'):
@@ -374,6 +378,10 @@ class _Publication(HTMLParser):
                 raise ValueError('nested publication anchor')
             self.link = {'href': attrs.get('href'), 'text': [],
                          'precedingHeading': self.last_heading}
+            if self.include_navigation:
+                self.link.update(inNavigation=self.navigation_depth > 0,
+                                 relRaw=attrs.get('rel'),
+                                 relTokens=(attrs.get('rel') or '').lower().split())
 
     def handle_data(self, data):
         if not self.in_main or self.ignore:
@@ -393,6 +401,10 @@ class _Publication(HTMLParser):
             return
         if not self.in_main:
             return
+        if tag == 'nav' and self.include_navigation:
+            if self.navigation_depth < 1:
+                raise ValueError('unbalanced index navigation')
+            self.navigation_depth -= 1
         if tag == self.heading:
             text = ' '.join(' '.join(self.heading_text).split())
             self.headings.append((tag, text))
@@ -407,22 +419,54 @@ class _Publication(HTMLParser):
             self.main_closed, self.in_main = True, False
 
 
-def parse_publication(data, source_url, allowed_origins, expected_title):
-    """Inspect one known HTML shape; headings are publisher assertions only."""
+def _checked_html(data, expected_title, include_navigation=False):
     text = _text(data)
     if not isinstance(expected_title, str) or not expected_title.strip():
         raise ValueError('expected publication title required')
-    parser = _Publication()
+    parser = _Publication(include_navigation=include_navigation)
     parser.feed(text)
     parser.close()
     titles = [t for tag, t in parser.headings if tag == 'h1']
     normalize = lambda x: ' '.join(x.split()).casefold()
     main = ' '.join(' '.join(parser.text).split())
     if (parser.base_url_present or parser.main_count != 1 or not parser.main_closed or parser.ignore
-            or parser.link is not None or parser.heading or len(titles) != 1
+            or parser.link is not None or parser.heading or parser.navigation_depth or len(titles) != 1
             or normalize(titles[0]) != normalize(expected_title)
             or parser.password or re.search(r'access denied|verify you are human|page not found|captcha', main[:500], re.I)):
         raise ValueError('publication shape, title or access/error representation differs')
+    return parser, titles[0]
+
+
+def parse_resource_index(data, source_url, allowed_origins, expected_title):
+    """Account for main-region index links and pagination hints, without following them."""
+    parser, title = _checked_html(data, expected_title, include_navigation=True)
+    result = _envelope('resource-index-link-observations-v1', data, source_url, allowed_origins)
+    links = []
+    for ordinal, link in enumerate(parser.links):
+        observed = {**link, 'ordinal': ordinal, 'publisherAssertionOnly': True}
+        if not link['href']:
+            observed.update(status='missing-locator', reason='anchor has no href')
+        else:
+            try:
+                resolved = _url(link['href'], allowed_origins, source_url)
+            except ValueError as exc:
+                observed.update(status='held-locator', reason=str(exc))
+            else:
+                observed.update(**resolved, status=('same-page-navigation'
+                    if resolved['fetchURL'] == source_url else 'allowed-link-observation'))
+        links.append(observed)
+    if not links:
+        raise ValueError('no resource-index link observations found')
+    result.update(title=title, links=links, linkOccurrenceCount=len(links),
+                  paginationHints=[r for r in links if set(r['relTokens']) & {'next', 'prev'}],
+                  paginationComplete=False, catalogueCoverageComplete=False,
+                  publicationIdentityAssigned=False, checkpointAdvanced=False)
+    return result
+
+
+def parse_publication(data, source_url, allowed_origins, expected_title):
+    """Inspect one known HTML shape; headings are publisher assertions only."""
+    parser, title = _checked_html(data, expected_title)
     links = []
     for link in parser.links:
         href = link['href']
@@ -433,6 +477,6 @@ def parse_publication(data, source_url, allowed_origins, expected_title):
     if not links:
         raise ValueError('no publication PDF download links found')
     result = _envelope('publication-download-observations-v1', data, source_url, allowed_origins)
-    result.update(title=titles[0], downloads=links, downloadOccurrences=len(links),
+    result.update(title=title, downloads=links, downloadOccurrences=len(links),
                   rawEditionDatesInferred=False, publicationIdentityAssigned=False)
     return result

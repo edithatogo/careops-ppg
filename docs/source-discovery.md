@@ -61,6 +61,19 @@ origins and retain the returned source hash with the original capture.
   Navigation subtrees inside the main region are also excluded. A document with
   a `base href` is an unsupported layout and is refused; its relative links are
   never silently resolved against a different base.
+- `parse_resource_index(raw, source_url, allowed_origins, expected_title)` reuses
+  the checked HTML shape without requiring a PDF link. It accounts for each
+  anchor in the main region, including duplicates and anchors without locators.
+  Main-region navigation remains visible with an `inNavigation` marker; `rel`
+  values and next/previous hints are retained without following them. Scripts,
+  styles, templates and outside-main navigation cannot supply resource entries.
+  Same-page anchors, allowed links, missing locators and held external/unsupported
+  locators are distinct observations. A held link is retained with its reason;
+  it is never requested or silently dropped. Keep original href, text, heading,
+  ordinal and resolved URL/fragment provenance. Pagination completeness and
+  publication coverage remain false, even when no pagination hint is found;
+  dynamic filters or unrecognised page controls require separate qualification.
+  This helper does not create publication identities or advance a checkpoint.
 
 Relative link resolution removes dot segments while preserving empty path
 segments, including doubled slashes. The original `href`, observed URL, fetch URL
