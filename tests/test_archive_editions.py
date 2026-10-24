@@ -40,3 +40,32 @@ class EditionTests(unittest.TestCase):
     def test_equivalent_footer_version_does_not_create_a_conflict(self):
         page = self.header + ('x' * 1600) + '\nVersion No.: 4; Effective From: 01/01/2025'
         self.assertEqual(e.propose(page, [self.row])['state'], 'exact')
+
+
+    def test_later_first_page_identifier_conflict_cannot_select_header_identity(self):
+        page = self.header + ('x' * 1600) + '\nDocument Number EXAMPLE-Other-V4-06/26'
+        out = e.propose(page, [self.row])
+        self.assertEqual(out['state'], 'unresolved')
+        self.assertEqual(out['reason'], 'document_identifiers_conflict_on_first_page')
+        self.assertNotIn('existingDocumentUID', out)
+
+    def test_repeated_first_page_identifier_remains_exact(self):
+        page = self.header + ('x' * 1600) + f'\nDocument No.: {self.alias}'
+        self.assertEqual(e.propose(page, [self.row])['state'], 'exact')
+
+    def test_identifier_only_outside_header_window_does_not_establish_identity(self):
+        page = 'Version No. 4.0\n' + ('x' * 1600) + f'\nDocument Number {self.alias}'
+        self.assertEqual(e.propose(page, [self.row])['reason'],
+                         'missing_or_ambiguous_document_header')
+
+    def test_window_truncated_identifier_cannot_match_catalogue_prefix(self):
+        prefix = self.alias.split('-V')[0]
+        start = 'Version No. 4.0\n'
+        label = 'Document Number '
+        page = start + (' ' * (1500 - len(start) - len(label) - len(prefix)))
+        page += label + self.alias
+        row = {**self.row, 'sourceDocumentId': prefix}
+        out = e.propose(page, [row])
+        self.assertEqual(out['state'], 'unresolved')
+        self.assertEqual(out['reason'], 'document_identifiers_conflict_on_first_page')
+        self.assertNotIn('existingDocumentUID', out)
