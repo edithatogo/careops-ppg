@@ -164,8 +164,10 @@ def build(profile, runtime, persistence):
     flow = build_integrated(profile, runtime)
     p = flow['properties']; p['connectionReferences'][SLOT] = b['connectionReference']
     trigger = p['definition']['triggers']['manual']['inputs']['schema']
+    # The native Request trigger rejects regex schema constraints. Validate the
+    # resume characters and length in Require_safe_resume before building paths.
     trigger['properties']['resumeRunId'] = {'type':'string','title':'Resume existing observation run (optional)',
-        'maxLength':80,'pattern':'^[A-Za-z0-9-]*$','x-ms-dynamically-added':True,'x-ms-content-hint':'TEXT'}
+        'maxLength':80,'x-ms-dynamically-added':True,'x-ms-content-hint':'TEXT'}
     actions = p['definition']['actions']['Select_fixed_source']['actions']['Require_ready']['actions']['Require_expected_metadata']['actions']['Require_stable_metadata']['actions']['Require_integrated_integrity']['actions']
     stable=p['definition']['actions']['Select_fixed_source']['actions']['Require_ready']['actions']['Require_expected_metadata']['actions']['Require_stable_metadata']['actions']
     site = b['site']; site_path = urlsplit(site).path

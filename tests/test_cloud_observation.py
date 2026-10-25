@@ -89,12 +89,33 @@ def evaluate(expression,bodies,outputs):
                    'concat':lambda *v:''.join(v),'base64':lambda v:base64.b64encode(v.encode()).decode(),
                    'base64ToString':lambda v:base64.b64decode(v).decode(),'json':json.loads,
                    'sub':lambda a,b:a-b,'div':lambda a,b:a//b,'mul':lambda a,b:a*b,
-                   'endsWith':lambda a,b:a.endswith(b),'utcNow':lambda:'2026-10-24T12:00:00Z'}
+                   'endsWith':lambda a,b:a.endswith(b),'utcNow':lambda:'2026-10-24T12:00:00Z',
+                   'lessOrEquals':lambda a,b:a<=b,'contains':lambda a,b:b in a,
+                   'substring':lambda s,start,count:s[start:start+count],
+                   'item':lambda:outputs['_item']}
         return functions[name](*values)
     return run(tree)
 
 
 class CloudObservation(unittest.TestCase):
+    def test_supported_trigger_schema_retains_runtime_resume_path_validation(self):
+        p,r,b=fixture();flow=build(p,r,b);a=persistence_actions(flow)
+        schema=flow['properties']['definition']['triggers']['manual']['inputs']['schema']
+        self.assertNotIn('pattern',json.dumps(schema))
+        self.assertEqual(schema['properties']['resumeRunId']['type'],'string')
+        self.assertEqual(schema['properties']['resumeRunId']['maxLength'],80)
+        self.assertEqual(a['Observation_origin_run']['runAfter'],{'Require_safe_resume':['Succeeded']})
+        self.assertEqual(a['Observation_filename']['runAfter'],{'Observation_origin_run':['Succeeded']})
+        query=a['Observation_resume_characters']['inputs']['where']
+        guard=a['Require_safe_resume']['expression']
+        for value,expected in [('',True),('NativeRun-1',True),('A'*80,True),
+                               ('A'*81,False),('../escape',False),("quote'",False),
+                               ('A B',False),('é',False),('%2F',False)]:
+            outputs={'Observation_resume_input':value}
+            selected=[i for i in range(len(value)) if evaluate(query,{},dict(outputs,_item=i))]
+            with self.subTest(value=value):
+                self.assertIs(evaluate(guard,{'Observation_resume_characters':selected},outputs),expected)
+
     def test_emitted_context_guard_accepts_exact_native_values_and_holds_changes(self):
         p,r,b=fixture();a=persistence_actions(build(p,r,b));bodies={}
         for index,row in enumerate(b['records']):
