@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import ppg_source_discovery as discovery
-from ppg_source_discovery import parse_rss, parse_sitemap, reconcile_sitemaps, parse_publication
+from ppg_source_discovery import parse_rss, parse_sitemap, reconcile_sitemaps, reconcile_rss, compare_sitemaps, parse_publication, parse_resource_index
 
 ORIGINS = ['https://publisher.example']
 BASE = ORIGINS[0]
@@ -33,6 +33,220 @@ def publication(body=''):
 
 
 class SourceDiscoveryTests(unittest.TestCase):
+    def test_resource_index_retains_duplicate_content_links_without_requiring_pdf(self):
+        raw = publication('<h2>Resources</h2><a href="/resource">First</a><a href="/resource">Repeated</a>')
+        result = parse_resource_index(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(result['linkOccurrenceCount'], 2)
+        self.assertEqual([r['ordinal'] for r in result['links']], [0, 1])
+        self.assertEqual({r['fetchURL'] for r in result['links']}, {BASE+'/resource'})
+        self.assertEqual({r['precedingHeading'] for r in result['links']}, {'Resources'})
+        for flag in ('paginationComplete','catalogueCoverageComplete','publicationIdentityAssigned',
+                     'checkpointAdvanced','identityEstablished','applicabilityAccepted','sourceWrites'):
+            self.assertIs(result[flag], False)
+
+    def test_resource_index_keeps_main_navigation_and_pagination_as_hints(self):
+        raw = publication('<a href="/real.pdf">PDF</a><nav><div><a rel="NEXT nofollow" href="?page=2">Next page</a></div></nav>')
+        result = parse_resource_index(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(len(result['paginationHints']), 1)
+        page = result['paginationHints'][0]
+        self.assertEqual(page['fetchURL'], BASE+'/index?page=2')
+        self.assertTrue(page['inNavigation'])
+        self.assertEqual(page['relRaw'], 'NEXT nofollow')
+        self.assertEqual(result['linkOccurrenceCount'], 2)  # Outside-main navigation is excluded.
+        original = parse_publication(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(len(original['downloads']), 1)
+
+    def test_resource_index_holds_unsupported_and_external_locators_without_dropping_them(self):
+        body = ''.join('<a href="'+href+'">Reference</a>' for href in
+                       ['https://other.example/item', 'mailto:person@example.test', 'javascript:alert(1)',
+                        'http://publisher.example/item']) + '<a>Missing locator</a>'
+        result = parse_resource_index(publication(body), BASE+'/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(result['linkOccurrenceCount'], 5)
+        self.assertEqual([r['status'] for r in result['links']], ['held-locator']*4+['missing-locator'])
+        self.assertTrue(all('fetchURL' not in r for r in result['links']))
+
+    def test_resource_index_same_page_fragment_and_doubled_paths_remain_distinct(self):
+        raw = publication('<a href="#section">Section</a><a href="../files//resource.pdf#page=2">Resource</a>')
+        result = parse_resource_index(raw, BASE+'/resources/index', ORIGINS, 'Fictional framework')
+        self.assertEqual(result['links'][0]['status'], 'same-page-navigation')
+        self.assertEqual(result['links'][0]['fragment'], 'section')
+        self.assertEqual(result['links'][1]['fetchURL'], BASE+'/files//resource.pdf')
+        self.assertEqual(result['links'][1]['fragment'], 'page=2')
+
+    def test_resource_index_interactive_controls_are_retained_without_becoming_acquisition_targets(self):
+        for attrs in ['role="button"', 'aria-controls="feedback-form"',
+                      'data-ajax-target="#feedback-form"', 'data-dialog-type="modal"']:
+            raw = publication('<a href="/feedback?target=form" '+attrs+'>Feedback</a>'
+                              '<a href="/resource">Resource</a>')
+            result = parse_resource_index(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+            self.assertEqual(result['linkOccurrenceCount'], 2)
+            self.assertEqual(result['links'][0]['status'], 'interaction-control')
+            self.assertEqual(result['links'][0]['fetchURL'], BASE+'/feedback?target=form')
+            self.assertEqual(result['links'][1]['status'], 'allowed-link-observation')
+
+    def test_resource_index_refuses_shape_access_and_navigation_errors(self):
+        good = publication('<a href="/resource">Resource</a>')
+        for raw in [good.replace(b'<h1>Fictional framework</h1>', b'<h1>Different title</h1>'),
+                    good.replace(b'</main>', b''), publication('<nav><a href="/resource">Resource</a>'),
+                    publication('</nav><a href="/resource">Resource</a>'),
+                    publication('<input type="password"><a href="/resource">Resource</a>'),
+                    good.replace(b'Publisher source observations.', b'Verify you are human'),
+                    good.replace(b'<main>', b'<base href="https://other.example/"><main>')]:
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                parse_resource_index(raw, BASE+'/index', ORIGINS, 'Fictional framework')
+
+    def test_resource_index_scripts_templates_and_empty_pages_cannot_supply_entries(self):
+        for body in ['', '<script><a href="/fake">Fake</a></script>',
+                     '<template><a href="/fake">Fake</a></template>']:
+            with self.assertRaises(ValueError):
+                parse_resource_index(publication(body), BASE+'/index', ORIGINS, 'Fictional framework')
+        with patch.object(discovery, 'MAX_ENTRIES', 1), self.assertRaises(ValueError):
+            parse_resource_index(publication('<a href="/one">One</a><a href="/two">Two</a>'),
+                                 BASE+'/index', ORIGINS, 'Fictional framework')
+
+    def test_scoped_sitemap_comparison_accounts_for_unchanged_and_new_observations(self):
+        child = BASE+'/map-1'; index = sitemap('sitemapindex', [child])
+        old = {child: sitemap('urlset', [BASE+'/topic/kept', BASE+'/topic/old', BASE+'/other'])}
+        new = {child: sitemap('urlset', [BASE+'/topic/kept', BASE+'/topic/new', BASE+'/other'])}
+        result = compare_sitemaps(index, old, index, new, BASE+'/maps', ORIGINS, ['topic/'])
+        statuses = {r['fetchURL'].rsplit('/', 1)[1]: r['status'] for r in result['comparisons']}
+        self.assertEqual(statuses, {'kept':'unchanged', 'old':'not-observed-in-current-index', 'new':'first-observed'})
+        self.assertEqual((result['previousScopedURLCount'], result['currentScopedURLCount']), (2, 2))
+        self.assertTrue(result['declaredScopeInventoryComparable'])
+        for key in ('catalogueCoverageComplete', 'editionDatesInferred', 'removalDecisionsAllowed',
+                    'identityEstablished', 'checkpointAdvanced', 'sourceWrites'):
+            self.assertIs(result[key], False)
+
+    def test_missing_child_cannot_prove_addition_or_omission(self):
+        a, b = BASE+'/map-1', BASE+'/map-2'; index = sitemap('sitemapindex', [a, b])
+        complete = {a: sitemap('urlset', [BASE+'/topic/first']), b: sitemap('urlset', [BASE+'/topic/second'])}
+        partial = {a: complete[a]}
+        for old, new, expected in [(complete, partial, 'current-scope-incomplete'),
+                                   (partial, complete, 'previous-scope-incomplete')]:
+            result = compare_sitemaps(index, old, index, new, BASE+'/maps', ORIGINS, ['topic/'])
+            row = next(r for r in result['comparisons'] if r['fetchURL'].endswith('/second'))
+            self.assertEqual(row['status'], expected)
+            self.assertFalse(result['declaredScopeInventoryComparable'])
+
+    def test_lastmod_changes_remain_publisher_assertions_and_variants_are_held(self):
+        a, b = BASE+'/map-1', BASE+'/map-2'; index = sitemap('sitemapindex', [a, b])
+        original = sitemap('urlset', [BASE+'/topic/item'])
+        changed = original.replace(b'publisher-raw-date', b'different-publisher-date')
+        old = {a: original, b: sitemap('urlset', [])}
+        for new, expected in [({a: changed, b: sitemap('urlset', [])}, 'publisher-metadata-changed'),
+                              ({a: original, b: changed}, 'conflicting-lastmod-assertions')]:
+            result = compare_sitemaps(index, old, index, new, BASE+'/maps', ORIGINS, ['topic/'])
+            self.assertEqual(result['comparisons'][0]['status'], expected)
+            self.assertFalse(result['editionDatesInferred'])
+
+    def test_same_locator_moving_between_maps_keeps_all_source_provenance(self):
+        a, b = BASE+'/map-1', BASE+'/map-2'; index = sitemap('sitemapindex', [a, b])
+        item, empty = sitemap('urlset', [BASE+'/topic/item']), sitemap('urlset', [])
+        result = compare_sitemaps(index, {a:item, b:empty}, index, {a:item, b:item},
+                                  BASE+'/maps', ORIGINS, ['topic/'])
+        row = result['comparisons'][0]
+        self.assertEqual(row['status'], 'discovery-provenance-changed')
+        self.assertEqual(len(row['previousOccurrences']), 1)
+        self.assertEqual({r['discoveredIn'] for r in row['currentOccurrences']}, {a, b})
+        self.assertEqual(result['currentScopedURLCount'], 1)
+
+    def test_scope_is_explicit_literal_path_matching_not_query_or_identity_matching(self):
+        a=BASE+'/map'; index=sitemap('sitemapindex', [a])
+        child=sitemap('urlset', [BASE+'/TOPIC/item', BASE+'/other?topic=yes',
+                                 BASE+'/topic/item?v=1', BASE+'/topic/item?v=2'])
+        result=compare_sitemaps(index, {a:child}, index, {a:child}, BASE+'/maps', ORIGINS, ['topic'])
+        self.assertEqual(result['currentScopedURLCount'], 3)
+        self.assertFalse(any('/other?' in r['fetchURL'] for r in result['comparisons']))
+        for terms in (None, [], [''], ['.*'], ['Topic'], ['topic']*2, ['x']*21, [True]):
+            with self.subTest(terms=terms), self.assertRaises(ValueError):
+                compare_sitemaps(index, {a:child}, index, {a:child}, BASE+'/maps', ORIGINS, terms)
+
+    def test_malformed_current_child_does_not_report_false_missing_source(self):
+        a=BASE+'/map'; index=sitemap('sitemapindex', [a]);old={a:sitemap('urlset',[BASE+'/topic/item'])}
+        result=compare_sitemaps(index,old,index,{a:b'<html>outage</html>'},BASE+'/maps',ORIGINS,['topic/'])
+        self.assertEqual(result['comparisons'][0]['status'],'current-scope-incomplete')
+        self.assertEqual(result['current']['failures'][0]['status'],'parse_failed')
+
+    def test_rss_reconciliation_retains_repeats_without_creating_new_publications(self):
+        raw = rss([('same', ''), ('same', '')])
+        result = reconcile_rss(raw, raw, BASE+'/rss', ORIGINS)
+        self.assertEqual(result['groupCount'], 1)
+        self.assertEqual(result['currentOccurrenceCount'], 2)
+        group = result['comparisons'][0]
+        self.assertEqual(group['status'], 'unchanged')
+        self.assertEqual([r['ordinal'] for r in group['currentOccurrences']], [0, 1])
+        for flag in ('identityEstablished', 'applicabilityAccepted', 'checkpointAdvanced',
+                     'feedHistoryComplete', 'removalDecisionsAllowed', 'sourceWrites'):
+            self.assertIs(result[flag], False)
+
+    def test_rss_changed_old_item_is_detected_without_date_watermark(self):
+        date = 'Thu, 22 Oct 2026 00:00:00 GMT'
+        before, after = rss([('old text', date)]), rss([('revised text', date)])
+        result = reconcile_rss(before, after, BASE+'/rss', ORIGINS)
+        self.assertEqual(result['comparisons'][0]['status'], 'changed-observation')
+        self.assertEqual(result['previous']['sourceSHA256'], hashlib.sha256(before).hexdigest())
+        self.assertEqual(result['current']['sourceSHA256'], hashlib.sha256(after).hexdigest())
+
+    def test_rss_description_change_is_detected_with_same_title_guid_and_date(self):
+        base = rss([('same title', 'Thu, 22 Oct 2026 00:00:00 GMT')])
+        before = base.replace(b'</item>', b'<description>old content</description></item>')
+        after = base.replace(b'</item>', b'<description>revised content</description></item>')
+        result = reconcile_rss(before, after, BASE+'/rss', ORIGINS)
+        self.assertEqual(result['comparisons'][0]['status'], 'changed-observation')
+
+    def test_reordered_feed_and_new_guid_do_not_merge_by_title_or_url(self):
+        first = rss([('same title', '')]).replace(b'same-guid', b'first-guid')
+        second = rss([('same title', '')]).replace(b'same-guid', b'second-guid')
+        def combine(a, b):
+            return a.replace(b'</channel>', b[b.index(b'<item>'):b.index(b'</channel>')] + b'</channel>')
+        before, after = combine(first, second), combine(second, first)
+        result = reconcile_rss(before, after, BASE+'/rss', ORIGINS)
+        self.assertEqual([r['status'] for r in result['comparisons']], ['unchanged', 'unchanged'])
+        self.assertEqual(result['groupCount'], 2)
+        changed_guid = reconcile_rss(first, second, BASE+'/rss', ORIGINS)
+        self.assertEqual({r['status'] for r in changed_guid['comparisons']},
+                         {'first-observed', 'not-observed-in-current-feed'})
+
+    def test_rss_conflicting_guid_keeps_every_variant_and_never_selects_one(self):
+        raw = rss([('first variant', ''), ('second variant', '')])
+        for before, after in [(raw, raw), (raw, rss([('first variant', '')])), (None, raw)]:
+            result = reconcile_rss(before, after, BASE+'/rss', ORIGINS)
+            self.assertEqual(result['comparisons'][0]['status'], 'conflicting-observations')
+            self.assertEqual(result['currentOccurrenceCount'], len(result['current']['items']))
+
+    def test_truncated_or_empty_feed_does_not_retire_previous_observations(self):
+        before = rss([('first', ''), ('second', '')]).replace(b'same-guid', b'first-guid', 1)
+        # Distinct GUIDs, both pointing at the same observed publication locator.
+        for after in (rss([('second', '')]), rss([])):
+            result = reconcile_rss(before, after, BASE+'/rss', ORIGINS)
+            missing = [r for r in result['comparisons'] if r['status']=='not-observed-in-current-feed']
+            self.assertGreaterEqual(len(missing), 1)
+            self.assertTrue(all(r['previousOccurrences'] and not r['currentOccurrences'] for r in missing))
+            self.assertFalse(result['removalDecisionsAllowed'])
+
+    def test_first_capture_is_first_observed_not_proof_of_new_publication(self):
+        result = reconcile_rss(None, rss([('source item', '')]), BASE+'/rss', ORIGINS)
+        self.assertFalse(result['baselineSupplied'])
+        self.assertIsNone(result['previous'])
+        self.assertEqual(result['comparisons'][0]['status'], 'first-observed')
+        self.assertFalse(result['identityEstablished'])
+
+    def test_missing_guid_uses_exact_locator_with_fragment(self):
+        raw = rss([('first', ''), ('second', '')]).replace(b'<guid>same-guid</guid>', b'')
+        raw = raw.replace(b'/publication</link>', b'/publication#section-a</link>', 1)
+        result = reconcile_rss(None, raw, BASE+'/rss', ORIGINS)
+        self.assertEqual(result['groupCount'], 2)
+        self.assertEqual({r['keyKind'] for r in result['comparisons']}, {'observed-locator'})
+        self.assertEqual({r['keyValue'] for r in result['comparisons']},
+                         {BASE+'/publication', BASE+'/publication#section-a'})
+
+    def test_failed_current_or_previous_parse_refuses_comparison(self):
+        valid = rss([('source item', '')])
+        for before, after in [(valid, b'<html>outage</html>'), (b'bad XML', valid),
+                              (valid, b''), (None, None)]:
+            with self.subTest(before=before), self.assertRaises(ValueError):
+                reconcile_rss(before, after, BASE+'/rss', ORIGINS)
+
     def test_rss_retains_duplicate_guid_and_old_date_content_change(self):
         raw = rss([('one', 'Fri, 23 Oct 2026 00:00:00 GMT'),
                    ('two', 'Thu, 22 Oct 2026 00:00:00 GMT'),

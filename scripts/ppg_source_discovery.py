@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections import Counter
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from urllib.parse import urlsplit, urlunsplit, urldefrag
@@ -190,6 +191,53 @@ def parse_sitemap(data, source_url, allowed_origins):
     return result
 
 
+def reconcile_rss(previous_bytes, current_bytes, source_url, allowed_origins):
+    """Compare retained same-feed observations, without accepting a baseline or identity.
+
+    GUIDs are scoped to this feed. Missing GUIDs use the exact observed locator;
+    neither key is a publication identity. Keep every occurrence, including duplicates.
+    """
+    previous = (parse_rss(previous_bytes, source_url, allowed_origins)
+                if previous_bytes is not None else None)
+    current = parse_rss(current_bytes, source_url, allowed_origins)
+
+    def group(snapshot):
+        result = {}
+        for row in snapshot['items'] if snapshot else []:
+            key = ('feed-guid', row['guid']) if row['guid'] else ('observed-locator', row['observedURL'])
+            result.setdefault(key, []).append(row)
+        return result
+
+    before, after = group(previous), group(current)
+    comparisons = []
+    for kind, value in sorted(before.keys() | after.keys()):
+        old, new = before.get((kind, value), []), after.get((kind, value), [])
+        old_hashes, new_hashes = ({row['itemSHA256'] for row in rows} for rows in (old, new))
+        # A reused GUID/locator with simultaneous variants is ambiguous, even when
+        # the same ambiguous group is present in both snapshots. Never pick one.
+        if len(old_hashes) > 1 or len(new_hashes) > 1:
+            status = 'conflicting-observations'
+        elif not new:
+            status = 'not-observed-in-current-feed'
+        elif not old:
+            status = 'first-observed'
+        elif old_hashes == new_hashes:
+            status = 'unchanged'
+        else:
+            status = 'changed-observation'
+        comparisons.append({'keyKind': kind, 'keyValue': value, 'status': status,
+                            'previousOccurrences': old, 'currentOccurrences': new})
+    return {'kind': 'rss-observation-reconciliation-v1', 'sourceURL': source_url,
+            'previous': previous, 'current': current, 'comparisons': comparisons,
+            'groupCount': len(comparisons),
+            'previousOccurrenceCount': previous['itemCount'] if previous else 0,
+            'currentOccurrenceCount': current['itemCount'],
+            'baselineSupplied': previous is not None,
+            'feedHistoryComplete': False, 'removalDecisionsAllowed': False,
+            'identityEstablished': False, 'applicabilityAccepted': False,
+            'checkpointAdvanced': False, 'sourceWrites': False}
+
+
 def reconcile_sitemaps(index_bytes, child_bytes, index_url, allowed_origins):
     """Keep occurrences; a failed/missing child cannot establish removals."""
     index = parse_sitemap(index_bytes, index_url, allowed_origins)
@@ -231,8 +279,55 @@ def reconcile_sitemaps(index_bytes, child_bytes, index_url, allowed_origins):
             'identityEstablished': False, 'sourceWrites': False}
 
 
+def compare_sitemaps(previous_index, previous_children, current_index, current_children,
+                     index_url, allowed_origins, path_terms):
+    """Compare a declared path-term scope; index omissions never authorise retirement."""
+    if (not isinstance(path_terms, list) or not 1 <= len(path_terms) <= 20
+            or any(not isinstance(term, str) or not re.fullmatch(r'[a-z0-9][a-z0-9/_-]{0,199}', term)
+                   for term in path_terms) or len(path_terms) != len(set(path_terms))):
+        raise ValueError('one to twenty unique lowercase literal path terms required')
+    previous = reconcile_sitemaps(previous_index, previous_children, index_url, allowed_origins)
+    current = reconcile_sitemaps(current_index, current_children, index_url, allowed_origins)
+
+    def selected(snapshot):
+        return {row['fetchURL']: row['occurrences'] for row in snapshot['observations']
+                if any(term in urlsplit(row['fetchURL']).path.lower() for term in path_terms)}
+
+    before, after = selected(previous), selected(current)
+    changes = []
+    for url in sorted(before.keys() | after.keys()):
+        old, new = before.get(url, []), after.get(url, [])
+        old_dates, new_dates = ({r['lastmodRaw'] for r in rows} for rows in (old, new))
+        if len(old_dates - {None}) > 1 or len(new_dates - {None}) > 1:
+            status = 'conflicting-lastmod-assertions'
+        elif not new:
+            status = ('not-observed-in-current-index' if current['allDeclaredChildrenParsed']
+                      else 'current-scope-incomplete')
+        elif not old:
+            status = ('first-observed' if previous['allDeclaredChildrenParsed']
+                      else 'previous-scope-incomplete')
+        elif old_dates != new_dates:
+            status = 'publisher-metadata-changed'
+        elif Counter(r['discoveredIn'] for r in old) != Counter(r['discoveredIn'] for r in new):
+            status = 'discovery-provenance-changed'
+        else:
+            status = 'unchanged'
+        changes.append({'fetchURL': url, 'status': status,
+                        'previousOccurrences': old, 'currentOccurrences': new})
+    return {'kind': 'scoped-sitemap-comparison-v1', 'indexURL': index_url,
+            'scope': {'pathTerms': list(path_terms),
+                      'matching': 'case-insensitive literal substring of escaped URL path; no query matching'},
+            'previous': previous, 'current': current, 'comparisons': changes,
+            'previousScopedURLCount': len(before), 'currentScopedURLCount': len(after),
+            'declaredScopeInventoryComparable': (previous['allDeclaredChildrenParsed']
+                                                 and current['allDeclaredChildrenParsed']),
+            'catalogueCoverageComplete': False, 'editionDatesInferred': False,
+            'removalDecisionsAllowed': False, 'identityEstablished': False,
+            'checkpointAdvanced': False, 'sourceWrites': False}
+
+
 class _Publication(HTMLParser):
-    def __init__(self):
+    def __init__(self, include_navigation=False):
         super().__init__(convert_charrefs=True)
         self.main_count = 0
         self.in_main = False
@@ -248,6 +343,8 @@ class _Publication(HTMLParser):
         self.links = []
         self.text = []
         self.password = False
+        self.include_navigation = include_navigation
+        self.navigation_depth = 0
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -264,10 +361,12 @@ class _Publication(HTMLParser):
             self.in_main = True
         if not self.in_main:
             return
-        if tag in ('script', 'style', 'template', 'nav'):
+        if tag in ('script', 'style', 'template') or (tag == 'nav' and not self.include_navigation):
             self.ignore = tag
             self.ignore_depth = 1
             return
+        if tag == 'nav':
+            self.navigation_depth += 1
         if tag == 'input' and attrs.get('type', '').lower() == 'password':
             self.password = True
         if tag in ('h1', 'h2', 'h3', 'h4'):
@@ -279,6 +378,12 @@ class _Publication(HTMLParser):
                 raise ValueError('nested publication anchor')
             self.link = {'href': attrs.get('href'), 'text': [],
                          'precedingHeading': self.last_heading}
+            if self.include_navigation:
+                self.link.update(inNavigation=self.navigation_depth > 0,
+                                 relRaw=attrs.get('rel'),
+                                 relTokens=(attrs.get('rel') or '').lower().split(),
+                                 roleRaw=attrs.get('role'), ariaControls=attrs.get('aria-controls'),
+                                 ajaxTarget=attrs.get('data-ajax-target'), dialogType=attrs.get('data-dialog-type'))
 
     def handle_data(self, data):
         if not self.in_main or self.ignore:
@@ -298,6 +403,10 @@ class _Publication(HTMLParser):
             return
         if not self.in_main:
             return
+        if tag == 'nav' and self.include_navigation:
+            if self.navigation_depth < 1:
+                raise ValueError('unbalanced index navigation')
+            self.navigation_depth -= 1
         if tag == self.heading:
             text = ' '.join(' '.join(self.heading_text).split())
             self.headings.append((tag, text))
@@ -312,22 +421,58 @@ class _Publication(HTMLParser):
             self.main_closed, self.in_main = True, False
 
 
-def parse_publication(data, source_url, allowed_origins, expected_title):
-    """Inspect one known HTML shape; headings are publisher assertions only."""
+def _checked_html(data, expected_title, include_navigation=False):
     text = _text(data)
     if not isinstance(expected_title, str) or not expected_title.strip():
         raise ValueError('expected publication title required')
-    parser = _Publication()
+    parser = _Publication(include_navigation=include_navigation)
     parser.feed(text)
     parser.close()
     titles = [t for tag, t in parser.headings if tag == 'h1']
     normalize = lambda x: ' '.join(x.split()).casefold()
     main = ' '.join(' '.join(parser.text).split())
     if (parser.base_url_present or parser.main_count != 1 or not parser.main_closed or parser.ignore
-            or parser.link is not None or parser.heading or len(titles) != 1
+            or parser.link is not None or parser.heading or parser.navigation_depth or len(titles) != 1
             or normalize(titles[0]) != normalize(expected_title)
             or parser.password or re.search(r'access denied|verify you are human|page not found|captcha', main[:500], re.I)):
         raise ValueError('publication shape, title or access/error representation differs')
+    return parser, titles[0]
+
+
+def parse_resource_index(data, source_url, allowed_origins, expected_title):
+    """Account for main-region index links and pagination hints, without following them."""
+    parser, title = _checked_html(data, expected_title, include_navigation=True)
+    result = _envelope('resource-index-link-observations-v1', data, source_url, allowed_origins)
+    links = []
+    for ordinal, link in enumerate(parser.links):
+        observed = {**link, 'ordinal': ordinal, 'publisherAssertionOnly': True}
+        if not link['href']:
+            observed.update(status='missing-locator', reason='anchor has no href')
+        else:
+            try:
+                resolved = _url(link['href'], allowed_origins, source_url)
+            except ValueError as exc:
+                observed.update(status='held-locator', reason=str(exc))
+            else:
+                interactive = ((link['roleRaw'] or '').strip().lower() == 'button'
+                               or any(link[k] for k in ('ariaControls', 'ajaxTarget', 'dialogType')))
+                observed.update(**resolved, status=('interaction-control' if interactive else
+                    'same-page-navigation' if resolved['fetchURL'] == source_url else 'allowed-link-observation'))
+                if interactive:
+                    observed['reason'] = 'anchor declares an interaction role or controlled UI target; do not acquire automatically'
+        links.append(observed)
+    if not links:
+        raise ValueError('no resource-index link observations found')
+    result.update(title=title, links=links, linkOccurrenceCount=len(links),
+                  paginationHints=[r for r in links if set(r['relTokens']) & {'next', 'prev'}],
+                  paginationComplete=False, catalogueCoverageComplete=False,
+                  publicationIdentityAssigned=False, checkpointAdvanced=False)
+    return result
+
+
+def parse_publication(data, source_url, allowed_origins, expected_title):
+    """Inspect one known HTML shape; headings are publisher assertions only."""
+    parser, title = _checked_html(data, expected_title)
     links = []
     for link in parser.links:
         href = link['href']
@@ -338,6 +483,6 @@ def parse_publication(data, source_url, allowed_origins, expected_title):
     if not links:
         raise ValueError('no publication PDF download links found')
     result = _envelope('publication-download-observations-v1', data, source_url, allowed_origins)
-    result.update(title=titles[0], downloads=links, downloadOccurrences=len(links),
+    result.update(title=title, downloads=links, downloadOccurrences=len(links),
                   rawEditionDatesInferred=False, publicationIdentityAssigned=False)
     return result

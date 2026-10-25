@@ -1,4 +1,5 @@
 import contextlib
+import base64
 import copy
 import hashlib
 import io
@@ -11,7 +12,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from ppg_url_acquisition_qualification import build, main, API, MAX_BYTES, POLL_COUNT
+from ppg_url_acquisition_qualification import build, main, verify_readback, API, MAX_BYTES, POLL_COUNT
 
 
 def profile():
@@ -39,6 +40,118 @@ def nodes(value):
 
 def source_actions(flow):
     return flow['properties']['definition']['actions']['Select_fixed_source']['actions']
+
+
+def readback_fixture():
+    p = profile()
+    raw = b'%PDF-1.4\nFICTIONAL qualification fixture\n%%EOF\n'
+    actions = source_actions(build(p))['Require_ready']['actions']['Require_expected_metadata']['actions']
+    report = copy.deepcopy(actions['Require_stable_metadata']['actions']['Report_candidate']['inputs'])
+    metadata = {'Id': 'fictional-file', 'ETag': 'fictional-etag', 'Size': len(raw), 'IsFolder': False}
+    report.update(metadataBefore=metadata, metadataAfter=copy.deepcopy(metadata),
+                  content={'$content-type': 'application/octet-stream',
+                           '$content': base64.b64encode(raw).decode('ascii')},
+                  runName='fictional-run', uploadAttempted=True, pollAttempts=2)
+    return p, report, raw
+
+
+class ReadbackVerificationTests(unittest.TestCase):
+    def test_actual_bytes_verified_without_promoting_expected_values_or_native_acceptance(self):
+        p, report, raw = readback_fixture()
+        before = copy.deepcopy((p, report))
+        result = verify_readback(p, report, raw)
+        self.assertTrue(result['independentByteParityVerified'])
+        self.assertEqual(result['actualRawSHA256'], hashlib.sha256(raw).hexdigest())
+        for key in ('nativeAcquisitionQualified', 'checkpointAdvanced', 'redirectsVerified',
+                    'representationVerified', 'runProvenanceAuthenticated'):
+            self.assertIs(result[key], False)
+        self.assertEqual(result['catalogueWrites'], 0)
+        self.assertEqual((p, report), before)
+
+    def test_same_size_wrong_bytes_cannot_pass_expected_digest(self):
+        p, report, raw = readback_fixture()
+        changed = raw.replace(b'FICTIONAL', b'DIFFERENT')
+        report['content']['$content'] = base64.b64encode(changed).decode('ascii')
+        with self.assertRaisesRegex(ValueError, 'pinned source digest'):
+            verify_readback(p, report, changed)
+        with self.assertRaisesRegex(ValueError, 'connector bytes differ'):
+            verify_readback(p, report, raw)
+
+    def test_different_profile_or_stage_refuses(self):
+        for key in ('qualificationId', 'sourceKey', 'frameworkEditionId', 'requestedSourceURL',
+                    'stagingPath', 'expectedRawSHA256', 'state'):
+            p, report, raw = readback_fixture(); report[key] = 'different'
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                verify_readback(p, report, raw)
+
+    def test_unstable_file_or_boolean_size_refuses(self):
+        for key, value in [('Id', 'another-file'), ('ETag', 'changed'), ('Size', True),
+                           ('Size', 0), ('IsFolder', True)]:
+            p, report, raw = readback_fixture(); report['metadataAfter'][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                verify_readback(p, report, raw)
+
+    def test_unverified_producer_cannot_smuggle_acceptance_assertions(self):
+        for key, value in [('actualRawSHA256', 'a'*64), ('finalSourceURL', 'https://publisher.example/'),
+                           ('byteIntegrityVerified', True), ('redirectsVerified', True),
+                           ('nativeAcquisitionQualified', True), ('catalogueWrites', False),
+                           ('checkpointAdvanced', True), ('notificationsEnabled', True)]:
+            p, report, raw = readback_fixture(); report[key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                verify_readback(p, report, raw)
+
+    def test_unknown_representation_and_malformed_or_large_encoding_refuse(self):
+        for content in ['plain text', {'$content': 'AA=='},
+                        {'$content-type': 'application/pdf', '$content': '!'*64},
+                        {'$content-type': 'application/pdf', '$content': 'A'*(MAX_BYTES*2)}]:
+            p, report, raw = readback_fixture(); report['content'] = content
+            with self.subTest(kind=type(content)), self.assertRaises(ValueError):
+                verify_readback(p, report, raw)
+
+    def test_missing_run_and_invalid_poll_observations_refuse(self):
+        for key, value in [('runName', ''), ('runName', '@workflow()'),
+                           ('uploadAttempted', 1), ('pollAttempts', True),
+                           ('pollAttempts', POLL_COUNT+1), ('pollAttempts', -1)]:
+            p, report, raw = readback_fixture(); report[key] = value
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                verify_readback(p, report, raw)
+
+    def test_invalid_and_noncanonical_base64_with_expected_length_refuse(self):
+        for encoded in ('!!!!', 'Zh=='):
+            p, report, _ = readback_fixture(); raw = b'f'
+            p.update(expectedBytes=1, expectedSHA256=hashlib.sha256(raw).hexdigest())
+            report['expectedRawSHA256'] = p['expectedSHA256']
+            report['metadataBefore']['Size'] = report['metadataAfter']['Size'] = 1
+            report['content']['$content'] = encoded
+            with self.subTest(encoded=encoded), self.assertRaises(ValueError):
+                verify_readback(p, report, raw)
+
+    def test_cli_requires_paired_readback_inputs_before_any_file_access(self):
+        for option in ('--report', '--download'):
+            with patch.object(sys, 'argv', ['verify', '--profile', 'absent', '--output',
+                                            '.local/absent', option, 'absent']), \
+                    contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                main()
+
+    def test_cli_verifies_saved_inputs_without_replacing_receipt(self):
+        p, report, raw = readback_fixture()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)/'.local'; root.mkdir()
+            for name, data in [('profile.json', p), ('report.json', report)]:
+                (root/name).write_text(json.dumps(data))
+            (root/'download.bin').write_bytes(raw)
+            args = ['verify', '--profile', str(root/'profile.json'), '--report', str(root/'report.json'),
+                    '--download', str(root/'download.bin'), '--output', str(root/'receipt.json')]
+            with patch.object(sys, 'argv', args), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(main(), 0)
+                self.assertTrue(json.loads((root/'receipt.json').read_text())['independentByteParityVerified'])
+                with self.assertRaises(FileExistsError):
+                    main()
+            (root/'download.bin').write_bytes(b'x'*(MAX_BYTES+1))
+            args[-1] = str(root/'rejected.json')
+            with patch.object(sys, 'argv', args), self.assertRaises(ValueError):
+                main()
+            self.assertFalse((root/'rejected.json').exists())
 
 
 class URLQualificationTests(unittest.TestCase):

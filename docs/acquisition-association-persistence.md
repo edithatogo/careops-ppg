@@ -25,7 +25,15 @@ explicitly assigned destination and qualified runtime implementations:
 - `verifyBindings(handoff)` verifies the actual account/client, assigned namespace,
   selected current catalogue record hashes and human state, qualified source-file
   identity/version/ETag, native execution receipt and independent original bytes.
-  It runs before preparation, before each create and before final completion.
+  It returns exactly `{selectedRecordJSON: {recordKey: rawNativeRecordJSON}}`
+  for the three selected records. The component hashes each actual UTF-8 JSON
+  string and compares parsed content with the copied handoff record before any
+  receipt read or journal event, before each create and before final completion.
+  Preserve the native numeric/whitespace representation for hashing; do not
+  reserialise copied objects as a substitute for current native JSON.
+  Missing proof, changed native hashes or altered copied payloads hold the attempt.
+  The callback still performs all the account, namespace, original and human-state
+  checks above; returning snapshots alone is insufficient.
   Supplied JSON flags never replace those authenticated native checks.
 - `journal(event)` durably records intent before a mutation and verified outcomes.
   Keep credentials, bindings and operational receipts private. A test transport or
@@ -62,45 +70,35 @@ can resume after readback.
 node --test tests/test_acquisition_association.mjs
 ```
 
-Thirteen focused tests exercise same-input replay, a new occurrence sharing a claim,
+Sixteen focused tests exercise same-input replay, a new occurrence sharing a claim,
 all-member conflict preflight, response loss and explicit resumption, source changes
 before/among writes, overlapping creates, changed native pins, late member changes,
 held/altered inputs, receipt limits, missing guards and unrelated HTTP 500 refusal.
+Three additional cases reject altered copied records and missing/invalid native
+record proof while accepting equivalent native numeric/formatting representations.
 Fixtures are fictional. Tests never authenticate or mutate native services.
 
-## Selected native qualification — 24 October 2026
+## Native qualification and recovery
 
-An isolated source-owned folder in the existing evidence library was qualified
-with inherited access. Current library versioning, rules, subscriptions, receivers,
-current-user alerts and accessible Default flow triggers were inspected. The
-existing account, application, permissions and bindings were retained.
+Use the existing qualified account and exact assigned namespace. Before any
+publish, verify current library configuration and relevant accessible triggers,
+current native records and human state, source pins and independent original
+bytes. Keep actual dates, identities, execution/collision results, versions and
+readback receipts in private evidence. Source tests do not supply these checks.
 
-Two deliberately overlapping CLI publishers used the same real handoff. One
-created and verified all three files; the other reported an uncertain same-name
-create. On this endpoint the native response was HTTP 500 with the specific
-file-exists HRESULT `0x80070050`, rather than HTTP 409. The error was inspected
-alongside actual file readback; it was not treated as generic success. An explicit
-readback/replay then verified the complete set and made zero create calls. All
-three files stayed at native version 1.0 with no older versions, so the overlapping
-request did not overwrite the winner. Destination configuration, selected catalogue
-rows and original-file pins/bytes remained unchanged. Every occurrence and receipt
-is retained; no failed-attempt evidence was deleted.
+Exercise an initial publish, unchanged replay, overlapping create, lost-response
+reconciliation and partial-set recovery in an assigned isolated namespace. A
+file-exists response is uncertain until exact native readback proves what exists;
+never infer success from a generic status. Preserve prior member bytes and native
+histories. A read-only replay must disable create at the transport boundary.
 
-The combined driver initially found that repeated SDK client initialisation left
-its later account list unhydrated. Standalone client and first-account checks
-worked. Qualification kept one existing same-client source transport for both
-source guards and scoped file operations, preserving the shared publisher adapter
-and its strict identity checks unchanged. No login, consent, account/client switch
-or credential copying was used. Folder request representation was corrected only
-after a native read proved the initial rejected create left no folder.
+Runtime adapters written for the former callback contract must now return the
+three raw current RecordJSON snapshots after their existing guards. They must
+hold until this contract is qualified; copied objects or hash assertions cannot
+substitute for native reads. This strengthens payload binding without changing
+existing receipt bytes or deterministic keys. Preserve earlier receipts and
+qualification drivers rather than rewriting historical evidence.
 
-Detailed identity, transport, guard, collision, file-history and replay receipts
-remain private under the assigned qualification namespace. This proves CLI
-observation-association persistence and selected same-occurrence overlap/replay.
-It does not prove the integrated Power Automate producer/web path, final-URL or
-redirect observability, all native interruption cases, broader recovery, catalogue
-promotion, clinical applicability or the full sourcing track. Existing successful
-transport/hash/replay flows remain separate qualified components.
-
-References: [SharePoint folder/file REST operations](https://learn.microsoft.com/en-us/sharepoint/dev/sp-add-ins/working-with-folders-and-files-with-rest),
-[Windows file-exists error code](https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-).
+CLI persistence does not itself qualify an integrated producer/browser path,
+final-URL or redirect observability, all interruption cases, isolated restore,
+catalogue promotion, clinical applicability or full acquisition.
