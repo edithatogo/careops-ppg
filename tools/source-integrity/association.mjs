@@ -53,12 +53,27 @@ function checkNativeRead(read,wanted){
     String(read.pin.Length)!==String(wanted.bytes.length)||!literal(read.pin.ServerRelativeUrl)||!read.pin.ServerRelativeUrl.endsWith('/'+wanted.name))throw Error('ASSOCIATION_NATIVE_READBACK_MISMATCH');
  return canonical(read.pin);
 }
+function checkNativeRecords(proof,handoff){
+ const keys=Object.keys(handoff.selectedRecordSHA256);
+ if(!exact(proof,['selectedRecordJSON'])||!exact(proof.selectedRecordJSON,keys))throw Error('ASSOCIATION_NATIVE_RECORD_PROOF_REQUIRED');
+ for(const kind of ['publication','edition','capture']){
+  const record=handoff.selectedRecords[kind];
+  const raw=proof.selectedRecordJSON[record.key];
+  if(typeof raw!=='string'||Buffer.byteLength(raw,'utf8')>1024*1024)throw Error('ASSOCIATION_NATIVE_RECORD_PROOF_REQUIRED');
+  // Hash the actual native JSON, preserving its numeric and whitespace spelling.
+  // Comparing parsed content separately binds the copied payload to those bytes.
+  if(sha(Buffer.from(raw,'utf8'))!==handoff.selectedRecordSHA256[record.key])throw Error('ASSOCIATION_NATIVE_RECORD_HASH_MISMATCH');
+  let current;try{current=JSON.parse(raw);}catch{throw Error('ASSOCIATION_NATIVE_RECORD_PROOF_REQUIRED');}
+  if(canonical(current)!==canonical(record))throw Error('ASSOCIATION_NATIVE_RECORD_PAYLOAD_MISMATCH');
+ }
+}
 export async function persistAssociation({handoff,client,verifyBindings,journal}){
  const plan=planAssociation(handoff);
  if(typeof verifyBindings!=='function'||typeof journal!=='function'||typeof client?.get!=='function'||typeof client?.create!=='function')throw Error('ASSOCIATION_QUALIFIED_TRANSPORT_REQUIRED');
  // The handoff is deliberately non-authorising. Qualified runtime code must check
  // current native records, original bytes/pins, allowed destination and ownership.
- await verifyBindings(plan.handoff);
+ const verify=async()=>checkNativeRecords(await verifyBindings(plan.handoff),plan.handoff);
+ await verify();
  await journal({event:'association_prepared',replayKey:handoff.replayKey,occurrenceKey:handoff.occurrenceKey,files:plan.files.map(f=>({name:f.name,sha256:sha(f.bytes)}))});
  const pins=[];
  // Check all members before any mutation, including an existing commit marker.
@@ -70,7 +85,7 @@ export async function persistAssociation({handoff,client,verifyBindings,journal}
  for(let i=0;i<plan.files.length;i++){
   const f=plan.files[i];
   if(pins[i]===null){
-   await verifyBindings(plan.handoff);
+   await verify();
    await journal({event:'association_create_intent',name:f.name,sha256:sha(f.bytes)});
    try{await client.create(f.name,f.bytes);}catch(error){
     await journal({event:'association_create_uncertain',name:f.name,status:error.response?.status??error.status??null,reconcileBeforeRetry:true});
@@ -82,7 +97,7 @@ export async function persistAssociation({handoff,client,verifyBindings,journal}
   if(pins[i]!==null&&pins[i]!==pin)throw Error('ASSOCIATION_NATIVE_PIN_CHANGED');
   pins[i]=pin;await journal({event:'association_member_verified',name:f.name,pin:JSON.parse(pin),sha256:sha(f.bytes)});
  }
- await verifyBindings(plan.handoff);
+ await verify();
  for(let i=0;i<plan.files.length;i++)if(checkNativeRead(await client.get(plan.files[i].name),plan.files[i])!==pins[i])throw Error('ASSOCIATION_FINAL_MEMBER_CHANGED');
  const result={kind:'ppg-source-association-persistence-v1',state:created?'persisted':'replayed',created,
   replayKey:handoff.replayKey,occurrenceKey:handoff.occurrenceKey,

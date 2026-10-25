@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {createHash} from 'node:crypto';
 import {planAssociation,persistAssociation} from '../tools/source-integrity/association.mjs';
 // Golden digests were produced by the existing Python handoff implementation
 // from entirely fictional inputs; these expected values are not credentials.
@@ -10,14 +11,44 @@ function loadFixture(name){
 }
 const fixture=()=>loadFixture('fictional-acquisition-handoff.json');
 const next=()=>loadFixture('fictional-acquisition-handoff-next-run.json');
+function recordProof(h=fixture()){
+ function canonical(v){return v&&typeof v==='object'?(Array.isArray(v)?'['+v.map(canonical).join(',')+']':'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}'):JSON.stringify(v);}
+ return {selectedRecordJSON:Object.fromEntries(['publication','edition','capture'].map(k=>[h.selectedRecords[k].key,canonical(h.selectedRecords[k])]))};
+}
 function transport(){
  const store=new Map(),creates=[],events=[];let serial=0;
  const client={get:async name=>{const x=store.get(name);return x?{bytes:Buffer.from(x.bytes),pin:structuredClone(x.pin)}:null;},
   create:async(name,bytes)=>{creates.push(name);if(store.has(name)){const e=Error('conflict');e.status=409;throw e;}
    store.set(name,{bytes:Buffer.from(bytes),pin:{UniqueId:'fictional-'+(++serial),ETag:'"fixture-'+serial+',1"',UIVersionLabel:'1.0',Length:String(bytes.length),ServerRelativeUrl:'/sites/Fictional/Evidence/SourceReceipts/'+name}});}};
- return {store,creates,events,client,verifyBindings:async()=>{},journal:async event=>events.push(event)};
+ return {store,creates,events,client,verifyBindings:async()=>recordProof(),journal:async event=>events.push(event)};
 }
 const run=(t,h=fixture(),extra={})=>persistAssociation({handoff:h,...t,...extra});
+test('altered copied records cannot pass unchanged authoritative native JSON hashes',async()=>{
+ for(const kind of ['publication','edition','capture']){
+  const t=transport(),h=fixture();let reads=0;t.client.get=async()=>{reads++;return null;};
+  h.selectedRecords[kind].title+=' altered without changing native hash';
+  await assert.rejects(run(t,h),/NATIVE_RECORD_PAYLOAD_MISMATCH/);
+  assert.equal(reads,0);assert.equal(t.creates.length,0);assert.equal(t.events.length,0);
+ }
+});
+test('native record proof must supply exactly the three raw JSON snapshots with matching hashes',async()=>{
+ const h=fixture(),key=h.binding.publicationKey;
+ for(const proof of [undefined,{}, {selectedRecordJSON:{}},
+  {selectedRecordJSON:{...recordProof().selectedRecordJSON,[key]:'{}'}},
+  {selectedRecordJSON:{...recordProof().selectedRecordJSON,[key]:'x'.repeat(1024*1024+1)}}]){
+  const t=transport();let reads=0;t.client.get=async()=>{reads++;return null;};
+  await assert.rejects(run(t,h,{verifyBindings:async()=>proof}),/NATIVE_RECORD_/);
+  assert.equal(reads,0);assert.equal(t.creates.length,0);assert.equal(t.events.length,0);
+ }
+});
+test('native record JSON hashing preserves actual numeric and formatting representations',async()=>{
+ const h=fixture();h.selectedRecords.publication.data.number=1;
+ const proof=recordProof(h),key=h.binding.publicationKey;
+ proof.selectedRecordJSON[key]=' \n'+proof.selectedRecordJSON[key].replace('"number":1','"number":1.0')+'\n';
+ h.selectedRecordSHA256[key]=createHash('sha256').update(proof.selectedRecordJSON[key]).digest('hex');
+ const t=transport();const result=await run(t,h,{verifyBindings:async()=>proof});
+ assert.equal(result.created,3);assert.equal(result.associationCommitVerified,true);
+});
 test('persist verifies three immutable members; unchanged replay creates nothing',async()=>{
  const t=transport(),h=fixture(),before=JSON.stringify(h),first=await run(t,h);
  assert.equal(first.created,3);assert.equal(first.associationCommitVerified,true);
@@ -49,7 +80,7 @@ test('lost create response is not retried; explicit later reconciliation preserv
 });
 test('current source guard refuses before first write and between partial members',async()=>{
  let calls=0;const t=transport();await assert.rejects(run(t,fixture(),{verifyBindings:async()=>{throw Error('SOURCE_CHANGED');}}),/SOURCE_CHANGED/);assert.equal(t.creates.length,0);
- await assert.rejects(run(t,fixture(),{verifyBindings:async()=>{if(++calls===3)throw Error('SOURCE_CHANGED');}}),/SOURCE_CHANGED/);
+ await assert.rejects(run(t,fixture(),{verifyBindings:async()=>{if(++calls===3)throw Error('SOURCE_CHANGED');return recordProof();}}),/SOURCE_CHANGED/);
  assert.equal(t.store.size,1);assert.equal(t.events.some(e=>e.event==='association_complete'),false);
  const resumed=await run(t);assert.equal(resumed.created,2);assert.equal(t.store.size,3);
 });
@@ -68,7 +99,7 @@ test('same bytes with changed native pin are held and never overwritten',async()
 });
 test('late change after commit prevents reporting completion',async()=>{
  const t=transport();let guards=0;
- const guarded=async()=>{if(++guards===5){const first=[...t.store.values()][0];first.bytes=Buffer.from('changed after commit');}};
+ const guarded=async()=>{if(++guards===5){const first=[...t.store.values()][0];first.bytes=Buffer.from('changed after commit');}return recordProof();};
  await assert.rejects(run(t,fixture(),{verifyBindings:guarded}),/READBACK_MISMATCH/);
  assert.equal(t.events.some(e=>e.event==='association_complete'),false);
 });
