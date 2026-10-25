@@ -35,52 +35,35 @@ execution or claim persistence, source currency or full acquisition acceptance.
 Runtime qualification must additionally bind that report to the actual native
 input/output artifacts and authenticated action records.
 
-## Selected native qualification — 24 October 2026
+## Native execution and recovery qualification
 
-The existing source-owned transport flow was updated in place through one guarded
-save, with exact native graph/reference readback, preserved creator/history and
-actual failure alerts Off. Its separate hash helper was neither modified nor
-invoked. The already qualified script, workbook and captured original were reused.
+Before saving, freeze the complete previous definition, flow identity, creator,
+connections and earlier run history. Check the selected native script, workbook,
+source and original bytes/pins, destination configuration and relevant accessible
+triggers. Keep actual native receipts and target-specific outcomes private.
 
-The in-app Power Automate session required sign-in and returned an expired-token /
-MSAL PKCE cache error. No credential cache was reset or transferred. The supported
-CLI `flow run resubmit` route submitted the existing selected input once, through
-an exact-target guard allowing one mutation send and no redirects or retry. This
-is CLI execution evidence; the new integrated web invocation remains unqualified.
+Save with a single guarded request and read back the complete graph, references,
+stopped state and actual failure-alert setting. A provider validation response
+alone is insufficient. Invoke only the exact selected input through an existing
+qualified route; retain its native run ID, action records and bound artifacts.
+Verify artifact size/digest framing, actual content parity, script input/output
+and post-hash metadata against independent bytes. Preserve any provider-generated
+file revisions and return the maintained flow to its required terminal state.
 
-The new run succeeded. All 40 native action records were read. The upload was
-Skipped; the content read, script execution and post-hash metadata check succeeded.
-Nine run-bound artifacts were downloaded without forwarding a bearer token and
-verified against their native size/MD5 framing. The script's actual input equalled
-the downloaded content, and its actual output digest matched an independent
-2,794,382-byte original. Script, workbook and source-file bytes and native pins
-remained unchanged. The flow was returned to Stopped, alerts stayed Off, and both
-earlier successful runs remained intact.
+Pass a verified occurrence through the consumer-selected existing-capture handoff
+and append-only association protocol. Require the current callback contract's raw
+native RecordJSON proof and independent original verification. Replays reuse exact
+members without overwriting their bytes or native history. An uncertain operation
+must be reconciled before another explicit invocation.
 
-The verified occurrence was then passed through the existing consumer-selected
-capture handoff and [association persistence](acquisition-association-persistence.md).
-CLI persistence reused the existing replay claim and created only the new
-occurrence and commit files. Explicit readback/replay made zero creates. All five
-receipt files, including the earlier occurrence and commit, remained at native
-version 1.0 with unchanged earlier bytes and pins. Current catalogue rows, human
-state and retained original were checked by the persistence guards and unchanged.
+Qualify browser execution, source drift holds, interruption recovery, same-object
+definition restoration and isolated-target restore separately. Keep producer-side
+persistence, final-URL/redirect observability and source currency explicit. Neither
+a combined transport/hash run nor a following CLI association establishes every
+full-acquisition or clinical gate. Source CI is separate from native acceptance.
 
-This qualifies the selected combined transport/hash run followed by guarded CLI
-association persistence and replay. It does not establish a single cloud producer
-transaction, integrated web operation, fresh remote retrieval on every replay,
-redirect/final-URL observability, changed-source handling or broader producer
-recovery. No catalogue promotion, checkpoint advancement, clinical applicability,
-schedule, notification, new connection or permission is implied. Full FS-04 stays
-open; its next step is to join persistence/recovery to the owned producer path.
-
-Detailed preimages, failed browser renewal, single-send journals, native action
-artifacts, byte proofs and association receipts remain private with the source
-owner. Preserve every earlier edition and occurrence. Seven focused integration
-tests passed on actual repo-local Python 3.15.1; the 32 existing transport/preflight
-tests also passed. Run the affected selectors during edits:
+Run affected integration checks with the explicitly selected local interpreter:
 
 ```sh
 .venv/bin/python -m unittest -q tests.test_integrated_acquisition
 ```
-
-Hosted source/package checks and native runtime proof have separate scopes.
