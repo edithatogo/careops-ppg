@@ -18,14 +18,16 @@ class ReleaseCandidateTests(unittest.TestCase):
             root = Path(temporary)
             for name in ['README.md', 'NOTICE.md', 'AGENTS.md', 'requirements-xlsb.lock',
                          'requirements-atlas.lock', 'requirements-atlas-qualification.in']:
-                (root / name).write_text('Fictional source fixture. No public licence is granted.\n')
-            for name in ['scripts', 'tools/submission-package', 'templates', 'tests', '.github', 'config', 'docs']:
+                (root / name).write_text('Fictional project source fixture.\n')
+            shutil.copyfile(ROOT / 'LICENSE', root / 'LICENSE')
+            for name in ['scripts', 'tools/submission-package', 'templates', 'tests/fixtures', '.github', 'config', 'docs']:
                 (root / name).mkdir(parents=True, exist_ok=True)
             for name in ['build_release_candidate.py', 'build_submission_assembler.py']:
                 shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
             for name in ['page.html', 'assembler.js', 'prefill.js']:
                 shutil.copyfile(ROOT / 'tools/submission-package' / name, root / 'tools/submission-package' / name)
             shutil.copyfile(ROOT / 'templates/review-package.md', root / 'templates/review-package.md')
+            shutil.copyfile(ROOT / 'tests/fixtures/LICENSE.pandas', root / 'tests/fixtures/LICENSE.pandas')
             (root / 'tests/fixture.txt').write_text('Fictional test source\n')
             (root / 'config/fixture.json').write_text('{"fictional": true}\n')
             (root / '.github/fixture.txt').write_text('Fictional workflow source\n')
@@ -51,10 +53,16 @@ class ReleaseCandidateTests(unittest.TestCase):
             self.assertEqual(receipt['sourceCommit'], git('rev-parse', 'HEAD').decode().strip())
             self.assertEqual(receipt['archiveSha256'], hashlib.sha256(archive.read_bytes()).hexdigest())
             self.assertEqual(archive.read_bytes(), (root / '.local/two/careops-ppg-portable.zip').read_bytes())
-            self.assertFalse(receipt['nativeWrites']); self.assertFalse(receipt['publicLicenceGranted'])
+            self.assertFalse(receipt['nativeWrites'])
+            self.assertEqual(receipt['projectCodeLicense'], 'Apache-2.0')
+            self.assertTrue(receipt['thirdPartyTermsPreserved'])
+            self.assertFalse(receipt['externalContentLicensed'])
+            self.assertFalse(receipt['visibilityChanged']); self.assertFalse(receipt['releasePublished'])
             with zipfile.ZipFile(archive) as bundle:
                 self.assertEqual(bundle.read('PPG-submission-assembler.html'), (output / 'PPG-submission-assembler.html').read_bytes())
                 self.assertEqual(bundle.read('config/fixture.json'), (root / 'config/fixture.json').read_bytes())
+                self.assertEqual(bundle.read('LICENSE'), (root / 'LICENSE').read_bytes())
+                self.assertEqual(bundle.read('tests/fixtures/LICENSE.pandas'), (root / 'tests/fixtures/LICENSE.pandas').read_bytes())
                 self.assertEqual(bundle.read('NOTICE.md'), (root / 'NOTICE.md').read_bytes())
                 self.assertEqual(bundle.read('requirements-xlsb.lock'), (root / 'requirements-xlsb.lock').read_bytes())
                 for name in ['requirements-atlas.lock', 'requirements-atlas-qualification.in', '.python-version-atlas']:
