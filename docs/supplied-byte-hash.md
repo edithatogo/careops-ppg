@@ -29,7 +29,7 @@ remain false. A caller comparing its own invented pin does not authenticate a
 publisher; retain the independently qualified profile, native invocation and raw
 source receipts. No bytes are returned in the result and no prior capture changes.
 
-## Verification and remaining native work
+## Offline verification and native contract
 
 Run the exact offline tests with explicitly selected repo-local Python 3.15.1:
 
@@ -44,11 +44,7 @@ SHA-256 padding/block boundaries, arbitrary binary and the 3 MiB maximum. Malfor
 profiles/Base64, excess fields, wrong expected length, request limits and same-size
 corruption are exercised. Source CI proves offline behavior only.
 
-A private retained 2,794,382-byte PDF also passed offline comparison against its
-independent hash. Its operational profile and bytes remain outside this repository.
-The existing acquisition flow stays stopped; this helper does not modify it.
-
-Before native acceptance, allocate a separately owned script/workbook and qualify
+Before native acceptance, bind the existing owned script/workbook and qualify
 the existing Standard Excel operation and connection. Reuse the verified Office
 Script packaging route: its connector return metadata describes an object with
 string `result` and string-array `logs`, even though the TypeScript main returns a
@@ -63,27 +59,14 @@ Native runtime hash, authenticated provenance, redirect/final-URL evidence,
 durable replay/concurrency, conditional persistence and recovery remain separate
 FS-03/04 requirements. None is closed by the offline helper.
 
-## Native checkpoint — 24 October 2026
+## Preservation and qualification records
 
-The separately owned Standard OneDrive/Excel flow completed one manual run on the
-retained 2,794,382-byte public original. Native action records prove that its
-actual Base64 content became the script request, and the hosted script returned
-the same SHA-256 as the independently downloaded original. Exact script source,
-hosted packaging, connection bindings and saved source metadata were verified.
-The run succeeded in about 18 seconds. The test flow is Off, actual owner failure
-alerts are disabled, and its graph/bindings and single-run history are preserved.
-This qualifies the supplied-byte helper for that selected positive native case;
-it does not qualify every payload size or the native negative-case matrix.
-
-Excel saved a normalised workbook revision even though the script made no workbook
-calls. The new workbook is version 2.0 and remains empty, without external links
-or macros. Native version 1.0 was downloaded and hash-verified against the original
-local fixture; both native versions and both local byte streams are retained.
-The hosted script, existing PDF and destination rules/settings/subscriptions are
-unchanged. Operational bindings and full native receipts remain private.
-
-The earlier preparation requirements above remain applicable to another target.
-This checkpoint closes the selected native hash gap only. Redirect/final-URL
-observability, the consumer promotion contract, durable replay/concurrency,
-conditional persistence, recovery and broader error cases remain unqualified.
-No catalogue row, source-register field, checkpoint or clinical status changed.
+Retain target-specific run outcomes, dates, source sizes, native version changes,
+state records and detailed receipts privately. Inspect actual workbook versions
+and bytes before and after invocation, even when the helper contains no workbook
+calls. If the provider saves a normalised revision, preserve both versions and
+all original bytes; do not silently replace a working fixture or human edits.
+Read back the hosted script/package, connection references, complete native
+inputs/output and actual owner-alert setting. Finish an owned qualification flow
+in its intended stopped state. A selected positive case does not establish every
+payload size, negative-case handling or full acquisition acceptance.

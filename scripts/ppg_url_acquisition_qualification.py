@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -210,6 +213,81 @@ def build(profile):
             'definition': definition, 'connectionReferences': {SLOT: p['connectionReference']}}}
 
 
+def verify_readback(profile, report, independent_bytes):
+    """Verify supplied byte parity; never authenticate a run or advance a checkpoint."""
+    p = _profile(profile)
+    if not isinstance(report, dict):
+        raise ValueError('qualification report object required')
+    fixed = {'state': 'content-awaiting-independent-verification',
+             'qualificationId': p['qualificationId'], 'sourceKey': p['sourceKey'],
+             'frameworkEditionId': p['frameworkEditionId'],
+             'requestedSourceURL': p['sourceURL'], 'stagingPath': p['stagingPath'],
+             'expectedRawSHA256': p['expectedSHA256']}
+    if any(report.get(k) != v for k, v in fixed.items()):
+        raise ValueError('report differs from fixed qualification profile')
+    # Preserve the producer boundary: expected values and booleans are not proof.
+    for field in ('byteIntegrityVerified', 'representationVerified', 'redirectsVerified',
+                  'checkpointAdvanced', 'nativeAcquisitionQualified',
+                  'clinicalApplicabilityAccepted', 'notificationsEnabled'):
+        if report.get(field) is not False:
+            raise ValueError('unexpected producer acceptance assertion')
+    if (report.get('actualRawSHA256', 'missing') is not None
+            or report.get('finalSourceURL', 'missing') is not None
+            or type(report.get('catalogueWrites')) is not int
+            or report['catalogueWrites'] != 0
+            or report.get('metadataSnapshotStable') is not True):
+        raise ValueError('unexpected producer observation boundary')
+    run = _literal(report.get('runName'), 256)
+    if type(report.get('uploadAttempted')) is not bool:
+        raise ValueError('upload attempt observation required')
+    polls = report.get('pollAttempts')
+    if type(polls) is not int or not 0 <= polls <= POLL_COUNT:
+        raise ValueError('bounded polling observation required')
+    before, after = report.get('metadataBefore'), report.get('metadataAfter')
+    for metadata in (before, after):
+        if (not isinstance(metadata, dict) or metadata.get('IsFolder') is not False
+                or type(metadata.get('Size')) is not int
+                or metadata['Size'] != p['expectedBytes']):
+            raise ValueError('file metadata size or kind differs')
+        _literal(metadata.get('Id'), 2048)
+        _literal(metadata.get('ETag'), 2048)
+    if any(before[k] != after[k] for k in ('Id', 'ETag', 'Size', 'IsFolder')):
+        raise ValueError('file identity or version changed during readback')
+    content = report.get('content')
+    if (not isinstance(content, dict) or set(content) != {'$content-type', '$content'}
+            or not isinstance(content['$content-type'], str)
+            or not isinstance(content['$content'], str)):
+        raise ValueError('explicit binary content envelope required')
+    encoded = content['$content']
+    expected_encoded = 4 * ((p['expectedBytes'] + 2) // 3)
+    if len(encoded) != expected_encoded:
+        raise ValueError('encoded content exceeds or differs from expected size')
+    try:
+        decoded = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise ValueError('invalid binary content encoding') from exc
+    if base64.b64encode(decoded).decode('ascii') != encoded:
+        raise ValueError('noncanonical binary content encoding')
+    if (type(independent_bytes) is not bytes
+            or len(independent_bytes) != p['expectedBytes']
+            or len(decoded) != p['expectedBytes']
+            or decoded != independent_bytes):
+        raise ValueError('independent and connector bytes differ')
+    digest = hashlib.sha256(independent_bytes).hexdigest()
+    if digest != p['expectedSHA256']:
+        raise ValueError('raw content differs from pinned source digest')
+    return {'state': 'supplied-readback-byte-parity-verified',
+            **{k: p[k] for k in ('qualificationId', 'sourceKey', 'frameworkEditionId',
+                                 'sourceURL', 'stagingPath')},
+            'runName': run, 'fileId': before['Id'], 'fileETag': before['ETag'],
+            'bytes': len(independent_bytes), 'actualRawSHA256': digest,
+            'independentByteParityVerified': True,
+            'runProvenanceAuthenticated': False, 'representationVerified': False,
+            'finalSourceURL': None, 'redirectsVerified': False,
+            'nativeAcquisitionQualified': False, 'checkpointAdvanced': False,
+            'catalogueWrites': 0, 'nativeWrites': 0}
+
+
 def main():
     expected = (ROOT / '.python-version').read_text().strip()
     actual = '.'.join(map(str, sys.version_info[:3]))
@@ -220,20 +298,35 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--profile', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--report', type=Path, help='Saved Report_candidate inputs, with binary envelope')
+    parser.add_argument('--download', type=Path, help='Separately downloaded original bytes; requires --report')
     args = parser.parse_args()
+    if bool(args.report) != bool(args.download):
+        parser.error('--report and --download must be supplied together')
     if '.local' not in args.output.resolve().parts:
         raise SystemExit('Keep bound flow definitions under .local')
     with args.profile.open('rb') as source:
         raw = source.read(64 * 1024 + 1)
     if len(raw) > 64 * 1024:
         raise SystemExit('Qualification profile exceeds limit')
-    flow = build(json.loads(raw))
+    profile = json.loads(raw)
+    if args.report:
+        with args.report.open('rb') as source:
+            report_raw = source.read(4 * ((MAX_BYTES + 2) // 3) + 65537)
+        if len(report_raw) > 4 * ((MAX_BYTES + 2) // 3) + 65536:
+            raise SystemExit('Qualification report exceeds limit')
+        with args.download.open('rb') as source:
+            downloaded = source.read(MAX_BYTES + 1)
+        flow = verify_readback(profile, json.loads(report_raw), downloaded)
+    else:
+        flow = build(profile)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0), 0o600)
     with os.fdopen(descriptor, 'w') as target:
         json.dump(flow, target, indent=2)
         target.write('\n')
-    print(json.dumps({'prepared': True, 'nativeWrites': 0, 'nativeAcceptanceEstablished': False,
+    print(json.dumps({'prepared': not bool(args.report), 'suppliedByteParityVerified': bool(args.report),
+                      'nativeWrites': 0, 'nativeAcceptanceEstablished': False,
                       'singleInvocationQualificationOnly': True}))
     return 0
 
