@@ -91,21 +91,18 @@ source receipt. Persist/read back a claim and association before advancing any
 checkpoint; native replay/concurrency and recovery still require actual proof.
 This helper alone closes none of those native persistence gates.
 
-## Selected integration checkpoint — 24 October 2026
+## Native interface qualification
 
-The real source-side handoff was prepared against three current native catalogue
-rows: one selected publication, its exact edition and its existing capture. Record
-JSON hashes, endpoint columns and review state matched a second read; current
-HTTP and item-metadata ETags were retained separately. The existing catalogue
-original was downloaded with stable metadata and matched the flow's independent
-2,794,382-byte original. The consumer's existing full schema/business validator
-accepted the unchanged three records and original bytes under its qualified
-Python 3.15.1 profile. That selected manifest explicitly claims no full collection
-coverage. Private receipts and operational identities remain outside Git.
+The catalogue owner supplies the selected publication, exact edition and existing
+capture. Read back their current RecordJSON, hashes, endpoints and human review
+state; retain HTTP and item-metadata ETags separately. Download the retained
+original with stable pins and compare it with the independently verified source.
+Run the owner's complete schema/business validator without broadening its scope.
+Keep selected-cohort completeness separate from whole-catalogue coverage.
 
-The source and catalogue URLs remain distinct. Both retained source receipts were
-checked against the same bytes before explicit locator evidence was supplied.
-The result reuses the existing capture and preserves its earlier acquisition
-route/time and original link; it creates no native file or catalogue record.
-This is a qualified preparation/interface result. Native observation association,
-durable claims, conditional writes, unchanged replay and recovery remain open.
+Retain source and catalogue URLs as distinct locators. When they differ, supply
+explicit byte-evidence receipts for both rather than deriving equivalence from
+an equal digest. Preserve the capture's earlier route/time and original link.
+Store target-specific dates, outcomes, bindings and detailed receipts privately.
+This preparation contract never creates a native record/file or closes durable
+claim, conditional-write, replay or recovery gates.
