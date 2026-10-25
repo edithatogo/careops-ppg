@@ -62,73 +62,60 @@ full acquisition qualification and clinical applicability false. Persisting an
 observation never promotes catalogue identity, changes human state or proves
 publication currency, final-URL/redirect observation or whole-track recovery.
 
-## Current evidence and next native operation
+## Focused offline verification
 
-Twelve focused offline tests passed on actual repo-local Python 3.15.1. They exercise
-emitted guard predicates against changed records/script pins, failed reads,
-missing resume targets, UTF-8 byte lengths/padding, altered saved pins, unsafe
-bindings, late receipt edits/replacements during source checks and unexpected
-actions. They do not authenticate or mutate native data.
+The source tests evaluate emitted guards for changed record/script pins, failed
+reads, missing resume targets, UTF-8 byte lengths/padding, altered saved pins,
+late receipt edits/replacements, unsafe bindings and unexpected actions. They
+perform no authentication or native mutation.
 
 ```sh
 .venv/bin/python -m unittest -q tests.test_cloud_observation
 ```
 
-The selected candidate has 98 actions, seven action nesting levels and a longest
-expression of 6,779 characters. Native save exposed a provider rule missed by the
-pre-validator: Request trigger schemas reject `pattern`/`patternProperties` when
-schema validation applies. The trigger retains its string type and length bound;
-`Require_safe_resume` checks every character and the length before constructing
-an observation path. Focused emitted-predicate checks reject traversal, quoting,
-spaces, non-ASCII characters, encoded separators and overlong input. No runtime
-path guard or connector boundary was relaxed.
+## Native trigger compatibility
 
-## Selected native qualification — 25 October 2026
+Request trigger schemas reject `pattern`/`patternProperties` when native schema
+validation applies. Keep the resume input's string type and length bound, and
+check every character and the length in `Require_safe_resume` before constructing
+an observation path. Emitted-predicate tests reject traversal, quotes, spaces,
+non-ASCII characters, encoded separators and overlong inputs. Do not remove the
+runtime guard to make a definition save.
 
-Same-client renewal completed and fresh native preflight verified the selected
-catalogue records, original, capture claim, staging file and script. Existing
-library rules/subscriptions/receivers and current-user alerts were inspected; an
-accessible Default-environment inventory found no relevant active file trigger.
-That inventory has the scope of the accessible environment, not tenant-wide proof.
+## Native qualification and recovery
 
-- The corrected graph saved to the same owned flow and passed exact native
-  definition/reference/creator readback with actual owner failure alerts Off.
-- One CLI invocation succeeded, skipped the original upload and created one
-  3,087-byte observation at native version 1.0. Seventeen downloaded action
-  artifacts passed native size/hash checks. Independent receipt readback matched
-  exact expected bytes, native pins and the hash computed from the retained source.
-- The existing operator invoked an explicit resume through the web Run form.
-  It succeeded with no receipt/capture creation or catalogue-row change. Sixteen
-  action artifacts verified the original observation time, origin run and exact
-  saved bytes. All six receipt files retained their native IDs, ETags and versions.
-- A deliberately missing resume target stopped at the intended hold with an
-  actual 404. Creation and result-reporting actions were skipped. Four action
-  artifacts and independent folder readback proved the held result and unchanged
-  receipt set. The expected held run is preserved alongside successful runs.
-- With all runs terminal, the flow was stopped. Its earlier integrated definition
-  was restored and independently read back, then the qualified observation graph
-  was reapplied and read back. Definition recovery used the same native object
-  and preserved its identity, creator, prior runs and failure-alert setting,
-  matching each version's exact connection references.
+Keep target bindings, dates, run outcomes, downloaded originals, screenshots,
+service-state records and detailed preservation receipts outside portable Git.
+A source test or pre-validator pass does not prove that a provider accepts a save
+or that a native run produced the intended result.
 
-A further guarded CLI resubmit of the qualified web-resume input succeeded through
-the restored graph. The flow was stopped again, with all seven runs retained and
-actual owner failure alerts Off. This exercises same-object definition recovery
-and runtime resumption; it is not an isolated-target deployment or full recovery
-of the catalogue.
+1. Refresh exact account/client/target reads, selected records and original,
+   claim, staging, script and workbook pins/bytes. Inspect destination effects,
+   connections and actual owner failure alerts before invoking anything.
+2. Preserve the stopped definition, creator, references and run history. Save
+   once through the existing guarded route; inspect exact native readback before
+   activation. After an uncertain outcome, reconcile native state before retrying.
+3. Qualify a selected normal invocation with independent receipt bytes, native
+   identity/version and supplied-source hash checks. Distinguish an expected
+   handled 404 for a new receipt from an unknown read failure.
+4. Use the existing web Run form to resume that exact observation. Require zero
+   receipt/capture creation, unchanged prior files and preserved observation time.
+   Exercise a missing target: it must hold before any create or result report.
+5. With all runs terminal, stop the flow. Restore a retained definition, inspect
+   native readback, reapply the qualified graph and exercise bounded resumption
+   through it. Recheck files, records, references, creator, history and actual
+   alert settings. Finish in the intended stopped state.
+6. Export only non-secret recovery projections, source/config pins and selected
+   retained evidence to a private package. Verify member hashes and clean-directory
+   reconstruction, including changed/missing-member refusal. An offline verifier
+   makes no native calls. Same-object restoration does not qualify an isolated
+   target deployment or a complete catalogue restore.
 
-The three selected catalogue records, original source bytes/pins, capture claim,
-script, workbook and staging file were rechecked without changes. Native
-observation persistence is separate from the CLI association-commit protocol:
-`associationCommitVerified` and checkpoint advancement remain false. Final-URL and
-redirect observability, changed-source/interrupted-create scenarios, isolated
-target restoration and wider catalogue/clinical acceptance remain unqualified.
-These selected native checks do not close the full sourcing track.
-
-Before later invocation, verify the exact current definition, account, source
-pins, destination effects, connections and actual owner-alert setting. Preserve
-failed attempts, raw artifacts, source/file versions and restore preimages
-privately. Do not enable schedules, sends, permissions, connections or billing as
-a qualification shortcut. Keep the graph stopped at a terminal handover.
+Retain every failed attempt and prior source edition. Keep observation persistence,
+association-commit verification, checkpoint advancement, final-URL/redirect evidence,
+source currency and clinical applicability as separate assertions. Do not close
+broader acquisition, changed-source/interrupted-create or consumer requirements
+from a selected successful run. Never enable schedules, sends, permissions,
+connections or billing as a qualification shortcut.
 
 Connector operations and binary content parameters: [SharePoint connector reference](https://learn.microsoft.com/en-us/connectors/sharepointonline/).
