@@ -1,6 +1,6 @@
 # Lifecycle source reconciliation
 
-This source increment reconciles32 selected implementation/test paths, seven
+This source increment reconciles32 selected implementation/test paths, eight
 supporting regression paths and two canonical integration fixes, and retains
 one source-workspace setup test outside the portable toolkit. Existing canonical
 adaptations are preserved through a three-way comparison against the recorded

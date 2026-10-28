@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "increment": "lifecycle-portability-20261028",
-  "scope": "32 selected source/test ports, seven supporting regression ports and two canonical integration fixes; dated source hashes, not a current-hash enforcement policy",
+  "scope": "32 selected source/test ports, eight supporting regression ports and two canonical integration fixes; dated source hashes, not a current-hash enforcement policy",
   "files": [
     {
       "path": "scripts/ppg_lifecycle_relationship_checkpoint.py",
@@ -206,6 +206,11 @@
     {
       "path": "tests/test_policy_editions_maintenance.cjs",
       "sha256": "167eec1437ba6af4fbc1bc4f7dad92f2ab95e1668295cd7d4c2875866b4afcd5",
+      "reconciliation": "supporting-portable-regression"
+    },
+    {
+      "path": "tests/test_policy_evidence_guard.cjs",
+      "sha256": "0abf6ad8b21784641bbc4fe968c24b1f6423d85830cdbed7403e26982b7756a6",
       "reconciliation": "supporting-portable-regression"
     }
   ],
