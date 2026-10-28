@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "increment": "lifecycle-portability-20261028",
-  "scope": "32 selected source/test ports, three supporting regression ports and two canonical integration fixes; dated source hashes, not a current-hash enforcement policy",
+  "scope": "32 selected source/test ports, seven supporting regression ports and two canonical integration fixes; dated source hashes, not a current-hash enforcement policy",
   "files": [
     {
       "path": "scripts/ppg_lifecycle_relationship_checkpoint.py",
@@ -187,6 +187,26 @@
       "path": "tests/test_selected_prepared_verification.py",
       "sha256": "2cc618939d9c84185b9bc119003555a7af917ad8b8bd7ca9769e4f0642e96091",
       "reconciliation": "canonical-integration-fix"
+    },
+    {
+      "path": "tests/test_binary_copy_reconciliation.py",
+      "sha256": "c1e5673b7dd798f945c1f7ee0377fe5c4a4de5dfb93b9d90658813ba843f95b3",
+      "reconciliation": "supporting-portable-regression"
+    },
+    {
+      "path": "tests/test_binary_proof_producer.py",
+      "sha256": "0224e9c10e91509d3ad66e77c97ac96c2b180eff758e5c4e2aaba34fe70bb0f9",
+      "reconciliation": "supporting-portable-regression"
+    },
+    {
+      "path": "tests/test_edition_transition_guard.cjs",
+      "sha256": "d3d66e03a7282ed23dc49fa40dd05ce15474298769a2546a70d12bfaa2869658",
+      "reconciliation": "supporting-portable-regression"
+    },
+    {
+      "path": "tests/test_policy_editions_maintenance.cjs",
+      "sha256": "167eec1437ba6af4fbc1bc4f7dad92f2ab95e1668295cd7d4c2875866b4afcd5",
+      "reconciliation": "supporting-portable-regression"
     }
   ],
   "retainedOutsidePortableRepository": [

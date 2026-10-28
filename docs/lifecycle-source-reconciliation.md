@@ -1,6 +1,6 @@
 # Lifecycle source reconciliation
 
-This source increment reconciles32 selected implementation/test paths, three
+This source increment reconciles32 selected implementation/test paths, seven
 supporting regression paths and two canonical integration fixes, and retains
 one source-workspace setup test outside the portable toolkit. Existing canonical
 adaptations are preserved through a three-way comparison against the recorded
@@ -17,7 +17,10 @@ receipt admission to the existing standard SharePoint route. Other increments
 preserve per-role consultation identity, complete-history refusal, explicit
 no-retry initiation writes and strict same-site source paths.
 
-These modules are offline compilers, validators and local-copy utilities.
+The new journal/checkpoint/publication compilers are offline, alongside pure
+validators and local-copy utilities. Existing read-only maintenance/proof
+adapters retain explicit target configuration and separate access qualification;
+this port invokes none of them.
 They do not deploy or invoke native flows, inherit connection permissions,
 authorise policy publication or establish real actor authority. Navigation-copy
 output still needs rendering/access qualification in its intended application.
