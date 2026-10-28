@@ -219,3 +219,9 @@ readback; durable claims, byte verification and production replay remain separat
 See [the source reconciliation](docs/lifecycle-source-reconciliation.md) for
 relationship journals, version-scoped checkpoints and standard-connector flow
 compilers. These are portable source contracts, not native deployment claims.
+
+## Owner-controlled guide route
+
+[Guide preparation, exact-revision review and controlled filing](docs/owner-controlled-guide.md)
+use the maintained owner rubric and create-only evidence receipts. Portable source
+and fictional tests do not establish native deployment or institutional issuance.
