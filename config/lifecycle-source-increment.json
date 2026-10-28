@@ -180,12 +180,12 @@
     },
     {
       "path": "tools/lifecycle/build_selected_prepared_verification.py",
-      "sha256": "b1c6c01e0ef53488e213cd8ec38209019f7ca2bda55ee7be948657d6d83eb0b3",
+      "sha256": "a38efdc924d42223e2f8e7afd856479a07c5716d40770d79cc93140691620741",
       "reconciliation": "canonical-integration-fix"
     },
     {
       "path": "tests/test_selected_prepared_verification.py",
-      "sha256": "2cc618939d9c84185b9bc119003555a7af917ad8b8bd7ca9769e4f0642e96091",
+      "sha256": "ddb016cf2378adf636112ce40342e80080bd2de04637387e5f33c002f19f7e14",
       "reconciliation": "canonical-integration-fix"
     },
     {

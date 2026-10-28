@@ -118,6 +118,19 @@ class SelectedPreparedVerificationTests(unittest.TestCase):
             with self.subTest(uri=invalid), self.assertRaisesRegex(ValueError, 'assurance reader'):
                 build(source, target, binding)
 
+    def test_case_list_identity_is_case_insensitive_for_native_guids(self):
+        source, target, binding, _, _ = fixture()
+        nodes = _flatten(source['properties']['definition']['actions'])
+        collection = COLLECTION.replace('000000000008', '00000000000a')
+        case_uri = nodes['Read_selected_case']['inputs']['parameters']
+        case_uri['parameters/uri'] = case_uri['parameters/uri'].replace('000000000008', '00000000000a')
+        nodes['Purpose_before_assurance']['inputs']['parameters']['parameters/uri'] = (
+            collection.replace('00000000000a', '00000000000A') + '?$top=5000')
+        binding.update(caseListUri=collection,
+            approvedImplementationDefinitionSHA256=digest(source['properties']['definition']))
+        with self.assertRaisesRegex(ValueError, 'assurance reader'):
+            build(source, target, binding)
+
     def test_existing_writer_proof_guards_and_frozen_parent_readback_retained(self):
         source, target, binding, case, parent = fixture()
         result = build(source, target, binding); actions = result['properties']['definition']['actions']

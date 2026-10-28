@@ -37,7 +37,7 @@ def build(implementation, target, binding):
     if (history_template['inputs']['parameters']['dataset'] != site or
             history_template['inputs']['parameters']['parameters/method'] != 'GET' or
             not re.fullmatch(pattern + r'(?:\?\$top=5000)?', history_uri)
-            or history_uri.split('?', 1)[0] == collection):
+            or history_uri.split('?', 1)[0].lower() == collection.lower()):
         raise ValueError('Existing complete assurance reader required')
 
     # Satisfy the unchanged legacy compiler, then replace every template value.
