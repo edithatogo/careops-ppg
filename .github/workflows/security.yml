@@ -38,7 +38,7 @@ jobs:
           .venv-atlas/bin/python scripts/qualify_atlas_adapter.py --atlas-root .local/atlas-python315-pin --atlas-profile
   source-security:
     name: Shared source security
-    uses: edithatogo/careops/.github/workflows/reusable-source-security.yml@5cf006bce6c37c0c15db5d35055e302701a500ad
+    uses: ./.github/workflows/careops-source-security-5cf006bce6c3.yml
     with:
       policy-revision: 5cf006bce6c37c0c15db5d35055e302701a500ad
   portable-content:
