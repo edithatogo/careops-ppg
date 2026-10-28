@@ -22,10 +22,13 @@ def package(output):
     epoch = int(git('show', '-s', '--format=%ct', 'HEAD'))
     output.mkdir(parents=True, exist_ok=False)
     archive = output / 'careops-ppg-portable.zip'
+    security_paths = git('ls-tree', '--name-only', revision, '--',
+                         'SECURITY.md', '.careops-security', '.githooks',
+                         '.gitleaks.toml', 'renovate.json').decode().splitlines()
     subprocess.run(['git', 'archive', '--format=zip', '--output', str(archive.resolve()),
                     revision, 'README.md', 'LICENSE', 'NOTICE.md', 'AGENTS.md', '.gitattributes', '.gitignore', '.github', '.careops', 'conductor', 'docs',
                     '.python-version', '.python-version-atlas', '.node-version', 'requirements-xlsb.lock',
-                    'requirements-atlas.lock', 'requirements-atlas-qualification.in', 'config', 'scripts', 'tools', 'templates', 'tests'],
+                    'requirements-atlas.lock', 'requirements-atlas-qualification.in', 'config', 'scripts', 'tools', 'templates', 'tests', *security_paths],
                    cwd=ROOT, check=True)
     page = output / 'PPG-submission-assembler.html'
     build(page)
