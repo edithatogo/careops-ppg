@@ -58,3 +58,9 @@ still follows the caller commit. Other workflow audits remain enabled.
 
 The directory-local Git attributes retain LF for text and detect binaries, so
 Windows checkout preserves the exact qualified helper bytes and checksums.
+
+One existing source-control checker contains regular-expression alternation
+tokens that resemble a private machine path to this heuristic. Its exception
+is limited to the exact reviewed path, rule and SHA256 of that existing blob.
+Modified content, other paths and other rules retain their normal checks. This
+exception is not permission to store private paths or operational records.

@@ -22,3 +22,18 @@ The initial candidate list was a file-name classification, not complete test dep
 The first failed package and subsequent successful package are retained privately as different revisions. Source hashes and dispositions are recorded in the increment manifest; historical source hashes are not an immutable rule for future reviewed edits. Existing canonical-only adaptations are retained rather than overwritten.
 
 New journal/checkpoint and flow-definition builders do not invoke native services. Existing proof/maintenance readers retain their configured transport and permission checks; this port adds no networking import or client relative to canonical source and invokes no native reader/writer. Source tests and generated definitions do not establish native deployment, actor authority, clinical approval or operational acceptance. Source-workspace setup and native history remain outside this portable repository.
+
+
+### Medium: Existing control-regex false positive in a new-ref history scan
+The stricter outgoing-history audit identified the existing portable-content
+checker's own regex alternation as a machine path. One exact historical blob
+was independently inspected. The exception is scoped to that path, rule and full
+SHA256, with regressions for changed content and the same bytes at another path.
+Other rules remain enforced; no operational data, history rewrite or broad
+scanner exemption is permitted.
+
+An initial shell sequence erroneously pushed the authorised source branch after
+that audit failed. No PR was opened or merged at that point. The failure and
+its evidence are retained; subsequent validation and push are performed as
+separate checked steps. The false-positive fix must pass the full outgoing
+history audit before further delivery.
