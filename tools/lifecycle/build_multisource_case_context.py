@@ -2,7 +2,7 @@
 
 Pure composition. Other operations retain the original source restriction by
 default; explicit pinned exceptions can prepare ownership projection or read-only
-preparation checks for one additional profile. Native qualification is separate.
+preparation checks for reviewed additional profiles. Native qualification is separate.
 """
 import copy
 import hashlib
@@ -58,15 +58,21 @@ def match_expression():
     return '@and('+','.join("equals(item()?['"+key+"'],"+REQ+"?['"+request_key+"'])" for key,request_key in MATCH)+')'
 
 
-def _operation_expression(seed, additional_projection=None, additional_preparation=None):
+def _operation_expression(seed, additional_projection=None, additional_preparation=None, appended_projections=(), appended_preparations=()):
     checks = ["equals(triggerBody()?['text'],'Check context')",
               'equals('+SELECTED+"?['UniqueId'],"+_literal(seed['UniqueId'])+')']
     if additional_projection is not None:
         checks.append("and(equals(triggerBody()?['text'],'Project ownership'),equals("
                       +SELECTED+"?['UniqueId'],"+_literal(additional_projection)+'))')
+    for source_uid in appended_projections:
+        checks.append("and(equals(triggerBody()?['text'],'Project ownership'),equals("
+                      +SELECTED+"?['UniqueId'],"+_literal(source_uid)+'))')
     if additional_preparation is not None:
         checks.append("and(contains(createArray('Check preparation','Check readiness'),triggerBody()?['text']),equals("
                       +SELECTED+"?['UniqueId'],"+_literal(additional_preparation)+'))')
+    for source_uid in appended_preparations:
+        checks.append("and(contains(createArray('Check preparation','Check readiness'),triggerBody()?['text']),equals("
+                      +SELECTED+"?['UniqueId'],"+_literal(source_uid)+'))')
     return '@or('+','.join(checks)+')'
 
 
@@ -98,22 +104,41 @@ def _check_context_shape(definition):
     selected=verify['actions'][PREFIX+'selected']
     operation=verify['actions'][PREFIX+'operation']
     additional=context.get('limits',{}).get('additionalOwnershipProjectionSource')
+    appended=context.get('limits',{}).get('additionalOwnershipProjectionSources',[])
+    if (not isinstance(appended,list) or any(not isinstance(uid,str) for uid in appended)
+            or len(set(appended))!=len(appended)
+            or any(uid not in {p['UniqueId'] for p in profiles} or uid==additional for uid in appended)
+            or (appended and additional is None)):
+        raise ValueError('Appended projection identities require distinct existing reviewed sources')
     preparation=context.get('limits',{}).get('additionalPreparationContextSource')
+    prep_appended=context.get('limits',{}).get('additionalPreparationContextSources',[])
+    if (not isinstance(prep_appended,list) or any(not isinstance(uid,str) for uid in prep_appended)
+            or len(set(prep_appended))!=len(prep_appended)
+            or any(uid not in {p['UniqueId'] for p in profiles}
+                   or uid==preparation for uid in prep_appended)
+            or (prep_appended and preparation is None)):
+        raise ValueError('Appended preparation identities require distinct existing reviewed sources')
     folders=context.get('limits',{}).get('additionalPreparationArtifactFolders')
     roles=context.get('limits',{}).get('additionalPreparationReadinessRoles')
+    if prep_appended and roles is None:
+        raise ValueError('Appended preparation sources require the explicit retained readiness role plan')
     if additional is not None and (not isinstance(additional,str)
             or additional not in {p['UniqueId'] for p in profiles}):
         raise ValueError('Additional projection source must be an existing reviewed profile')
     if preparation is not None and (not isinstance(preparation,str)
             or preparation not in {p['UniqueId'] for p in profiles}):
         raise ValueError('Additional preparation source must be an existing reviewed profile')
-    seeds=[p for p in profiles if operation['expression']==_operation_expression(p,additional,preparation)]
+    seeds=[p for p in profiles if operation['expression']==_operation_expression(p,additional,preparation,appended,prep_appended)]
     if (len(seeds)!=1 or selected.get('runAfter')!={}
             or operation.get('runAfter')!={PREFIX+'selected':['Succeeded']}
             or operation['actions']!={PREFIX+'allowed':{'type':'Compose','inputs':True,'runAfter':{}}}):
         raise ValueError('Source-specific operation restriction changed')
+    if seeds[0]['UniqueId'] in appended:
+        raise ValueError('Appended projection source must differ from the original source')
     if additional is not None and additional==seeds[0]['UniqueId']:
         raise ValueError('Additional projection source must differ from the original source')
+    if seeds[0]['UniqueId'] in prep_appended:
+        raise ValueError('Appended preparation source must differ from the original source')
     if preparation is not None:
         if preparation==seeds[0]['UniqueId']:
             raise ValueError('Additional preparation source must differ from the original source')
@@ -125,7 +150,7 @@ def _check_context_shape(definition):
     if roles is not None:
         if preparation is None:
             raise ValueError('Readiness role binding requires the reviewed additional source')
-        expected=_preparation_role_graph(nodes,preparation,roles)
+        expected=_preparation_role_graph(nodes,preparation,roles,prep_appended)
         if nodes['Ready_consultation_Runtime_guard']!=expected['Ready_consultation_Runtime_guard']:
             raise ValueError('Reviewed source-specific readiness role guards changed')
     if additional is not None:
@@ -240,7 +265,7 @@ def _check_preparation_folders(nodes, site, source_uid, folders, *, by_document_
             raise ValueError('Prepared receipt reference changed')
 
 
-def _preparation_role_graph(nodes, source_uid, binding):
+def _preparation_role_graph(nodes, source_uid, binding, appended_sources=()):
     """Select two explicit role plans within the existing unrolled coverage shape."""
     from build_consultation_coverage import build_runtime
     if (not isinstance(binding,dict)
@@ -248,7 +273,17 @@ def _preparation_role_graph(nodes, source_uid, binding):
             or not isinstance(binding['originalRoles'],list) or not isinstance(binding['additionalRoles'],list)
             or len(binding['originalRoles'])!=len(binding['additionalRoles'])):
         raise ValueError('Equal-cardinality explicit readiness role plans required; qualify a different shape separately')
-    reader=nodes['Readiness_consultation_before'];uri=reader['inputs']['parameters']['parameters/uri']
+    reader=copy.deepcopy(nodes['Readiness_consultation_before']);uri=reader['inputs']['parameters']['parameters/uri']
+    retained_uri=uri
+    # The separately qualified history binder changes only this URI leaf. Verify
+    # the original canonical coverage hash first, then restore its exact bound;
+    # never accept arbitrary filters, continuation shortcuts or altered guards.
+    bounded=isinstance(uri,str) and uri.endswith('?$top=5000')
+    if bounded:
+        uri=uri[:-len('?$top=5000')]
+        if not re.fullmatch(r"_api/web/lists(?:\(guid'[0-9a-fA-F-]{36}'\)|/getbytitle\('[^'\r\n]+'\))/items",uri):
+            raise ValueError('Exact bounded history collection required')
+        reader['inputs']['parameters']['parameters/uri']=uri
     def canonical(roles):
         return build_runtime('Readiness_consultation_before',reader,roles,
             qualified_reader=nodes['Read_selected_case'],collection_uri=uri,prefix='Ready_consultation')
@@ -257,6 +292,8 @@ def _preparation_role_graph(nodes, source_uid, binding):
         raise ValueError('Original complete readiness coverage graph changed')
     original=_flatten(old);changed=_flatten(new)
     condition='equals('+SELECTED+"?['UniqueId'],"+_literal(source_uid)+')'
+    if appended_sources:
+        condition='or('+','.join([condition]+['equals('+SELECTED+"?['UniqueId'],"+_literal(uid)+')' for uid in appended_sources])+')'
     replacements=[('Ready_consultation_Problems','where')]
     replacements += [('Ready_consultation_R'+str(i)+'_Rows','where')for i in range(len(binding['originalRoles']))]
     selected=copy.deepcopy(old);updated=_flatten(selected)
@@ -271,6 +308,8 @@ def _preparation_role_graph(nodes, source_uid, binding):
         changed['Ready_consultation_Receipt']['inputs']['requiredRoleResults'][index]['SubjectRole']=before
     if new!=old:
         raise ValueError('Role binding must preserve every other coverage action, condition and reader')
+    if bounded:
+        updated['Readiness_consultation_before']['inputs']['parameters']['parameters/uri']=retained_uri
     return selected
 
 
@@ -295,7 +334,8 @@ def with_readonly_preparation_source(profile, source_uid, approved_definition_sh
     if 'additionalPreparationContextSource' in limits:
         raise ValueError('Review an existing preparation exception before replacing it')
     additional=limits.get('additionalOwnershipProjectionSource')
-    seeds=[p for p in profiles if nodes[PREFIX+'operation']['expression']==_operation_expression(p,additional)]
+    appended=limits.get('additionalOwnershipProjectionSources',[])
+    seeds=[p for p in profiles if nodes[PREFIX+'operation']['expression']==_operation_expression(p,additional,None,appended)]
     if len(seeds)!=1 or source_uid==seeds[0]['UniqueId'] or source_uid not in {p['UniqueId'] for p in profiles}:
         raise ValueError('Exact existing additional reviewed source identity required')
     site=nodes['Read_selected_case']['inputs']['parameters']['dataset']
@@ -303,7 +343,7 @@ def with_readonly_preparation_source(profile, source_uid, approved_definition_sh
     _check_preparation_readers(nodes,site,original_uri)
     out=copy.deepcopy(profile);out['properties']['state']='Stopped'
     updated=_flatten(out['properties']['definition']['actions'])
-    updated[PREFIX+'operation']['expression']=_operation_expression(seeds[0],additional,source_uid)
+    updated[PREFIX+'operation']['expression']=_operation_expression(seeds[0],additional,source_uid,appended)
     updated['Selected_case_context']['inputs']['limits']['additionalPreparationContextSource']=source_uid
     updated['Read_prepared_source_final']['inputs']['parameters']['parameters/uri']=_projection_source_uri()
     if artifact_folder_relative is not None:
@@ -359,12 +399,13 @@ def with_ownership_projection_source(profile, source_uid, approved_definition_sh
         raise ValueError('Exact existing reviewed source identity required')
     operation=nodes[PREFIX+'operation']['expression']
     preparation=limits.get('additionalPreparationContextSource')
-    seeds=[p for p in profiles if operation==_operation_expression(p,None,preparation)]
+    prep_appended=limits.get('additionalPreparationContextSources',[])
+    seeds=[p for p in profiles if operation==_operation_expression(p,None,preparation,(),prep_appended)]
     if len(seeds)!=1 or seeds[0]['UniqueId']==source_uid:
         raise ValueError('An additional source with the original restriction required')
     out=copy.deepcopy(profile);out['properties']['state']='Stopped'
     updated=_flatten(out['properties']['definition']['actions'])
-    updated[PREFIX+'operation']['expression']=_operation_expression(seeds[0],source_uid,preparation)
+    updated[PREFIX+'operation']['expression']=_operation_expression(seeds[0],source_uid,preparation,(),prep_appended)
     updated['Selected_case_context']['inputs']['limits']['additionalOwnershipProjectionSource']=source_uid
     site=updated['Read_selected_case']['inputs']['parameters']['dataset']
     original_uri="_api/web/GetFileById('"+seeds[0]['UniqueId']+"')?$select=UniqueId,ETag,Length"
@@ -377,6 +418,50 @@ def with_ownership_projection_source(profile, source_uid, approved_definition_sh
                 raise ValueError('Exact reviewed projection metadata reader required')
             params['parameters/uri']=_projection_source_uri()
     _check_context_shape(out['properties']['definition'])
+    return out
+
+
+def with_additional_ownership_projection_sources(profile, source_uids, approved_definition_sha256):
+    """Append exact reviewed projection exceptions without replacing prior scopes.
+
+    Changes only the explicit source/mode gate and its declaration in a stopped
+    copy. Every writer, source/frame/response/ETag guard and connection is retained.
+    Native first/replay qualification is required separately.
+    """
+    source=profile['properties']['definition']
+    if digest(source)!=approved_definition_sha256:
+        raise ValueError('Exact reviewed case-work definition required')
+    profiles=_check_context_shape(source)
+    if profiles is None or not isinstance(source_uids,list) or not source_uids:
+        raise ValueError('Existing context and nonempty reviewed projection additions required')
+    nodes=_flatten(source['actions']);limits=nodes['Selected_case_context']['inputs']['limits']
+    retained=limits.get('additionalOwnershipProjectionSource')
+    appended=limits.get('additionalOwnershipProjectionSources',[])
+    preparation=limits.get('additionalPreparationContextSource')
+    prep_appended=limits.get('additionalPreparationContextSources',[])
+    operation=nodes[PREFIX+'operation']['expression']
+    seeds=[p for p in profiles if operation==_operation_expression(p,retained,preparation,appended,prep_appended)]
+    if retained is None or len(seeds)!=1:
+        raise ValueError('Existing reviewed projection exception required before append')
+    combined=appended+source_uids
+    if (any(not isinstance(uid,str) for uid in combined) or len(set(combined))!=len(combined)
+            or any(uid not in {p['UniqueId'] for p in profiles}
+                   or uid in (retained,seeds[0]['UniqueId']) for uid in combined)):
+        raise ValueError('Distinct additional reviewed source identities required')
+    out=copy.deepcopy(profile);updated=_flatten(out['properties']['definition']['actions'])
+    updated['Selected_case_context']['inputs']['limits']['additionalOwnershipProjectionSources']=combined
+    updated[PREFIX+'operation']['expression']=_operation_expression(seeds[0],retained,preparation,combined,prep_appended)
+    _check_context_shape(out['properties']['definition'])
+    shadow=copy.deepcopy(out);shadow_nodes=_flatten(shadow['properties']['definition']['actions'])
+    shadow_nodes[PREFIX+'operation']['expression']=operation
+    shadow_limits=shadow_nodes['Selected_case_context']['inputs']['limits']
+    if 'additionalOwnershipProjectionSources' in limits:
+        shadow_limits['additionalOwnershipProjectionSources']=appended
+    else:
+        del shadow_limits['additionalOwnershipProjectionSources']
+    if shadow!=profile:
+        raise ValueError('Only the reviewed projection gate and declaration may change')
+    out['properties']['state']='Stopped'
     return out
 
 
@@ -394,6 +479,33 @@ def _selected_final_guard(expression, seed, site):
     if expression.count(old)!=1:raise ValueError('Original exact source-content guard changed')
     expression=expression.replace(old,'equals('+decoded+','+SELECTED+"?['content'])")
     return expression
+
+
+def with_additional_context_sources(profile, additions, approved_definition_sha256):
+    """Append exact reviewed sources to a stopped copy; preserve all operation guards.
+
+    This enables context lookup only for new profiles. Existing source-specific
+    projection/preparation exceptions remain unchanged; no native operation occurs.
+    """
+    source = profile['properties']['definition']
+    if digest(source) != approved_definition_sha256:
+        raise ValueError('Exact reviewed eligible-source definition required')
+    retained = _check_context_shape(source)
+    if retained is None or not isinstance(additions, list) or not additions:
+        raise ValueError('Existing eligible-source contract and nonempty additions required')
+    nodes = _flatten(source['actions'])
+    site = nodes['Read_selected_case']['inputs']['parameters']['dataset']
+    combined = validate_sources(retained + additions, site)
+    out = copy.deepcopy(profile)
+    _flatten(out['properties']['definition']['actions'])[PREFIX+'configured']['inputs'] = combined
+    if _check_context_shape(out['properties']['definition']) != combined:
+        raise ValueError('Retain reviewed context and operation restrictions')
+    shadow = copy.deepcopy(out)
+    _flatten(shadow['properties']['definition']['actions'])[PREFIX+'configured']['inputs'] = retained
+    if shadow != profile:
+        raise ValueError('Only the exact source profile table may change')
+    out['properties']['state'] = 'Stopped'
+    return out
 
 
 def with_eligible_sources(profile, profiles, approved_definition_sha256):
@@ -449,4 +561,53 @@ def with_eligible_sources(profile, profiles, approved_definition_sha256):
     if geometry['actionCount']>500:raise ValueError('Eligible-source context exceeds native action limit')
     if action_references(definition['actions'])-_flatten(definition['actions']).keys():raise ValueError('Unresolved eligible-source context reference')
     _check_context_shape(definition)
+    return out
+
+
+def with_additional_preparation_sources(profile, source_uids, approved_definition_sha256):
+    """Append reviewed read-only preparation scopes using the retained role plan.
+
+    Existing folder exceptions stay specific to their original source. New sources
+    use the original artifact folder, retained template and explicit additional
+    fictional readiness role plan. No writer or connection may change.
+    """
+    source=profile['properties']['definition']
+    if digest(source)!=approved_definition_sha256:
+        raise ValueError('Exact reviewed case-work definition required')
+    profiles=_check_context_shape(source)
+    if profiles is None or not isinstance(source_uids,list) or not source_uids:
+        raise ValueError('Existing context and nonempty reviewed preparation additions required')
+    nodes=_flatten(source['actions']);limits=nodes['Selected_case_context']['inputs']['limits']
+    retained=limits.get('additionalPreparationContextSource')
+    roles=limits.get('additionalPreparationReadinessRoles')
+    appended=limits.get('additionalPreparationContextSources',[])
+    projection=limits.get('additionalOwnershipProjectionSource')
+    projections=limits.get('additionalOwnershipProjectionSources',[])
+    operation=nodes[PREFIX+'operation']['expression']
+    seeds=[p for p in profiles if operation==_operation_expression(p,projection,retained,projections,appended)]
+    if retained is None or roles is None or len(seeds)!=1:
+        raise ValueError('Existing reviewed preparation source and explicit fictional role plan required')
+    combined=appended+source_uids
+    if (any(not isinstance(uid,str) for uid in combined) or len(set(combined))!=len(combined)
+            or any(uid not in {p['UniqueId'] for p in profiles}
+                   or uid in (retained,seeds[0]['UniqueId']) for uid in combined)):
+        raise ValueError('Distinct additional reviewed preparation source identities required')
+    out=copy.deepcopy(profile);updated=_flatten(out['properties']['definition']['actions'])
+    updated['Selected_case_context']['inputs']['limits']['additionalPreparationContextSources']=combined
+    updated[PREFIX+'operation']['expression']=_operation_expression(seeds[0],projection,retained,projections,combined)
+    graph=_preparation_role_graph(updated,retained,roles,combined)
+    updated['Ready_consultation_Runtime_guard'].clear()
+    updated['Ready_consultation_Runtime_guard'].update(graph['Ready_consultation_Runtime_guard'])
+    _check_context_shape(out['properties']['definition'])
+    shadow=copy.deepcopy(out);restored=_flatten(shadow['properties']['definition']['actions'])
+    restored[PREFIX+'operation']['expression']=operation
+    restored['Ready_consultation_Runtime_guard'].clear()
+    restored['Ready_consultation_Runtime_guard'].update(copy.deepcopy(nodes['Ready_consultation_Runtime_guard']))
+    if 'additionalPreparationContextSources' in limits:
+        restored['Selected_case_context']['inputs']['limits']['additionalPreparationContextSources']=appended
+    else:
+        del restored['Selected_case_context']['inputs']['limits']['additionalPreparationContextSources']
+    if shadow!=profile:
+        raise ValueError('Only the preparation gate, role selectors and declaration may change')
+    out['properties']['state']='Stopped'
     return out

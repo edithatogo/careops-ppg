@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "increment": "lifecycle-portability-20261028",
+  "scope": "Reusable code and fictional regression tests only; source snapshot hashes, not a current-hash enforcement policy",
+  "files": [
+    {
+      "path": "scripts/ppg_lifecycle_relationship_checkpoint.py",
+      "sha256": "3e6d56af9aa6f7109caf8397677d0741994e604251de5167dd801af9751ee15e",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "scripts/ppg_relationship_versions.py",
+      "sha256": "78c29c2c62613a74a79218c3011d44426a7d464b4883dc0398303336e3615517",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_edition_relationship_bundle.cjs",
+      "sha256": "6a4f3a4c02b0baadb6de833deef0e1fc5a38837e6eff48785db2179c70d3e3f4",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_lifecycle_reference_transition.py",
+      "sha256": "07e2611ecc44096d4b1961dbb83e2b280712ec6c4f163721da032f5382d595bd",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_lifecycle_relationship_checkpoint.py",
+      "sha256": "6b6527cef244075d82c510674205b883d3d6d4a17a867a91787b4d36a389a048",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_lifecycle_remaining_adverse.py",
+      "sha256": "5c1dae0568804d53ad5c9482c7180d9f997d1f7ddf1c3efd1e697b0dbacde045",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_multisource_case_context.py",
+      "sha256": "5b1443ff719ab42f7ec95f66acd2a4fbad36a801cd4e8acac8c37cc281ce2483",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tests/test_multisource_event_context.py",
+      "sha256": "04568768ea6d28e626bbde4b9206c9cc7aa3fc09c9f64c64c90b5a5ddb388c95",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_operator_entry.py",
+      "sha256": "076273c9bd339d8d949816713f7c7cc50af23c4f8f552edfd6248e59ad54a400",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tests/test_ownership_response_pages.py",
+      "sha256": "ca04abb17af09531c5c6e324ac31d989081d9331a9e42a1f9bfede4400c94d45",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_prepared_closure_check.py",
+      "sha256": "f4124c226d0ae0c0003e50a2a92051bbbcb289c70bca7794aa9ae1985e80e8a7",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tests/test_prepared_navigation_links.py",
+      "sha256": "f22f1c27d90718db62c4e5541e8e99ec0736bf948aa38fbf2aab3002676b4001",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_prepared_purpose_events.py",
+      "sha256": "50d71f76dcaa4b763c6daab8d6c0c288c4dd422d15060ec0ed63e7077f66a902",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tests/test_prepared_readiness_check.py",
+      "sha256": "0c383286632498041d4c4fa3fb4ae72fa8d70949b5e9d87ccbd0d779723baad7",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tests/test_relationship_versions.py",
+      "sha256": "de8f72c10c3084da6e5351f2be8e2456ec60d1732a94668440a53b1bb42f75c7",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tests/test_versioned_publication.py",
+      "sha256": "48add24ace758644e67c9239b6eed2d11f0677750e8bae2673a4fb45e6029654",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tools/lifecycle/add_prepared_navigation_links.py",
+      "sha256": "ebf562706bd3a9e6af96e711db6df9cbf6a62e54a085ec7e32e1bfa4541c6dee",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tools/lifecycle/bind_publication_admission.py",
+      "sha256": "fa5b34da9404e1eb061029cb3706b92a30ed11b4cab6197c94bf65ebaa54af0e",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tools/lifecycle/build_multisource_case_context.py",
+      "sha256": "7595736d2299a68aa821e10c2676e99c63314bded9db3f8108177505c026fd4e",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/lifecycle/build_multisource_event_context.py",
+      "sha256": "2f18d006ad14c3339336c8acff597d461dc7b73e251907101d1279b348de880c",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tools/lifecycle/build_operator_initiation.py",
+      "sha256": "09fbd7649e4ba65aaff291ccda5b419c75b71f54d0f90cf8bd304c3f737dda1e",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/lifecycle/build_prepared_consultation_events.py",
+      "sha256": "93e3bf4a77b39753ad30888a2c0980c4c970710ab3a718b15994311e9d34bb4c",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/lifecycle/build_prepared_purpose_events.py",
+      "sha256": "395c5e2ff3e485669404d5545e63706cd985b095d5c5ce0551fb57787d7ebb2c",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/lifecycle/build_selected_ownership_response.py",
+      "sha256": "e2e4599de4a572bc1cc8815f1ca63e3b8a5b93a724d4a7ddd92b82b87f2f69ed",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/lifecycle/build_versioned_publication.py",
+      "sha256": "b5ffa2edd1572a1aea4f53a909c2262fff9649e4e529b65a244a6d541e97d9aa",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tools/policy-editions/binary_publication.py",
+      "sha256": "eeda2426fa85537c4d3963b6b821e14450cea9e3de4042485cce36281744f0b1",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/policy-editions/build_native_graph_qualification.py",
+      "sha256": "9defb94c84a711b6bc3f275f6a1cf4271eaaad5532a5679c1e4ea4e11ec9e1d6",
+      "reconciliation": "new-portable-source"
+    },
+    {
+      "path": "tools/policy-editions/build_prepared_binary_publication.py",
+      "sha256": "65f968f9eb95893dab01be83d047ddca7b5d5d96c8997e4223f0df99da772020",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/policy-editions/evidence-guard.js",
+      "sha256": "4aea6d98123e892d6a24620eaa656d178f576b7adc5742b63519a8db65a6df47",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/policy-editions/maintain.js",
+      "sha256": "58237176efbd42bc7feb93e8df130491cd75506c2aa31956d1d5147fd69736d9",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/policy-editions/produce_binary_publication_proof.py",
+      "sha256": "a603bde78b17aeac2eb265cc441f0635dcad9e5ecd71b6b697d0a286603c5315",
+      "reconciliation": "three-way-preserving-canonical-adaptations"
+    },
+    {
+      "path": "tools/policy-editions/relationship-bundle.js",
+      "sha256": "4a635c05e338541dee812354165a289b899aac813f93d22bd0cd0e3f2cff3532",
+      "reconciliation": "new-portable-source"
+    }
+  ],
+  "retainedOutsidePortableRepository": [
+    {
+      "path": "tests/test_setup_lifecycle.py",
+      "reason": "Tests source-workspace bootstrap/archive metadata; canonical source has its own security and setup contracts."
+    }
+  ],
+  "privateHistoryImported": false,
+  "nativeDeploymentQualified": false,
+  "realPolicyAuthority": false
+}

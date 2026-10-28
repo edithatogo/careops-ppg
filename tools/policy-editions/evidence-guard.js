@@ -36,49 +36,79 @@ function validateEditionEvidence(input = {}) {
     if (!adjacency.has(from)) adjacency.set(from,[]);
     adjacency.get(from).push(to);
   }
-  const visiting = new Set(), visited = new Set();
-  function visit(n) {
-    if (visiting.has(n)) { reasons.push('replacement:cycle'); return; }
-    if (visited.has(n)) return;
-    visiting.add(n);
-    for (const next of adjacency.get(n) || []) visit(next);
-    visiting.delete(n); visited.add(n);
+  // Iterative traversal keeps a long retained history independent of stack depth.
+  const indegree = new Map();
+  for (const [from, targets] of adjacency) {
+    if (!indegree.has(from)) indegree.set(from, 0);
+    for (const to of targets) indegree.set(to, (indegree.get(to) || 0) + 1);
   }
-  for (const n of adjacency.keys()) visit(n);
+  const queue = [...indegree].filter(([, degree]) => degree === 0).map(([pin]) => pin);
+  for (let i = 0; i < queue.length; i++) for (const to of adjacency.get(queue[i]) || []) {
+    indegree.set(to, indegree.get(to) - 1);
+    if (indegree.get(to) === 0) queue.push(to);
+  }
+  if (queue.length !== indegree.size) reasons.push('replacement:cycle');
   return {consistent:reasons.length === 0,reasons:[...new Set(reasons)],qualificationScope:fixture ? 'fictional-evidence-consistency-only' : 'operational-evidence-consistency-only',writesPerformed:0};
 }
 if (typeof module !== 'undefined') module.exports = {validateEditionEvidence};
 
 /* Edition relationship/withdrawal receipts supplement existing fields/history.
    The purpose envelope is independent evidence, not a new native approval field. */
-function validateEditionTransitionEvidence(input = {}) {
+function editionTransitionIntent(input = {}) {
   const reasons = [];
   const text = v => typeof v === 'string' && v.trim().length > 0;
   const time = v => text(v) && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0,19) === v.slice(0,19);
   const pinKey = p => p && text(p.DocumentUID) && text(p.policyEdition) && text(p.resourceReference) && text(p.nativeVersionRef) && /^[a-f0-9]{64}$/i.test(p.sha256 || '') ? JSON.stringify([p.DocumentUID,p.policyEdition,p.resourceReference,p.nativeVersionRef,p.sha256]) : null;
-  const {subject = {}, decision = {}, purposeEvidence = {}, effect = {}, route = {}} = input;
+  const {subject = {}, decision = {}, purposeEvidence = {}, route = {}} = input;
   const fixture = input.mode === 'fictional-qualification';
   if (!['fictional-qualification','operational-evidence'].includes(input.mode)) reasons.push('invalid-mode');
   if (!['replace','withdraw'].includes(input.operation)) reasons.push('unsupported-operation');
   if (!pinKey(subject) || subject.downloadedSHA256 !== subject.sha256) reasons.push('subject:unverified-pin');
-  if (!text(input.expectedETag) || input.expectedETag === '*' || input.expectedETag !== input.observedETag) reasons.push('subject:stale-version');
+  if (!text(input.expectedETag) || input.expectedETag.trim() === '*' || input.expectedETag !== input.observedETag) reasons.push('subject:stale-version');
   if (!time(input.observedAtUtc)) reasons.push('invalid-observation-time');
   const decisionSubject = input.operation === 'replace' ? (input.replacementPublication?.authorised || {}) : subject;
   if (!text(decision.EventUID) || decision.DocumentReference !== decisionSubject.resourceReference || decision.ReviewedVersionRef !== decisionSubject.nativeVersionRef || decision.DocumentSHA256 !== decisionSubject.sha256 || decision.Stage !== 'Decision' || decision.RecordState !== 'Recorded' || decision.DecisionOutcome !== 'Approved (recorded)' || !['None recorded','Resolved'].includes(decision.ConditionsState) || !text(decision.DecisionReference)) reasons.push('decision:wrong-or-incomplete');
-  if (!time(decision.OccurredOn) || (time(decision.OccurredOn) && time(effect.readbackAtUtc) && Date.parse(decision.OccurredOn) > Date.parse(effect.readbackAtUtc))) reasons.push('decision:invalid-chronology');
+  if (!time(decision.OccurredOn)) reasons.push('decision:invalid-chronology');
   if (purposeEvidence.decisionEventUID !== decision.EventUID || purposeEvidence.purpose !== input.operation || !text(purposeEvidence.reference) || pinKey(purposeEvidence.subject) !== pinKey(subject)) reasons.push('decision:purpose-unproven');
   if (!text(route.reference) || !text(route.revision) || !/^[a-f0-9]{64}$/i.test(route.sourceSHA256 || '') || (!fixture && route.currentAuthorityConfirmed !== true)) reasons.push('route:unconfirmed');
-  if (fixture && [subject,decision,purposeEvidence,effect,route].some(p => p.FictionalTest !== true)) reasons.push('fixture-boundary-missing');
-  if (!text(effect.receiptReference) || effect.decisionEventUID !== decision.EventUID || pinKey(effect.subject) !== pinKey(subject) || effect.historyRetained !== true || !time(effect.readbackAtUtc) || (time(effect.readbackAtUtc) && time(input.observedAtUtc) && Date.parse(effect.readbackAtUtc) > Date.parse(input.observedAtUtc))) reasons.push('effect:unverified-receipt');
-  if (input.operation === 'withdraw') {
-    if (effect.outcome !== 'withdrawn-from-active-projection' || effect.activeProjectionState !== 'withdrawn' || !text(effect.activeProjectionEvidenceReference)) reasons.push('withdrawal:active-state-unproven');
-  }
+  if (fixture && [subject,decision,purposeEvidence,route].some(p => p.FictionalTest !== true)) reasons.push('fixture-boundary-missing');
   if (input.operation === 'replace') {
     const publication = validateEditionEvidence(input.replacementPublication);
     reasons.push(...publication.reasons.map(r => 'replacement:' + r));
     if (input.replacementPublication?.mode !== input.mode) reasons.push('replacement:mode-mismatch');
     const replacement = input.replacementPublication?.published;
-    if (!pinKey(replacement) || pinKey(replacement) === pinKey(subject) || pinKey(effect.replacement) !== pinKey(replacement) || pinKey(purposeEvidence.replacement) !== pinKey(replacement)) reasons.push('replacement:wrong-edition');
+    if (!pinKey(replacement) || pinKey(replacement) === pinKey(subject) || pinKey(purposeEvidence.replacement) !== pinKey(replacement)) reasons.push('replacement:wrong-edition');
+  }
+  return {reasons,text,time,pinKey,subject,decision,purposeEvidence,route,fixture};
+}
+
+/* Proposal check has no effect/readback requirement and grants no write right. */
+function validateEditionTransitionProposal(input = {}) {
+  const object = v => v && typeof v === 'object' && !Array.isArray(v);
+  const invalid = !object(input) || !['subject','decision','purposeEvidence','route'].every(k => object(input[k])) ||
+    (input.operation === 'replace' && (!object(input.replacementPublication) ||
+      !['edition','authorised','published','route','decision','publication','actorEvidence'].every(k => object(input.replacementPublication[k]))));
+  if (invalid) return {consistent:false,reasons:['proposal:malformed-evidence'],qualificationScope:'fictional-transition-proposal-only',nativeWriterEnabled:false,writesPerformed:0};
+  const {reasons,time,decision} = editionTransitionIntent(input);
+  if (input.mode !== 'fictional-qualification') reasons.push('proposal:native-generalisation-unqualified');
+  if (Object.hasOwn(input,'effect')) reasons.push('proposal:unexpected-effect');
+  if (time(decision.OccurredOn) && time(input.observedAtUtc) && Date.parse(decision.OccurredOn) > Date.parse(input.observedAtUtc)) reasons.push('decision:invalid-chronology');
+  return {consistent:reasons.length === 0,reasons:[...new Set(reasons)],qualificationScope:'fictional-transition-proposal-only',nativeWriterEnabled:false,writesPerformed:0};
+}
+if (typeof module !== 'undefined') module.exports.validateEditionTransitionProposal = validateEditionTransitionProposal;
+
+function validateEditionTransitionEvidence(input = {}) {
+  const {reasons,text,time,pinKey,subject,decision,fixture} = editionTransitionIntent(input);
+  const {effect = {}} = input;
+  if (time(decision.OccurredOn) && time(effect.readbackAtUtc) && Date.parse(decision.OccurredOn) > Date.parse(effect.readbackAtUtc)) reasons.push('decision:invalid-chronology');
+  if (fixture && effect.FictionalTest !== true) reasons.push('fixture-boundary-missing');
+  if (!text(effect.receiptReference) || effect.decisionEventUID !== decision.EventUID || pinKey(effect.subject) !== pinKey(subject) || effect.historyRetained !== true || !time(effect.readbackAtUtc) || (time(effect.readbackAtUtc) && time(input.observedAtUtc) && Date.parse(effect.readbackAtUtc) > Date.parse(input.observedAtUtc))) reasons.push('effect:unverified-receipt');
+  if (input.operation === 'withdraw') {
+    if (effect.outcome !== 'withdrawn-from-active-projection' || effect.activeProjectionState !== 'withdrawn' || !text(effect.activeProjectionEvidenceReference)) reasons.push('withdrawal:active-state-unproven');
+  }
+  if (input.operation === 'replace') {
+    const replacement = input.replacementPublication?.published;
+    if (pinKey(effect.replacement) !== pinKey(replacement)) reasons.push('replacement:wrong-edition');
     if (effect.outcome !== 'replaced-in-active-projection' || effect.activeProjectionState !== 'superseded' || !text(effect.activeProjectionEvidenceReference)) reasons.push('replacement:active-state-unproven');
   }
   return {consistent:reasons.length === 0,reasons:[...new Set(reasons)],qualificationScope:fixture ? 'fictional-transition-evidence-only' : 'operational-transition-evidence-only',writesPerformed:0};

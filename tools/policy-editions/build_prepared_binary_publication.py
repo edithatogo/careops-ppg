@@ -50,7 +50,7 @@ def build(purpose, target, binding, producer_evidence=None):
             and all(x not in folder for x in ('..', '%', '?', '#', '\\')), 'Canonical isolated same-site folder required')
     assurance_uri = binding['assuranceCollectionUri']
     require(re.fullmatch(r"_api/web/lists\(guid'[0-9a-fA-F-]{36}'\)/items", assurance_uri), 'Complete literal assurance collection required')
-    require(base_work['Purpose_before_assurance']['inputs']['parameters']['parameters/uri'] == assurance_uri,
+    require(base_work['Purpose_before_assurance']['inputs']['parameters']['parameters/uri'] == assurance_uri + '?$top=5000',
             'Retain exact producer full-history reader')
 
     def quote(v): return "'" + v.replace("'", "''") + "'"
