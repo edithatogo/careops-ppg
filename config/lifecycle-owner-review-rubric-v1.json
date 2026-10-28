@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "rubricId": "owner-lifecycle-review-v1",
+  "areas": ["provenance", "content", "lifecycle", "safety", "saved-output"],
+  "responses": ["supported-finding", "no-issue-in-checked-scope", "not-applicable", "needs-evidence"],
+  "severities": ["critical", "high", "medium", "low", "none"],
+  "dispositions": ["open", "fixed", "accepted-limitation", "no-action"],
+  "evidenceRequired": true,
+  "userAcceptanceRequired": true,
+  "officialStatusGranted": false,
+  "effectivenessEstablished": false
+}

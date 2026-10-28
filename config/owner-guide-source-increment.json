@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "increment": "owner-guide-source-20261028",
+  "scope": "Portable owner-guide preparation, review, decision and bounded filing source; fictional tests only",
+  "files": [
+    {
+      "path": "scripts/ppg_owner_master.py",
+      "sha256": "46d161047bf6f829ec837652dd2919b0d5d83251125bc3abbb078db75029cc6b",
+      "adaptation": "Reviewed source snapshot"
+    },
+    {
+      "path": "config/lifecycle-owner-review-rubric-v1.json",
+      "sha256": "0ba83d0f16f8ce6a24eed88da8b5a44f73d29c6b1d44319bd600d3f06b16e540",
+      "adaptation": "Reviewed source snapshot"
+    },
+    {
+      "path": "tools/lifecycle/build_owner_guide_entry.py",
+      "sha256": "027f2143cf97444fbd514acdf2f639f7e798d5a153b495d4d570df38455d817a",
+      "adaptation": "Reject credential-bearing and malformed site targets before building a definition"
+    },
+    {
+      "path": "tools/lifecycle/file_owner_guide.mjs",
+      "sha256": "cd56d92b9af56ccc340f16313798f479eaa25b108cbcdaa0a2825cae52c084c7",
+      "adaptation": "Destination preflight before acceptance reads and regression"
+    },
+    {
+      "path": "tests/test_owner_master.py",
+      "sha256": "005541edd822d7daa7b18f0852e0341fb9a193bf7fe21c8c13a5e340d6786c21",
+      "adaptation": "Reject credential-bearing and malformed site targets before building a definition"
+    },
+    {
+      "path": "tests/test_owner_guide_files.mjs",
+      "sha256": "965c8ab9881f38ef99110c598634f35f7208ff28b74759ffc05b462a6fb71f5b",
+      "adaptation": "Destination preflight before acceptance reads and regression"
+    }
+  ],
+  "privateHistoryImported": false,
+  "nativeDeploymentQualified": false,
+  "realPolicyAuthority": false
+}
