@@ -58,6 +58,14 @@ REVIEW = {
 }
 MAX_BYTES = 5 * 1024 * 1024
 
+# The reviewed content check contains regex alternation tokens, not a machine path.
+# Exact path, rule and full blob hash only; edits cannot inherit this exception.
+REVIEWED_CONTROL_SOURCES = {
+    ("scripts/check_portable_content.py", "private-machine-path"): {
+        "54bb3d104f7f1e984e1e7f51e4b40ad83d514d766353af5a57abed9879e4a99d"
+    }
+}
+
 
 def git(*args: str) -> bytes:
     """Read a supported Git operation without invoking a shell."""
@@ -105,7 +113,11 @@ def findings(path: str, blob: bytes, approvals: dict) -> list[str]:
         issues.append("credential-or-private-file")
     if len(blob) > MAX_BYTES:
         return [*issues, "oversize-file-review-required"]
-    issues += [rule for rule, pattern in RULES.items() if pattern.search(blob)]
+    for rule, pattern in RULES.items():
+        if pattern.search(blob) and hashlib.sha256(blob).hexdigest() not in (
+            REVIEWED_CONTROL_SOURCES.get((path, rule), set())
+        ):
+            issues.append(rule)
     try:
         blob.decode("utf-8")
         binary = b"\0" in blob

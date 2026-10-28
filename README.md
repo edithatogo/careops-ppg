@@ -213,3 +213,9 @@ prepares a stopped OneDrive URL-upload experiment with overwrite disabled, bound
 completion polling and content readback. It performs no deployment or invocation.
 The experiment requires a native owner, empty run history and actual alert-Off
 readback; durable claims, byte verification and production replay remain separate.
+
+## Lifecycle source contracts
+
+See [the source reconciliation](docs/lifecycle-source-reconciliation.md) for
+relationship journals, version-scoped checkpoints and standard-connector flow
+compilers. These are portable source contracts, not native deployment claims.

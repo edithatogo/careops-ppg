@@ -66,6 +66,16 @@ def history_result(history, selected=3, profile=None, continuation=None):
 
 
 class PreparedPurposeTests(unittest.TestCase):
+    def test_complete_history_reads_exceed_default_page_without_widening_writer(self):
+        c, t, b = fixture()
+        actions = flatten(build(c, t, b)['properties']['definition']['actions'])
+        history_reads = [v for v in actions.values() if v['type'] == 'OpenApiConnection'
+            and v['inputs']['parameters']['parameters/method'] == 'GET'
+            and v['inputs']['parameters']['parameters/uri'].startswith(b['assuranceCollectionUri'])]
+        self.assertGreaterEqual(len(history_reads), 2)
+        self.assertTrue(all(v['inputs']['parameters']['parameters/uri'] == b['assuranceCollectionUri']+'?$top=5000' for v in history_reads))
+        self.assertFalse(history_result(rows(), continuation={'odata.nextLink':'fixture:more'}))
+
     def test_partial_history_cannot_qualify_a_valid_prefix_or_identical_retry(self):
         for key in ('nextLink', '@nextLink', 'odata.nextLink', '@odata.nextLink'):
             for selected in range(4):

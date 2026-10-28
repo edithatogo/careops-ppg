@@ -36,3 +36,17 @@ test('future or malformed native observation fails',()=>{
   fails(f=>f.published.readbackAtUtc='2026-10-18T00:00:00Z','publication:native-readback-missing');
   fails(f=>f.observedAtUtc='2026-02-30T00:00:00Z','invalid-observation-time');
 });
+test('long replacement histories remain read-only and detect a deep cycle without recursion',()=>{
+  const f=copy();
+  const nodes=Array.from({length:12001},(_,i)=>({DocumentUID:'fictional-depth-'+i,policyEdition:'1',sha256:'a'.repeat(64)}));
+  f.replacements=nodes.slice(0,-1).map((node,i)=>({replacement:node,replaced:nodes[i+1],FictionalTest:true,evidenceReference:'fictional-depth-probe'}));
+  const before=JSON.stringify(f);
+  assert.equal(check(f).consistent,true);
+  assert.equal(check(f).writesPerformed,0);
+  assert.equal(JSON.stringify(f),before);
+  f.replacements.push({replacement:nodes.at(-1),replaced:nodes[0],FictionalTest:true,evidenceReference:'fictional-depth-cycle'});
+  const result=check(f);
+  assert.equal(result.consistent,false);
+  assert.ok(result.reasons.includes('replacement:cycle'));
+  assert.equal(result.writesPerformed,0);
+});

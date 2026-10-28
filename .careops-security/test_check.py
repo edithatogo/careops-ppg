@@ -41,6 +41,18 @@ class PrivacyTests(unittest.TestCase):
         self.assertIn("environment-file", privacy.findings(".env", b"A=B", {}))
         self.assertEqual([], privacy.findings(".env.example", b"A=placeholder", {}))
 
+    def test_reviewed_control_exception_is_path_rule_and_blob_specific(self) -> None:
+        """Only the exact reviewed historical control source avoids its false hit."""
+        root = Path(__file__).resolve().parents[1]
+        blob = subprocess.check_output(
+            [GIT, "-C", str(root), "show", "HEAD:scripts/check_portable_content.py"]
+        )
+        path = "scripts/check_portable_content.py"
+        self.assertEqual([], privacy.findings(path, blob, {}))
+        self.assertIn("private-machine-path", privacy.findings("other.py", blob, {}))
+        changed = blob + b"\n# " + b"/" + b"Users/" + b"fictional/private\n"
+        self.assertIn("private-machine-path", privacy.findings(path, changed, {}))
+
     def test_private_directories_cannot_be_inventory_approved(self) -> None:
         """Refuse private exports even if someone lists their paths in an inventory."""
         for path in [

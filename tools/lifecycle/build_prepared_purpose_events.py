@@ -82,6 +82,10 @@ def build(case_work, target, binding):
             'else': {'actions': no}, 'runAfter': {prev: ['Succeeded']} if prev else {}}
     def http(path, prev=None, body=None):
         v = copy.deepcopy(template); p = v['inputs']['parameters']
+        # SharePoint defaults to 100 rows. Bound the full-history observation;
+        # the retained guards still refuse every continuation link.
+        if path == uri and body is None:
+            path += '?$top=5000'
         p.update({'parameters/uri': path, 'parameters/method': 'GET' if body is None else 'POST',
                   'parameters/headers': {'Accept': 'application/json;odata=minimalmetadata'}})
         v['runAfter'] = {prev: ['Succeeded']} if prev else {}
