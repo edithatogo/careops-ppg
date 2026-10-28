@@ -97,6 +97,8 @@ included.
 
 ## Security and publishing boundary
 
+See [the security policy](SECURITY.md) and [source-security alignment](docs/source-security-alignment.md) for the source boundary, reporting and delivery requirements.
+
 [Gitleaks](https://github.com/gitleaks/gitleaks) scans full Git history on pushes,
 pull requests and manual runs. The CLI version, download checksum and checkout
 Action are pinned. The workflow uses read-only permissions and requires no scanner
