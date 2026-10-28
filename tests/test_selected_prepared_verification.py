@@ -85,7 +85,7 @@ class SelectedPreparedVerificationTests(unittest.TestCase):
             bad = {**parent, key: value}
             self.assertEqual(select(actions, case, [bad])[1], 'SelectedVerification_parent_valid')
             self.assertEqual(select(actions, case, [bad, parent])[1], 'SelectedVerification_unique')
-        for marker in ('nextLink', '@nextLink', 'odata.nextLink', '@odata.nextLink'):
+        for marker in ('nextLink', '@nextLink', 'odata.nextLink', '@odata.nextLink', '__next'):
             with self.subTest(marker=marker):
                 self.assertEqual(select(actions, case, [parent], history_extra={marker: 'more'})[1],
                                  'SelectedVerification_unique')
@@ -98,6 +98,25 @@ class SelectedPreparedVerificationTests(unittest.TestCase):
                      "https://example.invalid/site/a'b.docx", 'https://example.invalid/site/../a.docx']:
             self.assertEqual(select(actions, {**case, 'evidenceDraftLink': link}, [parent])[1], 'SelectedVerification_link')
         self.assertEqual(select(actions, {**case, 'CaseUID': "LC-FICTIONAL-OP-a'b"}, [parent])[1], 'SelectedVerification_input')
+
+    def test_history_query_accepts_only_exact_whole_list_profiles(self):
+        for suffix in ('', '?$top=5000'):
+            source, target, binding, _, _ = fixture()
+            node = _flatten(source['properties']['definition']['actions'])['Purpose_before_assurance']
+            base = node['inputs']['parameters']['parameters/uri'].split('?', 1)[0]
+            node['inputs']['parameters']['parameters/uri'] = base + suffix
+            binding['approvedImplementationDefinitionSHA256'] = digest(source['properties']['definition'])
+            result = build(source, target, binding)
+            self.assertEqual(result['properties']['definition']['actions']['SelectedVerification_history']
+                ['inputs']['parameters']['parameters/uri'], base + suffix)
+        for invalid in (COLLECTION + '?$top=5000', base + '?$top=1',
+                        base + '?$filter=Stage', base + '?$top=5000&$skip=1'):
+            source, target, binding, _, _ = fixture()
+            node = _flatten(source['properties']['definition']['actions'])['Purpose_before_assurance']
+            node['inputs']['parameters']['parameters/uri'] = invalid
+            binding['approvedImplementationDefinitionSHA256'] = digest(source['properties']['definition'])
+            with self.subTest(uri=invalid), self.assertRaisesRegex(ValueError, 'assurance reader'):
+                build(source, target, binding)
 
     def test_existing_writer_proof_guards_and_frozen_parent_readback_retained(self):
         source, target, binding, case, parent = fixture()

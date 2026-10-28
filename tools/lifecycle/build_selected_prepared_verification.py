@@ -36,7 +36,8 @@ def build(implementation, target, binding):
     history_uri = history_template['inputs']['parameters']['parameters/uri']
     if (history_template['inputs']['parameters']['dataset'] != site or
             history_template['inputs']['parameters']['parameters/method'] != 'GET' or
-            not re.fullmatch(pattern, history_uri) or history_uri == collection):
+            not re.fullmatch(pattern + r'(?:\?\$top=5000)?', history_uri)
+            or history_uri.split('?', 1)[0] == collection):
         raise ValueError('Existing complete assurance reader required')
 
     # Satisfy the unchanged legacy compiler, then replace every template value.
@@ -93,7 +94,7 @@ def build(implementation, target, binding):
                 'runAfter': {previous: ['Succeeded']} if previous else {}}
     def complete(name):
         return ["empty(body('" + name + "')?['" + key + "'])"
-                for key in ('nextLink', '@nextLink', 'odata.nextLink', '@odata.nextLink')]
+                for key in ('nextLink', '@nextLink', 'odata.nextLink', '@odata.nextLink', '__next')]
     prefix = {}
     # Validate operator input before any reads. The parent/child identity check
     # remains in the original validator after parent resolution.

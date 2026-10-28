@@ -1,6 +1,7 @@
 # Lifecycle source reconciliation
 
-This source increment reconciles32 reusable implementation/test paths and retains
+This source increment reconciles32 selected implementation/test paths, three
+supporting regression paths and two canonical integration fixes, and retains
 one source-workspace setup test outside the portable toolkit. Existing canonical
 adaptations are preserved through a three-way comparison against the recorded
 consolidation source, rather than overwriting canonical files with working copies.
@@ -26,3 +27,9 @@ history are excluded. The existing supported/manual routes remain available.
 Review and qualification use Python3.15.1, affected Python/Node regressions,
 portable-content/privacy checks, full-history secret scanning and source-package
 recovery. Real policy decisions and native adoption remain separate.
+
+The complete-package check exposed a verification reader that only recognised
+the legacy whole-list URI. It now also accepts the exact bounded top5000 URI,
+while rejecting filtered/paged variants, the case list as assurance and all five
+continuation markers. Failed first-package evidence is retained; the fix is
+qualified separately before the next clean package revision.
