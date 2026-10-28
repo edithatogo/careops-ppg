@@ -27,3 +27,8 @@ provenance, file hashes and original third-party licences, plus their own checks
 The privacy rollout and this policy change are separate source increments.
 Neither claims that every legacy file was manually reviewed. Maintain explicit
 review findings and preserve existing source and histories during remediation.
+
+The portable source archive retains the committed security policy, privacy-check
+sources and inherited licences, local hooks, scanner configuration and dependency
+update configuration when present. Packaging preserves exact committed bytes;
+it does not include private evidence or execute the hooks during extraction.

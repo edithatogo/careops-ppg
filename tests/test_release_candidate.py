@@ -31,6 +31,18 @@ class ReleaseCandidateTests(unittest.TestCase):
             (root / 'tests/fixture.txt').write_text('Fictional test source\n')
             (root / 'config/fixture.json').write_text('{"fictional": true}\n')
             (root / '.github/fixture.txt').write_text('Fictional workflow source\n')
+            security_files = {
+                'SECURITY.md': b'Fictional source security policy\n',
+                '.careops-security/check.py': b'# Fictional privacy checker\n',
+                '.careops-security/LICENSE': b'Fictional retained licence\n',
+                '.githooks/pre-push': b'#!/bin/sh\nexit 0\n',
+                '.gitleaks.toml': b'title = \"Fictional source scan\"\n',
+                'renovate.json': b'{}\n',
+            }
+            for name, data in security_files.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(data)
             for name in ['.careops/module.json', 'conductor/index.md', 'conductor/suite-delivery.md', '.python-version', '.python-version-atlas', '.node-version']:
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -70,9 +82,20 @@ class ReleaseCandidateTests(unittest.TestCase):
                 self.assertEqual(bundle.read('templates/review-package.md'), (root / 'templates/review-package.md').read_bytes())
                 for name in ['.careops/module.json', 'conductor/index.md', 'conductor/suite-delivery.md', '.python-version', '.node-version']:
                     self.assertEqual(bundle.read(name), (root / name).read_bytes())
+                for name, data in security_files.items():
+                    self.assertEqual(bundle.read(name), data)
                 self.assertFalse(any(name.startswith('.git/') for name in bundle.namelist()))
             self.assertNotEqual(run('one').returncode, 0)
             self.assertEqual(receipt['archiveSha256'], hashlib.sha256(archive.read_bytes()).hexdigest())
+            # Historical source without the optional security files still packages.
+            for name in security_files:
+                (root / name).unlink()
+            git('add', '-u')
+            git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                '-c', 'commit.gpgsign=false', 'commit', '-qm', 'Fictional older source shape')
+            self.assertEqual(run('without-security').returncode, 0)
+            with zipfile.ZipFile(root / '.local/without-security/careops-ppg-portable.zip') as bundle:
+                self.assertTrue(set(security_files).isdisjoint(bundle.namelist()))
             (root / 'README.md').write_text('Unreviewed edit\n')
             self.assertNotEqual(run('dirty').returncode, 0)
             self.assertFalse((root / '.local/dirty').exists())
