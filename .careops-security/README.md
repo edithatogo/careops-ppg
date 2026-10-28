@@ -64,3 +64,5 @@ tokens that resemble a private machine path to this heuristic. Its exception
 is limited to the exact reviewed path, rule and SHA256 of that existing blob.
 Modified content, other paths and other rules retain their normal checks. This
 exception is not permission to store private paths or operational records.
+
+The profile-path guard also checks Windows drive paths, including spaced names, bare roots and JSON-escaped forms. Use portable/private-home placeholders in reusable documentation. Fictional regression cases verify both rejection and ordinary system-path acceptance.
