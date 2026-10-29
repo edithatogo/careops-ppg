@@ -17,7 +17,9 @@ class ReleaseCandidateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             for name in ['README.md', 'NOTICE.md', 'AGENTS.md', 'requirements-xlsb.lock',
-                         'requirements-atlas.lock', 'requirements-atlas-qualification.in']:
+                         'requirements-atlas.lock', 'requirements-atlas-qualification.in',
+                         'requirements-external-catalogue.in', 'requirements-external-catalogue.lock',
+                         'requirements-external-catalogue-ci.in', 'requirements-external-catalogue-ci.lock']:
                 (root / name).write_text('Fictional project source fixture.\n')
             shutil.copyfile(ROOT / 'LICENSE', root / 'LICENSE')
             for name in ['scripts', 'tools/submission-package', 'templates', 'tests/fixtures', '.github', 'config', 'docs']:

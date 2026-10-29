@@ -1,0 +1,3 @@
+# Qualified development-first candidates on Python 3.15.1; exact transitive lock below.
+beautifulsoup4==4.15.0
+jsonschema[format-nongpl]==4.26.0

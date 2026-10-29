@@ -28,7 +28,9 @@ def package(output):
     subprocess.run(['git', 'archive', '--format=zip', '--output', str(archive.resolve()),
                     revision, 'README.md', 'LICENSE', 'NOTICE.md', 'AGENTS.md', '.gitattributes', '.gitignore', '.github', '.careops', 'conductor', 'docs',
                     '.python-version', '.python-version-atlas', '.node-version', 'requirements-xlsb.lock',
-                    'requirements-atlas.lock', 'requirements-atlas-qualification.in', 'config', 'scripts', 'tools', 'templates', 'tests', *security_paths],
+                    'requirements-atlas.lock', 'requirements-atlas-qualification.in',
+                    'requirements-external-catalogue.in', 'requirements-external-catalogue.lock',
+                    'requirements-external-catalogue-ci.in', 'requirements-external-catalogue-ci.lock', 'config', 'scripts', 'tools', 'templates', 'tests', *security_paths],
                    cwd=ROOT, check=True)
     page = output / 'PPG-submission-assembler.html'
     build(page)

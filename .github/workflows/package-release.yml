@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26.12.1'
-      - uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: tools/native-document-template/global.json
       - name: Select repo-local Python and restore locked document tooling
@@ -47,6 +47,12 @@ jobs:
           .venv/bin/python scripts/run_portable_tests.py
           .venv/bin/python scripts/build_submission_assembler.py --output rebuilt.html
           cmp PPG-submission-assembler.html rebuilt.html
+      - name: Exercise optional catalogue from the packaged hash lock
+        run: |
+          cd "$RUNNER_TEMP/ppg-consumer" || exit 1
+          .venv/bin/python -m pip install --require-hashes -r requirements-external-catalogue.lock
+          .venv/bin/python scripts/run_portable_tests.py --python-only tests.test_external_catalogue
+          node --test tests/test_external_catalogue.mjs
       - name: Read immutable qualified inventory tooling
         shell: bash
         run: |

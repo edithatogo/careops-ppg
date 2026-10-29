@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "External publication handoff v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "tranche", "observedAt", "scope", "records", "coverage"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "tranche": {"type": "string", "minLength": 1},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "scope": {"type": "string", "minLength": 1},
+    "coverage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["collectionEntries", "included", "excluded", "unresolved", "referencesInspected", "localTextGaps", "fullCollectionComplete"],
+      "properties": {
+        "collectionEntries": {"type": "integer", "minimum": 0},
+        "included": {"type": "integer", "minimum": 0},
+        "excluded": {"type": "integer", "minimum": 0},
+        "unresolved": {"type": "integer", "minimum": 0},
+        "referencesInspected": {"type": "integer", "minimum": 0},
+        "localTextGaps": {"type": ["integer", "null"], "minimum": 0},
+        "fullCollectionComplete": {"type": "boolean"}
+      }
+    },
+    "records": {"type": "array", "items": {"$ref": "#/$defs/record"}}
+  },
+  "$defs": {
+    "key": {"type": "string", "pattern": "^[a-z0-9][a-z0-9:._-]{0,199}$"},
+    "assertion": {
+      "type": "object", "additionalProperties": false,
+      "required": ["field", "value", "sourceURL", "sourceSHA256", "locator", "observedAt"],
+      "properties": {
+        "field": {"type": "string", "minLength": 1},
+        "value": {"type": ["string", "number", "boolean", "null"]},
+        "sourceURL": {"type": "string", "format": "uri"},
+        "sourceSHA256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "locator": {"type": "string", "minLength": 1},
+        "observedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "record": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "kind", "title", "issuer", "publicationKey", "editionKey", "frameworkKeys", "sourceStatus", "role", "requiredCapture", "assertions", "data"],
+      "properties": {
+        "key": {"$ref": "#/$defs/key"},
+        "kind": {"enum": ["Publication", "Edition", "Capture", "Reference", "Resolution", "Collection"]},
+        "title": {"type": "string", "minLength": 1},
+        "issuer": {"type": "string", "minLength": 1},
+        "publicationKey": {"oneOf": [{"$ref": "#/$defs/key"}, {"type": "null"}]},
+        "editionKey": {"oneOf": [{"$ref": "#/$defs/key"}, {"type": "null"}]},
+        "frameworkKeys": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/key"}},
+        "sourceStatus": {"enum": ["Published", "Draft", "FutureEffective", "Superseded", "Withdrawn", "Unknown", "Conflicting"]},
+        "role": {"enum": ["Normative", "Advisory", "Assessment", "Supporting", "Historical", "Development", "Unclassified"]},
+        "requiredCapture": {"type": "boolean"},
+        "assertions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/assertion"}},
+        "data": {"type": "object"}
+      }
+    }
+  }
+}
