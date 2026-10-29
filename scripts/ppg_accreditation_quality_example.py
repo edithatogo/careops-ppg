@@ -25,6 +25,10 @@ def validate_example(package, graph):
             or action['kind'] != 'action' or statement['FrameworkKey'] == action['FrameworkKey']):
         raise ValueError('Separate quality-statement and action frameworks required')
     version = package.get('EvidenceVersionKey')
+    evidence = next((row for row in graph['evidenceVersions']
+                     if row['EvidenceVersionKey'] == version), None)
+    if evidence is None or evidence['accessClass'] != 'fictional':
+        raise ValueError('Selected evidence must be explicitly fictional')
     scoped_assessments = []
     for requirement in (statement, action):
         assessments = [row for row in graph['assessments']
@@ -37,6 +41,8 @@ def validate_example(package, graph):
         mappings = [row for row in graph['mappings']
                     if row['MappingKey'] in assessment['MappingKeys']
                     and row['EvidenceVersionKey'] == version]
+        if any(row['reviewState'] != 'proposed' for row in mappings):
+            raise ValueError('Existing mapping decisions must not be replaced')
         if (len(mappings) != 1 or assessment['outcome'] != 'unknown'
                 or assessment['applicability'] != 'unknown'):
             raise ValueError('Shared evidence needs independent unknown judgements')

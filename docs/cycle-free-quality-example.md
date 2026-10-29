@@ -27,3 +27,32 @@ Keep records, captures, native bindings and execution receipts outside this repo
 For an eventual move to another Microsoft 365 organisation, use the
 [cross-tenant binding preparation](cross-tenant-recovery-preparation.md). An offline
 plan is not native restore proof.
+
+## Prepare row payloads with the CLI
+
+Run from the repository root with its qualified Python environment:
+
+```sh
+.venv/bin/python -m scripts.ppg_accreditation_quality_native \
+  --fixture /private/example.json \
+  --source /private/fictional-source.json \
+  --file-receipt /private/file-receipt.json \
+  --output /private/new-row-payloads.json
+```
+
+The fixture contains `package` and `graph`, as in the bundled fictional example.
+The source JSON contains `fixtureOnly: true`, `realServiceActivity: false`,
+`humanReviewClaimed: false` and an `observation` equal to the package observation.
+The file receipt must describe those exact bytes and their existing native file.
+Synthetic receipts are suitable only for local exercises.
+
+The output contains seven row payloads and remains private (mode 0600 on POSIX).
+An existing output is refused; use a new filename for each revision. Validation
+failures return exit code 2 without creating the output. Standard output contains
+only collection counts and local qualification flags. No authentication or native
+write occurs; use the existing qualified adapter for persistence and readback.
+
+The selected evidence must be fictional. Existing reviewed, rejected, superseded
+or needs-review mappings are refused instead of silently being reset to Proposed.
+Retain those decisions and use a separately identified fictional example when
+needed. Unknown assessments and missing counts retain their existing semantics.
