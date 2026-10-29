@@ -95,3 +95,18 @@ Use `STEP --help` to inspect required inputs before selecting a live stage.
 SharePoint maintained templates remain the preferred structured-document route.
 The parallel native qualification owns proof for that route. A successful offline
 walkthrough does not replace output, edit, access or recovery qualification.
+
+## Create an editable review draft
+
+Supply a private JSON object containing every placeholder in
+`templates/review-package.md`, with string values. Use `Not recorded` for pending
+business responses and explicit case, source-baseline and candidate references.
+
+```sh
+.venv/bin/python scripts/ppg_workbench.py draft-package --template templates/review-package.md --inputs .local/review-inputs.json --output .local/new-draft.md
+```
+
+The offline generator creates editable Markdown marked DRAFT / AWAITING REVIEW.
+It refuses existing output files, preserving human edits, and leaves inputs
+unchanged. No upload, notification or clinical approval occurs. For guided plans,
+declare the new draft path in the step outputs.

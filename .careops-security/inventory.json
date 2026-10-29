@@ -134,6 +134,7 @@
     "scripts/build_workspace_status_flow.py",
     "scripts/check_email_safety.py",
     "scripts/check_portable_content.py",
+    "scripts/generate_review_package.py",
     "scripts/ppg_acquisition_handoff.py",
     "scripts/ppg_ai_evaluation.py",
     "scripts/ppg_annotation_adapter.py",
