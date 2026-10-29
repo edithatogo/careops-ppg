@@ -12,6 +12,8 @@ Pure flow-definition builders make no API calls. Native adapters require explici
 configuration and separate permission/output/recovery qualification. No native
 Microsoft deployment is configured or implied by the local checks.
 
+For pinned evidence packets, see [recovery tools](docs/recovery-tools.md).
+
 ## Run locally
 
 The default uses explicitly selected repo-local Python 3.15.1 and Node.js 22 or
