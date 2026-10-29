@@ -24,6 +24,9 @@ def bind(prepared, native_catalogue, native_framework):
         key = row['RecordKey']
         if key in records or record['key'] != key or record['kind'] != row['RecordKind']:
             raise ValueError('Duplicate or inconsistent catalogue identity')
+        for column, field in [('PublicationKey', 'publicationKey'), ('EditionKey', 'editionKey')]:
+            if column not in row or row[column] != record.get(field):
+                raise ValueError('Native catalogue relationship disagrees with payload')
         if type(row.get('Id')) is not int or row['Id'] < 1:
             raise ValueError('Native catalogue item identity required')
         records[key] = record
