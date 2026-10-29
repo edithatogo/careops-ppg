@@ -391,9 +391,32 @@ class ChainAuditTests(unittest.TestCase):
                                             {'InternalName': 'RequirementLink', 'TypeAsString': 'Lookup', 'LookupField': 'RequirementKey', 'LookupList': '{other}'}]}],
                     'targetSnapshots': [{'side': 'live', 'kind': 'contexts', 'listId': 'list', 'itemId': 1,
                                          'targetKeyField': 'ReviewContextKey', 'row': {'Id': 1, 'ReviewContextKey': 'ctx'}}]}
+        evidence['support'][0]['row']['Id'] = 7
+        for field in ('support', 'checks', 'summary', 'targetSnapshots'):
+            recovery = copy.deepcopy(evidence[field][0])
+            recovery['side'] = 'recovery'
+            evidence[field].append(recovery)
+        index_name = 'selected-reconstruction-index-v4.json'
+        write(self.ext / index_name, {'workflowCohort': {'nodes': [
+            {'kind': 'requests', 'keyField': 'RequestKey', 'key': 'req',
+             'liveItemId': 7, 'recoveryItemId': 7}]}})
+        write(self.ext / 'extension-manifest.json', {'files': [{'path': index_name}]})
         (ext / name).write_text(json.dumps(evidence))
         write(ext / 'extension-manifest.json', {'files': [{'path': name}]})
-        self.assertEqual(verify_workflow_lookups(self.root)['resolvedLookups'], 1)
+        self.assertEqual(verify_workflow_lookups(self.root)['resolvedLookups'], 2)
+        for groups in (('support', 'checks', 'summary', 'targetSnapshots'), ('support',)):
+            omitted = copy.deepcopy(evidence)
+            for group in groups:
+                omitted[group] = []
+            (ext / name).write_text(json.dumps(omitted))
+            with self.assertRaisesRegex(ValueError, 'cohort coverage mismatch'):
+                verify_workflow_lookups(self.root)
+        changed = copy.deepcopy(evidence)
+        changed['support'][0]['row']['Id'] = 8
+        (ext / name).write_text(json.dumps(changed))
+        with self.assertRaisesRegex(ValueError, 'item identity mismatch'):
+            verify_workflow_lookups(self.root)
+
         evidence['targetSnapshots'][0]['row']['ReviewContextKey'] = 'wrong'
         (ext / name).write_text(json.dumps(evidence))
         with self.assertRaises(ValueError):

@@ -242,6 +242,32 @@ def verify_workflow_lookups(root):
                 or item['row'].get(group_keys[item['group']]) != item['key']):
             raise ValueError('Duplicate or invalid selected workflow row')
         supports[identity] = item
+    # Coverage must come from the independently declared cohort, not from the
+    # evidence being checked: an empty evidence document cannot certify itself.
+    index_ext = root / 'reconstruction-package-extension-v1'
+    index_name = 'selected-reconstruction-index-v4.json'
+    index_manifest = json.loads(checked_file(index_ext, 'extension-manifest.json').read_bytes())
+    if not any(entry.get('path') == index_name for entry in index_manifest['files']):
+        raise ValueError('Selected index is not manifest-bound')
+    index = json.loads(checked_file(index_ext, index_name).read_bytes())
+    required = {}
+    for node in index['workflowCohort']['nodes']:
+        if node['kind'] in ('versions', 'mappings'):
+            continue  # These are lookup targets, not the six typed source groups.
+        if node['kind'] not in group_keys or node['keyField'] != group_keys[node['kind']]:
+            raise ValueError('Unrecognized selected workflow source kind')
+        for side in ('live', 'recovery'):
+            identity = (side, node['kind'], node['key'])
+            item_id = node[side + 'ItemId']
+            if identity in required or type(item_id) is not int or item_id < 1:
+                raise ValueError('Duplicate or invalid selected workflow identity')
+            required[identity] = item_id
+    if set(supports) != set(required):
+        raise ValueError('Selected workflow lookup cohort coverage mismatch')
+    for identity, item_id in required.items():
+        row = supports[identity]['row']
+        if row.get('Id', row.get('ID')) != item_id:
+            raise ValueError('Selected workflow lookup item identity mismatch')
     expected = {}
     for item in supports.values():
         fields = item['fields']
