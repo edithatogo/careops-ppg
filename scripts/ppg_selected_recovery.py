@@ -16,6 +16,40 @@ def _unique(rows, key):
     return result
 
 
+def _file_bindings(source_row, recovery_row, proof):
+    """Bind bytes to the declared records, including preserved origin identities."""
+    source_id = re.search(r'fileUniqueId:([^;\s]+)', source_row.get('SourceItemKey', ''), re.I)
+    if source_id is None or source_id.group(1).lower() != proof['source']['UniqueId'].lower():
+        raise ValueError('Source row is detached from its file proof')
+    source_url = urlsplit(source_row.get('SourceURI', ''))
+    source_path = unquote(source_url.path)
+    historical = re.fullmatch(r'(.*)/_vti_history/([0-9]+)/(.+)', source_path)
+    if historical:
+        versions = [v for v in proof.get('sourceHistory', [])
+                    if str(v.get('ID')) == historical.group(2)
+                    and v.get('VersionLabel') == proof['sourceVersion']]
+        if len(versions) != 1:
+            raise ValueError('Source URL history does not match the exact file version')
+        source_path = historical.group(1) + '/' + historical.group(3)
+    if (source_url.scheme != 'https' or not source_url.hostname or source_url.username
+            or source_url.password or source_path != proof['source']['ServerRelativeUrl']):
+        raise ValueError('Source URL does not name the proved file')
+    relocation = recovery_row.get('RecoveryCopyURI')
+    recovery_uri = relocation.get('Url') if isinstance(relocation, dict) else relocation
+    recovery_url = urlsplit(recovery_uri or recovery_row.get('SourceURI', ''))
+    if (recovery_url.scheme != 'https' or recovery_url.netloc != source_url.netloc
+            or recovery_url.query or recovery_url.fragment
+            or unquote(recovery_url.path) != proof['recovered']['ServerRelativeUrl']):
+        raise ValueError('Recovery row does not link to the proved independent file')
+    # SourceItemKey may deliberately retain origin provenance. The actual copy
+    # relationship is established by the explicit recovery URI checked above.
+    identity = recovery_row.get('SourceItemKey', '')
+    recovered_id = re.search(r'fileUniqueId:([^;\s]+)', identity, re.I)
+    if (identity != source_row.get('SourceItemKey') and
+            (recovered_id is None or recovered_id.group(1).lower() != proof['recovered']['UniqueId'].lower())):
+        raise ValueError('Recovery row file identity has unexplained drift')
+
+
 def reconcile(bundle):
     if (not isinstance(bundle, dict) or not isinstance(bundle.get('pairs'), list) or not bundle['pairs']
             or not isinstance(bundle.get('snapshots'), dict) or not isinstance(bundle.get('files'), list)):
@@ -143,6 +177,7 @@ def reconcile(bundle):
                         or proof['sourceSHA256'] != proof['targetSHA256']
                         or proof['bytes'] <= 0):
                     raise ValueError('Independent file/version verification missing')
+                _file_bindings(row, copy, proof)
                 counts['files'] += 1
             counts['records'] += 1
         counts['families'] += 1

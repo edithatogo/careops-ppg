@@ -36,7 +36,10 @@ The snapshot has `pairs`, `snapshots`, `referenceBindings`, `files` and optional
 complete selected source/target rows. `snapshots` maps list IDs to native `fields`
 and `rows`; references declare source/target IDs and the destination key. File
 proofs bind each evidence key to its exact source version, expected SHA-256, size
-and distinct source/recovery file identities. Capture proofs bind guidance capture
+and distinct source/recovery file identities. Source rows must name the proved source object.
+Recovered rows must link to the proved independent copy through `RecoveryCopyURI`
+or their relocated `SourceURI`, even when their origin identity is retained.
+Historical source URLs must match the exact version in the file-history proof. Capture proofs bind guidance capture
 keys to two independently read objects and hashes. The tests demonstrate a minimal
 fictional shape; actual records and readback proofs stay outside Git.
 

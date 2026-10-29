@@ -70,7 +70,16 @@ class RecoveryCoverageTests(unittest.TestCase):
             b['snapshots'][side]['fields'][0]['InternalName']='EvidenceVersionKey'
             p[side+'Rows'][0]['EvidenceVersionKey']=p[side+'Rows'][0].pop('Key')
             p[side+'Rows'][0]['ExactVersion']='Native file version 1.0; SHA-256 '+'a'*64
-        b['files']=[dict(key='fictional-record',source=dict(UniqueId='source-file'),recovered=dict(UniqueId='recovered-file'),sourceVersion='1.0',sourceSHA256='a'*64,targetSHA256='a'*64,bytes=7,independent=True)]
+        b['files']=[dict(key='fictional-record',source=dict(UniqueId='source-file',ServerRelativeUrl='/source'),recovered=dict(UniqueId='recovered-file',ServerRelativeUrl='/recovery'),sourceVersion='1.0',sourceSHA256='a'*64,targetSHA256='a'*64,bytes=7,independent=True)]
+        for side in ('source','target'):
+            p[side+'Rows'][0].update(SourceItemKey='fileUniqueId:source-file',SourceURI='https://example.invalid/source')
+        p['targetRows'][0]['RecoveryCopyURI']={'Url':'https://example.invalid/recovery'}
         self.assertEqual(reconcile(b)['counts']['files'],1)
+        detached=copy.deepcopy(b);detached['pairs'][0]['targetRows'][0].pop('RecoveryCopyURI')
+        with self.assertRaisesRegex(ValueError,'does not link'):reconcile(detached)
+        detached=copy.deepcopy(b);detached['files'][0]['source']['UniqueId']='unrelated'
+        with self.assertRaisesRegex(ValueError,'detached'):reconcile(detached)
+        detached=copy.deepcopy(b);detached['pairs'][0]['targetRows'][0]['RecoveryCopyURI']['Url']='https://unrelated.invalid/recovery'
+        with self.assertRaisesRegex(ValueError,'does not link'):reconcile(detached)
         b['files'][0]['sourceVersion']='2.0'
         with self.assertRaisesRegex(ValueError,'file/version'):reconcile(b)
