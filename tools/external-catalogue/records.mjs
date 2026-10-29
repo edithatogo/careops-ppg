@@ -14,7 +14,7 @@ export function checkRows(rows,site) {
       record.data?.clinicalApplicabilityAccepted===true ||
       createHash('sha256').update(row.RecordJSON).digest('hex')!==row.PayloadSHA256) throw Error('PAYLOAD_IDENTITY_DRIFT');
   const official=new URL(row.OfficialURL);
-  if(official.protocol!=='https:'||official.hostname!=='www.safetyandquality.gov.au'||official.username||official.password)throw Error('OFFICIAL_SOURCE_URL_REQUIRED');
+  if(official.protocol!=='https:'||!['www.safetyandquality.gov.au','meteor.aihw.gov.au'].includes(official.hostname)||official.username||official.password)throw Error('OFFICIAL_SOURCE_URL_REQUIRED');
   for(const key of ['EvidenceURL','RelatedRecordsURL']){
    if(row[key]===null)continue;
    const target=new URL(row[key]);

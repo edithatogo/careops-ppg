@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 try:
-    from scripts.ppg_external_catalogue import page_inventory, payloads, validate, snapshot, reconstruct, changes
+    from scripts.ppg_external_catalogue import official_url, page_inventory, payloads, validate, snapshot, reconstruct, changes
     from jsonschema import FormatChecker
     if not {'date-time', 'uri'} <= FormatChecker.checkers.keys():
         raise unittest.SkipTest('Optional external catalogue format profile is not installed; run its hash-locked Python 3.15.1 profile')
@@ -16,6 +16,11 @@ except ModuleNotFoundError as error:
 
 
 class ExternalCatalogue(unittest.TestCase):
+    def test_meteor_origin_is_exact(self):
+        self.assertEqual(official_url('https://meteor.aihw.gov.au/content/123'), 'https://meteor.aihw.gov.au/content/123')
+        for url in ['https://meteor.aihw.gov.au.evil.test/content/123', 'https://user@meteor.aihw.gov.au/content/123']:
+            with self.assertRaises(ValueError): official_url(url)
+
     def fixture(self):
         assertion = dict(field='title', value='Fictional standard',
                          sourceURL='https://www.safetyandquality.gov.au/resources/fictional',
