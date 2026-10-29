@@ -12,6 +12,8 @@ from scripts.ppg_accreditation_quality_example import validate_example, freeze_e
 def project_example(package, graph, source_bytes, file_receipt):
     validate_example(package, graph)
     source = json.loads(source_bytes)
+    if not isinstance(source, dict) or not isinstance(file_receipt, dict):
+        raise ValueError('Source and file receipt must be objects')
     if (source.get('fixtureOnly') is not True or source.get('realServiceActivity') is not False
             or source.get('humanReviewClaimed') is not False):
         raise ValueError('Explicit fictional source required')
@@ -67,3 +69,36 @@ def project_example(package, graph, source_bytes, file_receipt):
                 ContractCaseJSON=json.dumps(freeze_example(package, graph), sort_keys=True))
     return dict(context=[context_row], evidence=[evidence], mappings=mappings, assessments=assessment_rows,
                 cases=[case], nativeWrites=0, nativeWorkflowQualified=False)
+
+
+def main():
+    """Prepare create-only private row payloads; never authenticate or send."""
+    import argparse
+    import os
+    from pathlib import Path
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--fixture', type=Path, required=True,
+                        help='JSON object containing package and graph')
+    parser.add_argument('--source', type=Path, required=True,
+                        help='Exact fictional source bytes named by the file receipt')
+    parser.add_argument('--file-receipt', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True,
+                        help='New JSON file; existing outputs are never replaced')
+    args = parser.parse_args()
+    try:
+        fixture = json.loads(args.fixture.read_text())
+        result = project_example(fixture['package'], fixture['graph'], args.source.read_bytes(),
+                                 json.loads(args.file_receipt.read_text()))
+        # O_EXCL also refuses symlinks. Mode is private from the first byte.
+        descriptor = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, 'w') as stream:
+            stream.write(json.dumps(result, indent=2) + '\n')
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        parser.exit(2, 'Projection failed: ' + str(exc) + '\n')
+    print(json.dumps(dict(counts={key: len(result[key]) for key in
+                                 ('context', 'evidence', 'mappings', 'assessments', 'cases')},
+                          nativeWrites=0, nativeWorkflowQualified=False)))
+
+
+if __name__ == '__main__':
+    main()
