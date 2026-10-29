@@ -14,6 +14,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 # Fixed allowlist: plans cannot provide executables, shell fragments or new tools.
 STEPS = {
+    'draft-package': ('python', 'scripts/generate_review_package.py', [], 'Edit the separate DRAFT candidate; source and business decisions remain unchanged'),
     'prepare-sources': ('python', 'scripts/ppg_source_preparation.py', ['prepare'], 'publish-sources'),
     'publish-sources': ('node', 'tools/cited-evidence/publish-sources.mjs', [], 'lookup'),
     'lookup': ('python', 'scripts/ppg_evidence_cli.py', ['lookup'], 'excerpt or evaluate-sources'),
@@ -194,7 +195,7 @@ def main(argv=None):
     if not a.step:
         p.error('a step, guide, or --plan is required')
     if a.step == 'guide':
-        print('Sources: prepare-sources -> publish-sources -> lookup -> excerpt -> validate; qualification: lookup -> evaluate-sources; packages: select-case -> prepare-package -> assemble-package -> publish-package; status: assurance-report --input RECEIPT.jsonl --output NEW_REPORT.md. For one guided run use --plan PLAN.json --state PRIVATE_RECEIPT.jsonl; add --resume only at a clean completed-stage boundary. Read docs/guided-cli.md for plans and docs/cli-assurance-report.md for report scope. Existing single-step commands remain available; there are no background runs or automatic retries, and native receipts stay authoritative.')
+        print('Sources: prepare-sources -> publish-sources -> lookup -> excerpt -> validate; qualification: lookup -> evaluate-sources; new editable draft: draft-package; existing-artifact packages: select-case -> prepare-package -> assemble-package -> publish-package; status: assurance-report --input RECEIPT.jsonl --output NEW_REPORT.md. For one guided run use --plan PLAN.json --state PRIVATE_RECEIPT.jsonl; add --resume only at a clean completed-stage boundary. Read docs/guided-cli.md for plans and docs/cli-assurance-report.md for report scope. Existing single-step commands remain available; there are no background runs or automatic retries, and native receipts stay authoritative.')
         return 0
     if a.arguments[:1] == ['--']:
         a.arguments = a.arguments[1:]
