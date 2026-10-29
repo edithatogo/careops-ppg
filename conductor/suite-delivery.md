@@ -254,3 +254,18 @@ supersedes earlier runtime-exception guidance. Retain the qualified Atlas Python
 old compatibility trials remain historical evidence, not active runners. Continue the
 selected no-additional-premium library-column route and qualify each structured
 output, preservation and recovery behavior before replacing its working output.
+
+## Authoring assurance integration — 30 October 2026
+
+The authoring-assurance lane owns the isolated `codex/ppg-authoring-assurance`
+source packet; exact checkout and registration receipts remain private. Reusable
+validator changes are ported without private history or delivery records. The
+existing release command now rejects duplicate keys, malformed workflow graphs,
+unresolved solution members and current Office Script source drift before output
+creation. Dependency provenance extends the existing module profile.
+
+Validation reports preserve pass/fail/unverified/not_applicable distinctions and
+never claim native readiness. Existing private-binding completeness, collision
+and no-email controls remain. Native import/recovery, exact connected preimages,
+script identity/readback and changed-behavior runtime checks retain their existing
+owners and explicit gates. No native operation is performed by source integration.

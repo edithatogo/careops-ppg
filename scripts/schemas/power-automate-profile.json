@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "profile": "power-automate-offline-structure-v1",
+  "upstream": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "upstreamSha256": "7795118ae8a8dcfe7bdf0b84229be08cde8bc7ebd9eeac9e6c372746c520499d",
+  "capturedOn": "2026-10-30",
+  "scope": "Project-owned structural profile informed by WDL. Power Automate OpenApiConnection extension allowed; not a full WDL or connector expression compiler. Unknown properties preserved. No network resolution.",
+  "requiredDefinitionObjects": [
+    "triggers",
+    "actions"
+  ],
+  "dependencyStatuses": [
+    "Succeeded",
+    "Failed",
+    "Skipped",
+    "TimedOut"
+  ],
+  "containerTypes": [
+    "Scope",
+    "Foreach",
+    "Until",
+    "If",
+    "Switch"
+  ],
+  "parameterTypes": [
+    "String",
+    "SecureString",
+    "Int",
+    "Float",
+    "Bool",
+    "Array",
+    "Object",
+    "SecureObject"
+  ],
+  "upstreamUnmodified": false
+}
