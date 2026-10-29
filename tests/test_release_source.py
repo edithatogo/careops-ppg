@@ -150,3 +150,27 @@ class ReleaseSourceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'duplicate_json_key'):
             materialise(self.source,self.settings,self.output)
         self.assertFalse(self.output.exists())
+
+    def test_sealed_external_script_is_verified_but_not_hydrated(self):
+        raw=b'function main() { return "fictional"; }\n'
+        script=self.source/'script.ts'; script.write_bytes(raw)
+        self.manifest['externalDependencies']=[{'path':'script.ts','role':'office-script','sha256':hashlib.sha256(raw).hexdigest()}]
+        self.save()
+        self.assertEqual(verify(self.source),self.manifest)
+        result=materialise(self.source,self.settings,self.output)
+        self.assertEqual(set(result['files']),{'member.xml'})
+        self.assertFalse((self.output/'script.ts').exists())
+        self.assertEqual(script.read_bytes(),raw)
+        self.assertTrue(any(c['check']=='external_dependency_hash' and c['outcome']=='pass' for c in result['assurance']['checks']))
+
+    def test_external_sources_fail_before_output_on_missing_drift_or_collision(self):
+        raw=b'fictional script'
+        script=self.source/'script.ts'; script.write_bytes(raw)
+        entry={'path':'script.ts','role':'office-script','sha256':hashlib.sha256(raw).hexdigest()}
+        for records in [[dict(entry,sha256='0'*64)],[dict(entry,path='missing.ts')],[entry,entry],
+                        [dict(entry,path='member.xml.in')],[dict(entry,path='release.json')],
+                        [dict(entry,path='../outside.ts')],[entry,dict(entry,path='SCRIPT.ts')]]:
+            with self.subTest(records=records):
+                self.manifest['externalDependencies']=records; self.save()
+                with self.assertRaises(ValueError):materialise(self.source,self.settings,self.output)
+                self.assertFalse(self.output.exists())

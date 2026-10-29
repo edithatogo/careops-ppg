@@ -64,8 +64,27 @@ def verify(source: Path) -> dict:
             raise ValueError('Duplicate release target')
         targets.add(target.casefold())
         used.update(TOKEN.findall(content.decode('utf-8') + target))
+    # External sources are sealed inputs, not hydrated solution members.
+    external = manifest.get('externalDependencies', [])
+    if not isinstance(external, list):
+        raise ValueError('Invalid external dependency declarations')
+    external_paths = set()
+    reserved = {name.casefold() for name in declared} | {'release.json'}
+    for item in external:
+        if not isinstance(item, dict) or not isinstance(item.get('path'), str):
+            raise ValueError('Invalid external dependency declaration')
+        name = relative_path(item['path']).as_posix()
+        if name.casefold() in reserved:
+            raise ValueError('Duplicate or colliding external dependency')
+        reserved.add(name.casefold())
+        external_paths.add(name)
+        path = source / name
+        if path.is_file() and path.stat().st_size > 5 * 1024 * 1024:
+            raise ValueError('External dependency exceeds bounded source size')
+    if any(c['outcome'] == 'fail' for c in dependency_checks(external, source)):
+        raise ValueError('External dependency validation failed')
     actual = {str(p.relative_to(source)) for p in source.rglob('*') if p.is_file()}
-    if actual != declared | {'release.json'} or any(p.is_symlink() for p in source.rglob('*')):
+    if actual != declared | external_paths | {'release.json'} or any(p.is_symlink() for p in source.rglob('*')):
         raise ValueError('Unexpected release member or symlink')
     if any(not isinstance(v, dict) or set(v) != {'kind', 'private'}
            or v.get('private') is not True or not isinstance(v.get('kind'), str)
