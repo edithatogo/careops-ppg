@@ -53,6 +53,29 @@ class ValidationTests(unittest.TestCase):
         raw['parameters']={'absent':{'type':'String'}}
         self.assertEqual(self.codes(raw),set())
 
+    def test_interpolation_checks_only_executable_segments(self):
+        literal = ["@{triggerBody()?['name']} parameters('example')",
+                   "text parameters('example') @{triggerBody()?['name']}",
+                   "@@{parameters('example')}",
+                   "@{concat('}', 'parameters(''example'')')} suffix",
+                   "@concat('@{parameters(''example'')}', 'ok')"]
+        for value in literal:
+            with self.subTest(value=value):
+                self.assertEqual(self.codes(definition({'one':{'type':'Compose','inputs':value}})),set())
+        for value in ["prefix @{parameters('missing')} suffix",
+                      "@{triggerBody()} @{parameters('missing')}",
+                      "@@literal @{parameters('missing')}",
+                      "@{concat('}', parameters('missing'))}"]:
+            with self.subTest(value=value):
+                self.assertIn('undeclared_parameter',self.codes(definition({'one':{'type':'Compose','inputs':value}})))
+
+    def test_trigger_conditions_require_declared_parameters(self):
+        raw=definition()
+        raw['triggers']['manual']['conditions']=[{'expression':"@equals(parameters('CaptureEnabled'), true)"}]
+        self.assertIn('undeclared_parameter',self.codes(raw))
+        raw['parameters']={'CaptureEnabled':{'type':'Bool'}}
+        self.assertEqual(self.codes(raw),set())
+
     def test_binding_resolution_and_redaction(self):
         data={'properties':{'definition':definition({'secret-label':{'type':'OpenApiConnection','inputs':{'host':{'connectionName':'unbound'},'parameters':{'private':'private-value'}}}}),'connectionReferences':{}}}
         result=v.validate_flow(data)

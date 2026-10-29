@@ -39,6 +39,35 @@ def report(checks, **extra):
             'checks': checks, 'deploymentReady': False, **extra}
 
 
+def executable_segments(value):
+    """Select WDL expressions, excluding interpolation text and escaped at signs."""
+    if value.startswith('@') and not value.startswith(('@{', '@@')):
+        return [value[1:]]
+    segments = []
+    index = 0
+    while index < len(value):
+        if value.startswith('@@', index):
+            index += 2
+        elif value.startswith('@{', index):
+            start = index + 2
+            index = start
+            quoted = False
+            while index < len(value):
+                if value[index] == "'":
+                    if quoted and value[index:index+2] == "''":
+                        index += 2
+                        continue
+                    quoted = not quoted
+                elif value[index] == '}' and not quoted:
+                    segments.append(value[start:index])
+                    break
+                index += 1
+            index += 1
+        else:
+            index += 1
+    return segments
+
+
 def validate_flow(document, *, component='workflow', require_bindings=False):
     """Accept a raw definition, definition envelope or Flow API properties envelope."""
     checks = []
@@ -66,14 +95,15 @@ def validate_flow(document, *, component='workflow', require_bindings=False):
         if not isinstance(parameter, dict) or parameter.get('type') not in profile['parameterTypes']:
             fail('invalid_parameter_declaration', f'{component}/parameters/{index}')
     def expressions(value, path):
-        if isinstance(value, str) and ((value.startswith('@') and not value.startswith('@@')) or '@{' in value):
-            # Literal strings inside expressions must not be parsed as function calls.
-            clean = re.sub(r"'(?:[^']|'')*'", lambda m: ' ' * len(m[0]), value)
-            for match in PARAMETER.finditer(value):
-                if clean[match.start():match.start()+10].lower() != 'parameters':
-                    continue
-                if match[1].replace("''", "'") not in parameters:
-                    fail('undeclared_parameter', path)
+        if isinstance(value, str):
+            for segment in executable_segments(value):
+                # Quoted expression arguments are data, not function calls.
+                clean = re.sub(r"'(?:[^']|'')*'", lambda m: ' ' * len(m[0]), segment)
+                for match in PARAMETER.finditer(segment):
+                    if clean[match.start():match.start()+10].lower() != 'parameters':
+                        continue
+                    if match[1].replace("''", "'") not in parameters:
+                        fail('undeclared_parameter', path)
         elif isinstance(value, dict):
             for index, item in enumerate(value.values()):
                 expressions(item, f'{path}/{index}')
@@ -153,7 +183,7 @@ def validate_flow(document, *, component='workflow', require_bindings=False):
             elif any(key in node for key in ('actions','else','cases','default')):
                 checks.append(finding('unknown_action_container', here, 'unverified'))
             # Do not treat literal payloads shaped like actions as executable graphs.
-            for key in ('inputs','expression','foreach','limit','recurrence','splitOn'):
+            for key in ('inputs','expression','foreach','limit','recurrence','splitOn','conditions'):
                 if key in node:
                     expressions(node[key], here+'/'+key)
         # Kahn elimination, local to siblings; loops are container semantics, not cycles.
