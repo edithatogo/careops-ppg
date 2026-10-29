@@ -134,3 +134,19 @@ class ReleaseSourceTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(receipt.read_text(), 'retained prior evidence')
         self.assertFalse(self.output.exists())
+
+    def test_invalid_graph_refused_before_any_output(self):
+        (self.source/'member.xml.in').unlink()
+        raw = json.dumps({'properties':{'definition':{'triggers':{'manual':{'type':'Request'}},'actions':{'one':{'type':'Compose','inputs':self.token,'runAfter':{'absent':['Succeeded']}}}},'connectionReferences':{}}}).encode()
+        (self.source/'flow.json.in').write_bytes(raw)
+        self.manifest['files']=[{'template':'flow.json.in','target':'Workflows/Fictional-00000000-0000-4000-8000-000000000001.json','sha256':hashlib.sha256(raw).hexdigest()}]
+        self.save()
+        with self.assertRaisesRegex(ValueError,'Invalid workflow structure'):
+            materialise(self.source,self.settings,self.output)
+        self.assertFalse(self.output.exists())
+
+    def test_duplicate_binding_key_is_refused(self):
+        self.settings.write_text('{"schemaVersion":1,"schemaVersion":1}')
+        with self.assertRaisesRegex(ValueError,'duplicate_json_key'):
+            materialise(self.source,self.settings,self.output)
+        self.assertFalse(self.output.exists())

@@ -42,5 +42,19 @@
       ],
       "success": "Human edits and earlier outputs remain unchanged; stable case/occurrence identity links immutable revisions with each output reference, source/template revision and issued history retained."
     }
-  ]
+  ],
+  "authoringAssurance": {
+    "profile": "power-automate-offline-structure-v1",
+    "scope": "current reusable standards-script source; sealed releases and native target versions remain separate",
+    "externalDependencies": [
+      {
+        "path": "tools/standards/standards_context.ts",
+        "role": "office-script",
+        "sha256": "3d5e7b0a9501b15be121e5092ce4ac6324677b38ca87429fabe91480073b0ea2",
+        "sourceRevision": "bea411eaf12cbae26fde476a4a4334ab17744630",
+        "qualification": "source bytes only; exact native script identity and version require private readback"
+      }
+    ],
+    "nativeAcceptance": false
+  }
 }

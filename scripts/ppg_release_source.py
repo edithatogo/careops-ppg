@@ -8,6 +8,11 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 
+import sys
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+from powerplatform_validation import loads as strict_loads, validate_flow, validate_members, dependency_checks, report, inspect_zip, component_map
+
 try:
     from .check_email_safety import email_actions
 except ImportError:  # Direct script execution uses the scripts directory.
@@ -28,11 +33,15 @@ def relative_path(name: str) -> Path:
     return Path(*p.parts)
 
 
+def target_is_workflow(name: str) -> bool:
+    return name.lower().startswith('workflows/') and name.lower().endswith('.json')
+
+
 def verify(source: Path) -> dict:
     if source.is_symlink():
         raise ValueError('Symlink source refused')
     source = source.resolve()
-    manifest = json.loads((source / 'release.json').read_text())
+    manifest = strict_loads((source / 'release.json').read_text())
     if (manifest.get('schemaVersion') != 1 or not manifest.get('files')
             or not manifest.get('releaseId') or not manifest.get('solutionVersion')):
         raise ValueError('Invalid release manifest')
@@ -67,6 +76,12 @@ def verify(source: Path) -> dict:
     return manifest
 
 
+def current_dependency_checks():
+    root = Path(__file__).resolve().parents[1]
+    source_manifest = strict_loads((root / '.careops/module.json').read_bytes())
+    return dependency_checks(source_manifest.get('authoringAssurance', {}).get('externalDependencies', []), root)
+
+
 def materialise(source: Path, settings: Path, output: Path, *, package_type: str = 'Unmanaged') -> dict:
     manifest = verify(source)
     if package_type not in ('Unmanaged', 'Managed'):
@@ -74,7 +89,7 @@ def materialise(source: Path, settings: Path, output: Path, *, package_type: str
     # These exact target values are intentionally kept outside version control.
     if settings.is_symlink() or '.local' not in settings.resolve().parts:
         raise ValueError('Private bindings must stay under .local')
-    values = json.loads(settings.read_text())
+    values = strict_loads(settings.read_text())
     if (values.get('schemaVersion') != 1 or values.get('releaseId') != manifest['releaseId']
             or set(values.get('values', {})) != set(manifest['bindings'])):
         raise ValueError('Wrong release or incomplete private bindings')
@@ -99,9 +114,11 @@ def materialise(source: Path, settings: Path, output: Path, *, package_type: str
             content = content.replace(b'<Managed>0</Managed>', b'<Managed>1</Managed>')
         # Hydrated source must be valid PAC XML/JSON before any pack/import step.
         if name.endswith('.json'):
-            flow = json.loads(content)
+            flow = strict_loads(content)
             if email_actions(flow):
                 raise ValueError('Email-capable flow refused by release route')
+            if target_is_workflow(name) and validate_flow(flow)['status'] == 'FAIL':
+                raise ValueError('Invalid workflow structure')
         elif name.endswith('.xml'):
             import xml.etree.ElementTree as ET
             ET.fromstring(content)
@@ -110,6 +127,13 @@ def materialise(source: Path, settings: Path, output: Path, *, package_type: str
         outputs[key] = (name, content)
     if package_type == 'Managed' and not any(n == 'Other/Solution.xml' for n, _ in outputs.values()):
         raise ValueError('Missing solution manifest for managed package')
+    members = {name: content for name, content in outputs.values()}
+    assurance = validate_members(members) if any(n.lower().startswith('workflows/') for n in members) else report([])
+    assurance['checks'].extend(current_dependency_checks())
+    if 'externalDependencies' in manifest:
+        assurance['checks'].extend(dependency_checks(manifest['externalDependencies'], source))
+    if assurance['status'] == 'FAIL' or any(c['outcome'] == 'fail' for c in assurance['checks']):
+        raise ValueError('Solution or external dependency validation failed')
     output.mkdir(parents=True, mode=0o700)
     hashes = {}
     for name, content in outputs.values():
@@ -119,20 +143,35 @@ def materialise(source: Path, settings: Path, output: Path, *, package_type: str
         hashes[name] = digest(content)
     return {'releaseId': manifest['releaseId'], 'solutionVersion': manifest['solutionVersion'],
             'files': hashes, 'packageType': package_type, 'private': True, 'nativeWrites': 0, 'emailsSent': 0,
-            'deploymentOrRuntimeAccepted': False}
+            'deploymentOrRuntimeAccepted': False, 'assurance': assurance,
+            'componentMap': [{'source': name, **component_map(strict_loads(content))} for name, content in members.items() if target_is_workflow(name)]}
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--source', type=Path, required=True)
     p.add_argument('--bindings', type=Path)
+    p.add_argument('--package', type=Path, help='Validate an existing solution ZIP without materialising or importing')
+    p.add_argument('--deployment-settings', type=Path)
+    p.add_argument('--component-map', action='store_true', help='Emit sanitized source component map; no native claims')
     p.add_argument('--output', type=Path)
     p.add_argument('--package-type', choices=('Unmanaged', 'Managed'), default='Unmanaged')
     args = p.parse_args()
+    if args.package:
+        if args.bindings or args.output:
+            p.error('--package cannot be combined with materialisation')
+        result = inspect_zip(args.package, args.deployment_settings)
+        print(json.dumps(result))
+        return int(result['status'] == 'FAIL')
     if args.bindings is None and args.output is None:
         m = verify(args.source)
-        print(json.dumps({'releaseId': m['releaseId'], 'files': len(m['files']),
-                          'bindings': len(m['bindings']), 'nativeWrites': 0}))
+        components = [{'source': item['template'], 'target': item['target'], 'sha256': item['sha256']} for item in m['files']]
+        checks = current_dependency_checks()
+        result = report(checks, releaseId=m['releaseId'], files=len(m['files']), bindings=len(m['bindings']), nativeWrites=0)
+        if args.component_map:
+            result['components'] = components
+        print(json.dumps(result))
+        return int(result['status'] == 'FAIL')
     elif args.bindings is not None and args.output is not None:
         receipt = args.output.parent / (args.output.name + '-receipt.json')
         if receipt.exists() or receipt.is_symlink():
