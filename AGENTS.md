@@ -88,3 +88,32 @@ licences and attribution. Do not relabel external code, fixtures or dependencies
 The code licence grants no rights over external documents, manuscripts, policies,
 datasets, private evidence or history, and no visibility change or publication.
 Qualify source/package changes before merge and preserve current owners/runtimes.
+
+## Power Platform authoring assurance — 30 October 2026
+
+Identify authoritative source and its generator, inspect the relevant schema and
+accepted connector example, edit parsed JSON, run focused validation, review the
+semantic delta, then pack affected solution releases. Preserve tested generators;
+structural changes use parsed objects regardless of line count. Never replace a
+working flow with guessed connector fields. Preserve unknown properties.
+
+Use the installed qualified PAC/CLI route and already-exposed Power Platform MCP
+tools. Tool visibility and local help do not qualify native permissions. Retain
+workload identity pins, guarded M365 entry points and authentication ownership.
+Use native UI only for a specific missing capability, rendering or human login.
+
+The offline power-automate-profile.json is a project-owned structural profile,
+with the source WDL URL/hash and explicit Power Automate extension limits. It is
+not a full expression compiler. Reports distinguish pass/fail/unverified/
+not_applicable and never imply native deployment readiness. Preserve exact
+connection references; parameter names alone do not prove environment variables.
+
+Keep native inputs, component maps and pack outputs private. Public maps use
+sanitized sources only. Read relevant dependency XML; ignore-file conventions are
+search hints, not confidentiality controls. Sync an active Canvas authoring
+session before local edits and use its supported current source route, not the
+retired experimental Canvas unpack format.
+
+Do not add blanket pack/check runs to every edit. Pack affected solution releases
+and compare unpacked source; cloud Solution Checker is a separate authorized
+operation. Keep output/replay/recovery evidence separate from all local checks.
