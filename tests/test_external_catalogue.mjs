@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {persist} from '../tools/external-catalogue/records.mjs';
+import {persist,checkRows} from '../tools/external-catalogue/records.mjs';
 import {provisionViews,configureLinks} from '../tools/external-catalogue/native.mjs';
 const row={Title:'Fictional',RecordKey:'pub:fixture',RecordKind:'Publication',PublicationKey:'pub:fixture',EditionKey:null,
  Issuer:'Fictional',SourceStatus:'Unknown',SourceRole:'Supporting',TrancheKey:'fictional',
@@ -57,3 +57,5 @@ test('native links cannot redirect to another site or executable scheme',async()
  await assert.rejects(persist({...o,rows:[{...row,OfficialURL:'https://example.org/pretend-official'}]}),/OFFICIAL_SOURCE_URL/);
  assert.equal(creates,0);
 });
+
+test('METEOR catalogue origin is exact',()=>{checkRows([{...row,OfficialURL:'https://meteor.aihw.gov.au/content/123'}]);for(const url of ['https://meteor.aihw.gov.au.evil.test/content/123','https://user@meteor.aihw.gov.au/content/123'])assert.throws(()=>checkRows([{...row,OfficialURL:url}]));});

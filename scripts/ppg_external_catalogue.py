@@ -27,7 +27,7 @@ def canonical(value):
 
 def official_url(value):
     parsed = urlsplit(value)
-    if (parsed.scheme != 'https' or parsed.hostname != HOST or parsed.username
+    if (parsed.scheme != 'https' or parsed.hostname not in (HOST, 'meteor.aihw.gov.au') or parsed.username
             or parsed.password or parsed.port not in (None, 443) or parsed.fragment
             or any(ord(c) < 32 for c in value)):
         raise ValueError('Official HTTPS source URL required')
