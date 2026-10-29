@@ -1,0 +1,229 @@
+{
+  "graph": {
+    "contractVersion": 1,
+    "frameworks": [
+      {
+        "FrameworkKey": "fixture-edition-1",
+        "EditionKey": "fixture:edition:1",
+        "status": "published"
+      },
+      {
+        "FrameworkKey": "fixture:stroke-shaped",
+        "EditionKey": "fixture:stroke-edition",
+        "status": "published"
+      }
+    ],
+    "requirements": [
+      {
+        "RequirementKey": "fixture-standard",
+        "FrameworkKey": "fixture-edition-1",
+        "ParentRequirementKey": null,
+        "publisherCode": "1",
+        "kind": "standard",
+        "source": {
+          "PublicationKey": "fixture:publication",
+          "EditionKey": "fixture:edition:1",
+          "CaptureKey": "fixture:capture",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "locator": "fictional page 1"
+        }
+      },
+      {
+        "RequirementKey": "fixture-action",
+        "FrameworkKey": "fixture-edition-1",
+        "ParentRequirementKey": "fixture-standard",
+        "publisherCode": "1.01",
+        "kind": "action",
+        "source": {
+          "PublicationKey": "fixture:publication",
+          "EditionKey": "fixture:edition:1",
+          "CaptureKey": "fixture:capture",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "locator": "fictional page 2"
+        }
+      },
+      {
+        "RequirementKey": "fixture-clause",
+        "FrameworkKey": "fixture-edition-1",
+        "ParentRequirementKey": "fixture-action",
+        "publisherCode": null,
+        "kind": "subclause",
+        "source": {
+          "PublicationKey": "fixture:publication",
+          "EditionKey": "fixture:edition:1",
+          "CaptureKey": "fixture:capture",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "locator": "fictional page 2 bullet a"
+        }
+      },
+      {
+        "RequirementKey": "fixture:stroke-statement",
+        "FrameworkKey": "fixture:stroke-shaped",
+        "ParentRequirementKey": null,
+        "publisherCode": "1",
+        "kind": "quality-statement",
+        "source": {
+          "PublicationKey": "fixture:stroke-publication",
+          "EditionKey": "fixture:stroke-edition",
+          "CaptureKey": "fixture:stroke-capture",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "locator": "Fictional statement locator; not publisher normative text"
+        }
+      }
+    ],
+    "scopes": [
+      {
+        "ScopeKey": "scope1",
+        "ParentScopeKey": null
+      },
+      {
+        "ScopeKey": "scope2",
+        "ParentScopeKey": null
+      }
+    ],
+    "contexts": [
+      {
+        "ReviewContextKey": "ctx1",
+        "purpose": "Fictional second-example quality improvement without accreditation",
+        "period": "2026-10-01/2026-10-02",
+        "ScopeKeys": [
+          "scope1"
+        ],
+        "FrameworkKeys": [
+          "fixture-edition-1",
+          "fixture:stroke-shaped"
+        ]
+      }
+    ],
+    "evidenceVersions": [
+      {
+        "EvidenceVersionKey": "ev1",
+        "EvidenceKey": "fixture-policy",
+        "sourceSystem": "fictional-ppg",
+        "sourceKey": "fixture-policy",
+        "sourceVersion": "1",
+        "accessClass": "fictional"
+      },
+      {
+        "EvidenceVersionKey": "ev3",
+        "EvidenceKey": "fixture-audit",
+        "sourceSystem": "fictional-audit",
+        "sourceKey": "fixture-audit",
+        "sourceVersion": "1",
+        "accessClass": "fictional"
+      }
+    ],
+    "mappings": [
+      {
+        "MappingKey": "map1",
+        "RequirementKey": "fixture-action",
+        "ReviewContextKey": "ctx1",
+        "ScopeKey": "scope1",
+        "EvidenceVersionKey": "ev1",
+        "rationale": "Fictional policy describes a practice; operation is unverified.",
+        "locator": "fictional section 1",
+        "period": "2026-10-01/2026-10-02",
+        "reviewState": "proposed",
+        "establishesCompliance": false
+      },
+      {
+        "MappingKey": "map2",
+        "RequirementKey": "fixture-clause",
+        "ReviewContextKey": "ctx1",
+        "ScopeKey": "scope1",
+        "EvidenceVersionKey": "ev1",
+        "rationale": "Separate proposed relevance for fictional clause.",
+        "locator": "fictional section 2",
+        "period": "2026-10-01/2026-10-02",
+        "reviewState": "proposed",
+        "establishesCompliance": false
+      },
+      {
+        "MappingKey": "map3",
+        "RequirementKey": "fixture-action",
+        "ReviewContextKey": "ctx1",
+        "ScopeKey": "scope1",
+        "EvidenceVersionKey": "ev3",
+        "rationale": "Fictional practice observation with unverified sufficiency.",
+        "locator": "fictional audit sample",
+        "period": "2026-10-01/2026-10-02",
+        "reviewState": "proposed",
+        "establishesCompliance": false
+      },
+      {
+        "MappingKey": "fixture:stroke-map",
+        "RequirementKey": "fixture:stroke-statement",
+        "ReviewContextKey": "ctx1",
+        "ScopeKey": "scope1",
+        "EvidenceVersionKey": "ev3",
+        "rationale": "Separate fictional relevance proposal; does not establish sufficiency for this statement.",
+        "locator": "Fictional audit sample, rows 1\u20135",
+        "period": "2026-10-01/2026-10-02",
+        "reviewState": "proposed",
+        "establishesCompliance": false
+      }
+    ],
+    "assessments": [
+      {
+        "AssessmentKey": "a1",
+        "ReviewContextKey": "ctx1",
+        "RequirementKey": "fixture-action",
+        "ScopeKey": "scope1",
+        "MappingKeys": [
+          "map1",
+          "map3"
+        ],
+        "applicability": "unknown",
+        "outcome": "unknown",
+        "narrative": "Human assessment has not occurred."
+      },
+      {
+        "AssessmentKey": "fixture:stroke-assessment",
+        "ReviewContextKey": "ctx1",
+        "RequirementKey": "fixture:stroke-statement",
+        "ScopeKey": "scope1",
+        "MappingKeys": [
+          "fixture:stroke-map"
+        ],
+        "applicability": "unknown",
+        "outcome": "unknown",
+        "narrative": "Separate fictional statement judgement remains unknown."
+      }
+    ],
+    "crosswalks": []
+  },
+  "package": {
+    "fixtureOnly": true,
+    "nativeWrites": false,
+    "ReviewContextKey": "ctx1",
+    "QualityStatementKey": "fixture:stroke-statement",
+    "NSQHSRequirementKey": "fixture-action",
+    "EvidenceVersionKey": "ev3",
+    "indicatorObservation": {
+      "ObservationKey": "fixture:indicator-observation",
+      "IndicatorDefinitionVersionKey": "fixture:indicator-definition:v1",
+      "EvidenceVersionKey": "ev3",
+      "PeriodStart": "2026-10-01",
+      "PeriodEnd": "2026-10-02",
+      "Numerator": 2,
+      "Denominator": 5,
+      "Unit": "percent",
+      "SourceLocator": "Fictional audit rows 1\u20135",
+      "Limitations": [
+        "Fictional sample; no real Stroke indicator or target is asserted."
+      ]
+    },
+    "indicatorDefinition": {
+      "IndicatorDefinitionVersionKey": "fixture:indicator-definition:v1",
+      "Unit": "percent",
+      "SourceSHA256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "SourceLocator": "Fictional versioned indicator definition; not a publisher definition"
+    },
+    "principalEvidenceAccess": {
+      "fixture-reviewer": [
+        "ev3"
+      ],
+      "fixture-restricted": []
+    }
+  }
+}
