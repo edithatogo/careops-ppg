@@ -1,0 +1,145 @@
+{
+  "contractVersion": 1,
+  "status": "v1-reconciled-native-extension-unqualified",
+  "owners": {
+    "PublicationKey/EditionKey/CaptureKey": "external-publication-catalogue",
+    "acquisition-receipt-and-bytes": "standards-flow-sourcing",
+    "FrameworkKey/RequirementKey/MappingKey/CrosswalkKey": "workbench-integration",
+    "DocumentUID": "existing-policy-identity-owner",
+    "readiness-and-accreditation-decisions": "authorised-people"
+  },
+  "bindings": {
+    "FrameworkKey": {
+      "list": "PPG Framework Editions",
+      "key": "FrameworkKey",
+      "rekeyAllowed": false
+    },
+    "RequirementKey": {
+      "list": "PPG Standard Requirements",
+      "key": "RequirementKey",
+      "rekeyAllowed": false
+    },
+    "MappingKey": {
+      "list": "PPG Standards Mappings",
+      "key": "MappingKey",
+      "rekeyAllowed": false
+    },
+    "CrosswalkKey": {
+      "list": "PPG Requirement Crosswalks",
+      "key": "CrosswalkKey",
+      "rekeyAllowed": false
+    },
+    "DocumentUID": {
+      "list": "existing-source-catalogue",
+      "key": "DocumentUID",
+      "rekeyAllowed": false
+    }
+  },
+  "sourceJoin": {
+    "FrameworkKey": "nsqhs-2-2021",
+    "PublicationKey": "acsqhc:nsqhs",
+    "EditionKey": "edition:nsqhs-2-2021",
+    "originalSha256": "f9432f4b52e8465d36f4ec5ff9c7bbc849d98f2877df05b3f6a37b16784d0f97",
+    "CaptureKey": "capture:f9432f4b52e8465d36f4ec5ff9c7bbc849d98f2877df05b3f6a37b16784d0f97",
+    "sourceAuthorityAccepted": false
+  },
+  "coreEntities": [
+    "FrameworkKey",
+    "RequirementKey",
+    "ScopeKey",
+    "ReviewContextKey",
+    "EvidenceKey",
+    "EvidenceVersionKey",
+    "MappingKey",
+    "AssessmentKey"
+  ],
+  "optionalAccreditationConsumer": [
+    "CycleKey",
+    "DecisionKey",
+    "SnapshotKey"
+  ],
+  "requirementKinds": [
+    "standard",
+    "criterion",
+    "action-group",
+    "action",
+    "subclause",
+    "qualifier",
+    "note",
+    "quality-statement"
+  ],
+  "mappingStates": [
+    "proposed",
+    "reviewed",
+    "rejected",
+    "superseded",
+    "needs-review"
+  ],
+  "applicabilityStates": [
+    "unknown",
+    "applicable",
+    "not-applicable"
+  ],
+  "ratingVocabulary": {
+    "source": "scheme-specific-versioned-source-required",
+    "configurationPath": "config/accreditation-scheme-vocabularies-v1.json",
+    "scopeStatus": "NSQHS external-assessor vocabulary locally source-bound; other schemes and native persistence remain open",
+    "universalScore": false
+  },
+  "evidenceVersionRule": "authoritative-system/key/exact-version; observation-period and native-history-version remain separate",
+  "legacyMappingAliasRule": "retain MappingKey and DocumentUID/DocumentVersion; explicit EvidenceVersionKey compatibility binding only, no inferred edition equality",
+  "nativeExtensionGaps": [
+    "RequirementKind choice lacks subclause/qualifier/note/action-group/quality-statement",
+    "RequirementCode is required; unnumbered source segments need a compatible separate local key without fabricated publisher code",
+    "FrameworkKey/ParentRequirementKey/RequirementKey foreign-reference queries lack indexes",
+    "No inspected native fields store scoped evidence-version/context/assessment entities",
+    "Source-bound full text and immutable capture references need an additive field binding; preserve existing summaries"
+  ],
+  "promotionRules": {
+    "fullCorpusAndTextRequiredForCompleteness": true,
+    "sourceCompleteFromIndexForbidden": true,
+    "automaticAcceptance": false,
+    "crosswalkTransfersAcceptance": false,
+    "scopeInheritance": false,
+    "nativeWritesImplemented": false,
+    "emailEnabled": false,
+    "premiumConnectors": false
+  },
+  "identityBindings": {
+    "FrameworkKey": "Existing edition-specific key in PPG Framework Editions; do not rekey. Join to an external Edition only where its frameworkKeys array contains this exact key.",
+    "RequirementKey": "Existing key in PPG Standard Requirements; preserve keys, hierarchy and existing rows; publisher codes are separate attributes.",
+    "PublicationKey": "External catalogue publication identity; do not mint one from a URL or citation occurrence.",
+    "EditionKey": "External catalogue publisher-edition identity; distinct from the local FrameworkKey and linked only by explicit frameworkKeys membership.",
+    "CaptureKey": "External catalogue captured-representation identity; bind to the exact EditionKey and verified source-byte SHA-256. SharePoint file history/ETag and capture observation times remain distinct.",
+    "DocumentUID": "Existing local policy identity; reference occurrences bind it with source version, hashes and exact offsets.",
+    "Reference/Resolution": "External catalogue occurrence and candidate-resolution records. They are not PPG dependency records, framework requirements or compliance mappings."
+  },
+  "minimalCompatibleContract": {
+    "newRegistersOrFrameworksRequired": false,
+    "nativeSchemaChangeRequiredForIdentityBridge": false,
+    "frameworkJoin": "External Edition.frameworkKeys contains the exact existing FrameworkKey; no EditionKey column is added to PPG Framework Editions for this bridge.",
+    "representationJoin": "One observed retained representation is recorded as a Capture with MIME type, URL, byte hash and acquisition/observation data; no separate RepresentationKey is required for the bounded NSQHS bridge.",
+    "requirementSourceTuple": [
+      "PublicationKey",
+      "EditionKey",
+      "CaptureKey",
+      "sha256",
+      "locator"
+    ],
+    "assertionProvenanceFields": [
+      "field",
+      "value",
+      "sourceURL",
+      "sourceSHA256",
+      "locator",
+      "observedAt"
+    ],
+    "ambiguityAndAliasRule": "Keep Unknown/Conflicting and multiple candidates explicit. Alias resolution is evidence-bound and reversible; do not rekey or merge existing publication/edition records from title or URL alone. Native promotion remains unqualified.",
+    "correctionBoundary": "Catalogue owner prepares source assertions; assigned native writer applies conditional changes and reads back. Conflicts retain human edits and stop promotion.",
+    "captureBoundary": "Sourcing owner owns acquisition receipts and bytes; catalogue owner owns publication/edition identity, selection and coverage. No access or rights change is implied.",
+    "completionBoundary": "Identity joins do not establish source completeness, normative requirement completeness, applicability, evidence sufficiency, acceptance or accreditation readiness.",
+    "nativeRequirementPersistenceStillNeedsAdditiveFields": true,
+    "identityJoinIsProjectionNotNativeRequirementStorage": true
+  },
+  "sourceSurveillanceBinding": "A source-surveillance sourceKey is producer-local identity, not PublicationKey, EditionKey or CaptureKey. Join an observed source only on explicit publisher/edition evidence and exact byte hash; preserve sourceKey, native version reference and observation timestamp separately."
+}

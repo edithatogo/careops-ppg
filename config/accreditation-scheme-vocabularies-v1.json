@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "status": "design-qualified-from-captured-official-source; not a native award record",
+  "authorities": [
+    {
+      "authorityKey": "authority:acsqhc",
+      "displayName": "Australian Commission on Safety and Quality in Health Care",
+      "role": "publisher and source authority for the NSQHS Standards and AHSSQA Scheme guidance"
+    },
+    {
+      "authorityKey": "authority:accrediting-agency",
+      "displayName": null,
+      "role": "external accrediting agency authorized for the assessed health service",
+      "identityPolicy": "bind the exact agency identity from an authorized assessment report; do not infer or invent one"
+    }
+  ],
+  "schemes": [
+    {
+      "schemeKey": "scheme:ahssqa",
+      "title": "Australian Health Service Safety and Quality Accreditation Scheme",
+      "schemeAuthorityKey": "authority:acsqhc",
+      "assessmentDecisionAuthorityKey": "authority:accrediting-agency",
+      "frameworkKeys": ["nsqhs-2-2021"],
+      "status": "configuration reference only"
+    }
+  ],
+  "ratingVocabularies": [
+    {
+      "vocabularyKey": "rating-vocabulary:ahssqa:nsqhs-action:fact-sheet-4",
+      "vocabularyVersion": "1",
+      "schemeKey": "scheme:ahssqa",
+      "frameworkKey": "nsqhs-2-2021",
+      "use": "external-accrediting-assessor-rating-only",
+      "source": {
+        "publicationKey": "acsqhc:ahssqa:fact-sheet-4",
+        "captureKey": "capture:acsqhc:ahssqa:fact-sheet-4:3111e7702c726ae100b6ef8c",
+        "sha256": "3111e7702c726ae100b6ef8c7ffbc746339bfd8afefe8e8d6b122add5d271bd3",
+        "nativeFileVersion": "1.0",
+        "locator": "Fact Sheet 4: Rating scale; Table 1",
+        "editionKey": null,
+        "editionState": "unknown; source capture identity is retained without inferring an edition"
+      },
+      "values": ["Met", "Met with recommendations", "Not met"],
+      "recordingRequirements": [
+        "retain the exact external report and report/version identity",
+        "retain assessment stage and assessed action scope separately from the rating",
+        "retain source vocabulary value verbatim; do not translate to a universal score"
+      ]
+    }
+  ],
+  "internalReviewStates": {
+    "applicability": ["Unknown", "Applicable", "Not applicable"],
+    "outcome": ["Unknown", "Human-recorded"],
+    "ratingVocabularyKey": null,
+    "externalRatingCopy": false
+  },
+  "invariants": {
+    "ratingDoesNotImplyAccreditationDecision": true,
+    "evidencePresenceDoesNotAssignRating": true,
+    "mappingDoesNotAssignRating": true,
+    "noUniversalScore": true,
+    "unknownRemainsExplicit": true
+  }
+}
