@@ -5,6 +5,7 @@ publication or actor authority. Native qualification and ordinary-user UI proof
 remain separate requirements; this module performs no network operations.
 """
 import copy
+import hashlib
 from build_selected_event_routes import audit_actions
 
 
@@ -13,11 +14,13 @@ def _stable_history_rows(rows):
     return 'if(equals(length('+rows+"),1),createArray(union(first("+rows+"),json('{\"odata.id\":null}'))),"+rows+')'
 
 
-def build(kind, prepared_event_flow, event_list_uri, technical_role):
+def build(kind, prepared_event_flow, event_list_uri, technical_role, *, role_scoped_identity=False):
     if kind not in ('request', 'response'):
         raise ValueError('Choose request or response')
     if not isinstance(technical_role,str) or not technical_role.startswith('FICTIONAL ') or len(technical_role)>255:
         raise ValueError('Explicit existing fictional technical role required')
+    if type(role_scoped_identity) is not bool:
+        raise ValueError('Explicit boolean role-scoped identity required')
     out=copy.deepcopy(prepared_event_flow);props=out['properties'];props['state']='Stopped'
     d=props['definition'];a=d['actions']
     if 'Route_consultation_prepared_context' not in a:
@@ -59,6 +62,11 @@ def build(kind, prepared_event_flow, event_list_uri, technical_role):
         return _stable_history_rows(rows)
 
     request_uid="concat('LC-CONSULT-REQ-',toLower("+p+"?['file']?['UniqueId']),'-v',"+p+"?['file']?['nativeVersion'])"
+    # Opt in only for additional roles. Historical request/parent keys stay exact.
+    # The full role is still compared in every native parent and replay guard.
+    if role_scoped_identity:
+        role_key = hashlib.sha256(technical_role.encode('utf-8')).hexdigest()[:16]
+        request_uid = request_uid[:-1] + ",'-r" + role_key + "')"
     role=quote(technical_role)
     base={'CaseUID':'@'+scope+"?['CaseUID']",'DocumentReference':'@'+scope+"?['DocumentReference']",'ReviewedVersionRef':'@'+scope+"?['ReviewedVersionRef']",'DocumentSHA256':'@'+scope+"?['DocumentSHA256']",'SubjectRole':technical_role,'EventKind':'Consultation','FictionalTest':True,'ActorName':'FICTIONAL technical operator; real reviewer authority unqualified','OccurredOn':'@utcNow()'}
     payload={**base,'Title':'FICTIONAL prepared-revision consultation request','EventUID':'@'+request_uid,'RecordState':'Pending response','ConditionsState':'None recorded','Summary':'FICTIONAL technical consultation on the verified prepared revision; no assignment or notification','ResponseSummary':None,'EvidenceReference':'@'+p+"?['qualificationReceipt']?['DocumentReference']",'NextAction':'Record an explicit response for this prepared revision; no readiness or approval is implied'}

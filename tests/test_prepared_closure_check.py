@@ -13,6 +13,7 @@ from pathlib import Path
 from urllib.parse import quote, unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools/lifecycle'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_prepared_closure_check import build_actions, CHAIN, calendar_date_expression
 from test_selected_event_routes import fixtures
 
@@ -171,6 +172,36 @@ def chain_result(rows, binding=None):
 
 
 class PreparedClosureTests(unittest.TestCase):
+    def test_old_revision_or_open_unknown_condition_at_each_chain_position_holds(self):
+        _, binding, rows = fixture()
+        for index, role in enumerate(CHAIN):
+            for key, value in [('ReviewedVersionRef', 'fictional-retained-earlier-revision'),
+                               ('DocumentSHA256', 'c' * 64),
+                               ('ConditionsState', 'Open'), ('ConditionsState', 'Unknown')]:
+                changed = copy.deepcopy(rows); changed[index][key] = value
+                with self.subTest(role=role, key=key, value=value):
+                    self.assertFalse(chain_result(changed, binding))
+            changed = copy.deepcopy(rows); changed[index]['ConditionsState'] = 'Resolved'
+            with self.subTest(role=role, condition='Resolved'):
+                self.assertTrue(chain_result(changed, binding))
+
+    def test_distinct_explicit_date_rules_remain_source_scoped_and_non_operational(self):
+        context, binding, _ = fixture(True)
+        work = build_actions(context, binding)['Closure_check_chain']['actions']
+        expression = work['Closure_date_consistent']['inputs']
+        meta = {'UniqueId': DATE_UID, 'ETag':'"1"'}
+        for config, day in [('A','2027-03-31'), ('B','2028-06-30')]:
+            scope = {**SCOPE, 'CaseUID':'FICTIONAL-case-'+config}
+            record = {'FictionalTest':True, 'notOperational':True, 'policyAuthorityGranted':False,
+                      'scope':scope, 'reviewDate':day, 'ruleReference':'fictional://declared-date/'+config,
+                      'evidenceReference':'fixture:date-'+config, 'recordedBy':'FICTIONAL technical recorder'}
+            ev = Expressions({'Closure_date_before':meta, 'Closure_date_after':meta},
+                {'Closure_date_record':record, 'Native_prepared_revision':{'preparedRevision':{'scope':scope}}})
+            with self.subTest(config=config):
+                self.assertTrue(ev.evaluate(expression))
+                ev.outputs['Native_prepared_revision']['preparedRevision']['scope'] = SCOPE
+                self.assertFalse(ev.evaluate(expression))
+
     def test_issued_metadata_and_content_uris_are_complete_expressions(self):
         context, binding, rows = fixture()
         work = build_actions(context, binding)['Closure_check_chain']['actions']

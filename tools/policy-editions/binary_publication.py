@@ -85,13 +85,16 @@ def copy_fragment(site, source, target_path, qualification_folder, reference):
     """Prepare the smallest body-free same-site server-copy action; does not run it."""
     source = metadata(source)
     parsed = urlsplit(site)
-    require(parsed.scheme == 'https' and parsed.netloc and not parsed.query and not parsed.fragment,
-            'Literal HTTPS site required')
+    require(parsed.scheme == 'https' and parsed.netloc and not parsed.query and not parsed.fragment
+            and not parsed.username and not parsed.password
+            and all(x not in parsed.path for x in ('..', '%', '\\')),
+            'Literal canonical HTTPS site without credentials required')
     require(site == site.rstrip('/'), 'Use canonical site URL without trailing slash')
     src = urlsplit(source['DocumentReference'])
     require((src.scheme, src.netloc) == (parsed.scheme, parsed.netloc) and not src.query and not src.fragment,
             'Same-site source required')
-    require(src.path.startswith(parsed.path + '/') and unquote(src.path) == src.path,
+    require(src.path.startswith(parsed.path + '/') and unquote(src.path) == src.path
+            and all(x not in src.path for x in ('..', '%', '\\')),
             'Canonical decoded same-site source path required')
     require(isinstance(target_path, str) and isinstance(qualification_folder, str), 'Explicit destination required')
     require(qualification_folder.startswith(parsed.path + '/') and target_path.startswith(qualification_folder + '/FICTIONAL-'),

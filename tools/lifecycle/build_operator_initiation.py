@@ -60,7 +60,10 @@ def build(reference, binding):
     def http(uri, after=None, method='GET', body=None):
         params = {'dataset': site, 'parameters/method': method, 'parameters/uri': uri, 'parameters/headers': headers}
         if body is not None: params['parameters/body'] = body
-        return {'type': 'OpenApiConnection', 'inputs': {'host': {'apiId': '/providers/Microsoft.PowerApps/apis/shared_sharepointonline', 'connectionName': 'shared_sharepointonline', 'operationId': 'HttpRequest'}, 'parameters': params}, 'runAfter': after or {}}
+        result = {'type': 'OpenApiConnection', 'inputs': {'host': {'apiId': '/providers/Microsoft.PowerApps/apis/shared_sharepointonline', 'connectionName': 'shared_sharepointonline', 'operationId': 'HttpRequest'}, 'parameters': params}, 'runAfter': after or {}}
+        if method != 'GET':
+            result['inputs']['retryPolicy'] = {'type': 'none'}
+        return result
     def comp(value, after=None): return {'type': 'Compose', 'inputs': value, 'runAfter': after or {}}
     def iff(expr, yes, no, after=None): return {'type': 'If', 'expression': expr, 'actions': yes, 'else': {'actions': no}, 'runAfter': after or {}}
     def fail(code): return {'type': 'Terminate', 'inputs': {'runStatus': 'Failed', 'runError': {'code': code, 'message': 'Fictional initiation held. Inspect request identity, source pins and retained case; do not overwrite.'}}, 'runAfter': {}}

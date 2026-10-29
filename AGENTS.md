@@ -82,8 +82,9 @@ not establish a complete native audit.
 
 ## Project-owned code licensing
 
-Use Apache-2.0 for project-owned code and include the complete LICENSE and NOTICE
-in source distributions. Align active declarations and preserve copyright, upstream
-and third-party terms. External documents, datasets, private evidence and native
-history retain their own rights. Licensing does not authorise publication, a
-visibility change or deployment; qualify source/package changes before merge.
+Use Apache-2.0 for project-owned code and include its complete licence and current
+notices in source packages. Preserve existing copyright, upstream and third-party
+licences and attribution. Do not relabel external code, fixtures or dependencies.
+The code licence grants no rights over external documents, manuscripts, policies,
+datasets, private evidence or history, and no visibility change or publication.
+Qualify source/package changes before merge and preserve current owners/runtimes.

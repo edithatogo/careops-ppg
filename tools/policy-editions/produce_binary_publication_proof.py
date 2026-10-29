@@ -5,6 +5,7 @@ Stage after a separately reviewed actual copy. Finalize only after a separately
 authorised create-only proof upload and reviewed storage-permission observation.
 """
 import argparse
+import copy
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import hashlib
@@ -53,6 +54,7 @@ def flatten(group):
 
 
 def validate_binding(b,definition):
+    validate_copy_reconciliation(b)
     require(b.get('qualificationOnly') is True,'Fictional qualification only')
     require(text(b.get('readinessDateTimeZone')) and isinstance(b.get('readinessAssessmentDate'),str)
             and re.fullmatch(r'\d{4}-\d{2}-\d{2}',b['readinessAssessmentDate']) is not None,
@@ -294,7 +296,20 @@ def publication_action_ineligibility(definition,rows,run_id,name):
     raise ValueError('Publication action inventory gap held: no observed Skipped ancestor or exact terminal runAfter barrier')
 
 
+def validate_copy_reconciliation(b):
+    r=b.get('copy',{}).get('reconciliation')
+    if r is None:
+        return
+    require(isinstance(r,dict) and set(r)=={'runId','initialIssued'}
+            and text(r['runId']) and re.fullmatch(r'[A-Za-z0-9-]{1,100}',r['runId']) is not None
+            and r['runId']!=b['copy']['runId'],'Explicit distinct reconciliation run required')
+    initial=metadata(r['initialIssued']);current=metadata(b['issued'])
+    require(all(initial[k]==current[k] for k in current if k!='ETag')
+            and initial['ETag']!=current['ETag'],'Only an explicit same-object/version/length token transition may reconcile')
+
+
 def inspect_copy(b,definition,t,c):
+    validate_copy_reconciliation(b)
     before=t.flow(b);c.json('copy-flow-before.json',before)
     require(before.get('name')==b['copy']['flowName'] and digest(before['properties']['definition'])==digest(definition),'Current flow differs from reviewed native definition')
     run=t.run(b);c.json('copy-run.json',run)
@@ -317,11 +332,66 @@ def inspect_copy(b,definition,t,c):
             'Run-specific body-free absent-only copy input differs')
     receipt=t.action_content(by_name['Native_binary_copy_observation'],'outputs');c.json('copy-terminal-receipt.json',receipt)
     require(receipt.get('runId')==b['copy']['runId'] and receipt.get('preparedScope')==b['scope']
-            and receipt.get('copyCreatedCount')==1 and receipt.get('binaryOutputQualified') is False
-            and all(receipt.get(k)==0 for k in ('publicationCreatedCount','caseWrites','sourceWrites','readinessWrites','purposeWrites','notifications'))
+            and type(receipt.get('copyCreatedCount')) is int and receipt['copyCreatedCount']==1
+            and receipt.get('binaryOutputQualified') is False
+            and all(type(receipt.get(k)) is int and receipt[k]==0 for k in ('publicationCreatedCount','caseWrites','sourceWrites','readinessWrites','purposeWrites','notifications'))
             and receipt.get('realPolicyEffects') is False,'Exact terminal copy receipt required; flags alone are insufficient')
     origin=urlsplit(b['site']).scheme+'://'+urlsplit(b['site']).netloc
-    require(normalize_sharepoint_file(receipt['issued'],origin)==metadata(b['issued']),'Copy receipt issued pins differ')
+    reconciliation = b['copy'].get('reconciliation')
+    initial = reconciliation['initialIssued'] if reconciliation else b['issued']
+    require(normalize_sharepoint_file(receipt['issued'],origin)==metadata(initial),'Copy receipt issued pins differ')
+    if reconciliation:
+        return inspect_copy_reconciliation(b, definition, t, c, run, receipt)
+    return receipt
+
+
+def inspect_copy_reconciliation(b, definition, t, c, first_run, first_receipt):
+    """Explicit new observation after an opaque token change; never silent repin.
+
+    Keep the first copy and its pins. A later unchanged-input native replay must
+    skip both writers and retain the same authorisation, scope and object/version.
+    Independent current-byte parity and metadata/frame brackets remain mandatory.
+    This proves the current copy, not bytes at the earlier opaque token.
+    """
+    r=b['copy']['reconciliation'];initial=metadata(r['initialIssued']);current=metadata(b['issued'])
+    require(set(r)=={'runId','initialIssued'} and text(r['runId'])
+            and re.fullmatch(r'[A-Za-z0-9-]{1,100}',r['runId']) is not None
+            and r['runId']!=b['copy']['runId'],'Explicit distinct reconciliation run required')
+    require(all(initial[k]==current[k] for k in current if k!='ETag')
+            and initial['ETag']!=current['ETag'],'Only an explicit same-object/version/length token transition may reconcile')
+    replay=copy.deepcopy(b);replay['copy']['runId']=r['runId']
+    run=t.run(replay);c.json('copy-reconciliation-run.json',run)
+    require(run.get('name')==r['runId'] and run['properties'].get('status')=='Succeeded'
+            and not run['properties'].get('isAborted')
+            and utc(run['properties'].get('startTime'))>=utc(first_run['properties'].get('endTime'))
+            and utc(run['properties'].get('endTime'))>=utc(run['properties']['startTime']),
+            'Terminal ordered reconciliation run required')
+    inventory=t.actions(replay);c.json('copy-reconciliation-actions.json',inventory);rows=complete(inventory)
+    by_name={a['name']:a for a in rows}
+    require(len(by_name)==len(rows) and all(a.get('runName')==r['runId'] for a in rows),'Complete exact reconciliation actions required')
+    for name in ('Copy_binary_absent_only','Create_binary_publication'):
+        require(by_name.get(name,{}).get('properties',{}).get('status')=='Skipped','Reconciliation must skip both writers')
+    require(by_name.get('Native_binary_copy_observation',{}).get('properties',{}).get('status')=='Succeeded',
+            'Actual reconciliation copy observation required')
+    c.json('copy-reconciliation-publication-ineligibility.json',publication_action_ineligibility(
+        definition,rows,r['runId'],'Native_binary_publication_receipt'))
+    want={'text':'Prepare binary copy','text_6':b['scope']['CaseUID']}
+    for label,observation in (('first',first_run),('replay',run)):
+        actual=t.action_content({'properties':observation['properties']['trigger']},'outputs')
+        c.json('copy-reconciliation-'+label+'-trigger.json',actual)
+        require(actual.get('body')==want,'Exact unchanged native copy input required')
+    receipt=t.action_content(by_name['Native_binary_copy_observation'],'outputs');c.json('copy-reconciliation-receipt.json',receipt)
+    require(receipt.get('runId')==r['runId'] and receipt.get('preparedScope')==b['scope']
+            and receipt.get('binaryOutputQualified') is False and receipt.get('realPolicyEffects') is False
+            and all(type(receipt.get(k)) is int and receipt[k]==0 for k in
+                ('copyCreatedCount','publicationCreatedCount','caseWrites','sourceWrites','readinessWrites','purposeWrites','notifications'))
+            and normalized(receipt.get('purposeAuthorisation'))==normalized(first_receipt.get('purposeAuthorisation')),
+            'Zero-effect same-authorisation reconciliation receipt required')
+    origin=urlsplit(b['site']).scheme+'://'+urlsplit(b['site']).netloc
+    require(normalize_sharepoint_file(receipt['issued'],origin)==current,'Current reconciliation issued pins differ')
+    c.json('copy-reconciliation-audit.json',{'firstRunId':b['copy']['runId'],'replayRunId':r['runId'],
+        'initialIssued':initial,'currentIssued':current,'oldTokenBytesVerified':False,
+        'currentByteProofStillRequired':True,'nativeWrites':0})
     return receipt
 
 
@@ -355,6 +425,12 @@ def stage(b,definition,t,output,expected_binding_sha):
                         **code,
                         'reviewedDefinitionSHA256':digest(definition),'actualCopyInputsSHA256':c.hashes['copy-actual-inputs.json'],
                         'terminalCopyReceiptSHA256':c.hashes['copy-terminal-receipt.json'],'protectedFrameSHA256':digest(normalized(after))}}
+        if b['copy'].get('reconciliation') is not None:
+            proof['downloadEvidence']['producer']['copyReconciliation']={
+                **b['copy']['reconciliation'], 'currentIssued':metadata(b['issued']),
+                'replayReceiptSHA256':c.hashes['copy-reconciliation-receipt.json'],
+                'auditSHA256':c.hashes['copy-reconciliation-audit.json'],
+                'oldTokenBytesVerified':False}
         c.json('binary-proof.json',proof)
         manifest={'kind':'staged-independent-binary-publication-proof-v1','bindingSHA256':digest(b),'proofContentSHA256':digest(proof),
                   'files':dict(c.hashes),'nativeWrites':0,'nativeProofStorageVerified':False,'publicationBindingProduced':False,

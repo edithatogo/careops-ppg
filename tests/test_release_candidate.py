@@ -20,18 +20,31 @@ class ReleaseCandidateTests(unittest.TestCase):
                          'requirements-atlas.lock', 'requirements-atlas-qualification.in',
                          'requirements-external-catalogue.in', 'requirements-external-catalogue.lock',
                          'requirements-external-catalogue-ci.in', 'requirements-external-catalogue-ci.lock']:
-                (root / name).write_text('Fictional source fixture. External content rights remain separate.\n')
-            for name in ['scripts', 'tools/submission-package', 'templates', 'tests', '.github', 'config', 'docs']:
-                (root / name).mkdir(parents=True, exist_ok=True)
+                (root / name).write_text('Fictional project source fixture.\n')
             shutil.copyfile(ROOT / 'LICENSE', root / 'LICENSE')
+            for name in ['scripts', 'tools/submission-package', 'templates', 'tests/fixtures', '.github', 'config', 'docs']:
+                (root / name).mkdir(parents=True, exist_ok=True)
             for name in ['build_release_candidate.py', 'build_submission_assembler.py']:
                 shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
             for name in ['page.html', 'assembler.js', 'prefill.js']:
                 shutil.copyfile(ROOT / 'tools/submission-package' / name, root / 'tools/submission-package' / name)
             shutil.copyfile(ROOT / 'templates/review-package.md', root / 'templates/review-package.md')
+            shutil.copyfile(ROOT / 'tests/fixtures/LICENSE.pandas', root / 'tests/fixtures/LICENSE.pandas')
             (root / 'tests/fixture.txt').write_text('Fictional test source\n')
             (root / 'config/fixture.json').write_text('{"fictional": true}\n')
             (root / '.github/fixture.txt').write_text('Fictional workflow source\n')
+            security_files = {
+                'SECURITY.md': b'Fictional source security policy\n',
+                '.careops-security/check.py': b'# Fictional privacy checker\n',
+                '.careops-security/LICENSE': b'Fictional retained licence\n',
+                '.githooks/pre-push': b'#!/bin/sh\nexit 0\n',
+                '.gitleaks.toml': b'title = \"Fictional source scan\"\n',
+                'renovate.json': b'{}\n',
+            }
+            for name, data in security_files.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(data)
             for name in ['.careops/module.json', 'conductor/index.md', 'conductor/suite-delivery.md', '.python-version', '.python-version-atlas', '.node-version']:
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -55,25 +68,36 @@ class ReleaseCandidateTests(unittest.TestCase):
             self.assertEqual(receipt['archiveSha256'], hashlib.sha256(archive.read_bytes()).hexdigest())
             self.assertEqual(archive.read_bytes(), (root / '.local/two/careops-ppg-portable.zip').read_bytes())
             self.assertFalse(receipt['nativeWrites'])
-            self.assertEqual(receipt['projectOwnedCodeLicense'], 'Apache-2.0')
-            self.assertFalse(receipt['externalContentRedistributionRightsGranted'])
+            self.assertEqual(receipt['projectCodeLicense'], 'Apache-2.0')
+            self.assertTrue(receipt['thirdPartyTermsPreserved'])
+            self.assertFalse(receipt['externalContentLicensed'])
+            self.assertFalse(receipt['visibilityChanged']); self.assertFalse(receipt['releasePublished'])
             with zipfile.ZipFile(archive) as bundle:
                 self.assertEqual(bundle.read('PPG-submission-assembler.html'), (output / 'PPG-submission-assembler.html').read_bytes())
                 self.assertEqual(bundle.read('config/fixture.json'), (root / 'config/fixture.json').read_bytes())
-                self.assertEqual(bundle.read('LICENSE'), (ROOT / 'LICENSE').read_bytes())
+                self.assertEqual(bundle.read('LICENSE'), (root / 'LICENSE').read_bytes())
+                self.assertEqual(bundle.read('tests/fixtures/LICENSE.pandas'), (root / 'tests/fixtures/LICENSE.pandas').read_bytes())
                 self.assertEqual(bundle.read('NOTICE.md'), (root / 'NOTICE.md').read_bytes())
                 self.assertEqual(bundle.read('requirements-xlsb.lock'), (root / 'requirements-xlsb.lock').read_bytes())
                 for name in ['requirements-atlas.lock', 'requirements-atlas-qualification.in', '.python-version-atlas']:
                     self.assertEqual(bundle.read(name), (root / name).read_bytes())
-                for name in ['requirements-external-catalogue.in', 'requirements-external-catalogue.lock',
-                             'requirements-external-catalogue-ci.in', 'requirements-external-catalogue-ci.lock']:
-                    self.assertEqual(bundle.read(name), (root / name).read_bytes())
                 self.assertEqual(bundle.read('templates/review-package.md'), (root / 'templates/review-package.md').read_bytes())
                 for name in ['.careops/module.json', 'conductor/index.md', 'conductor/suite-delivery.md', '.python-version', '.node-version']:
                     self.assertEqual(bundle.read(name), (root / name).read_bytes())
+                for name, data in security_files.items():
+                    self.assertEqual(bundle.read(name), data)
                 self.assertFalse(any(name.startswith('.git/') for name in bundle.namelist()))
             self.assertNotEqual(run('one').returncode, 0)
             self.assertEqual(receipt['archiveSha256'], hashlib.sha256(archive.read_bytes()).hexdigest())
+            # Historical source without the optional security files still packages.
+            for name in security_files:
+                (root / name).unlink()
+            git('add', '-u')
+            git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                '-c', 'commit.gpgsign=false', 'commit', '-qm', 'Fictional older source shape')
+            self.assertEqual(run('without-security').returncode, 0)
+            with zipfile.ZipFile(root / '.local/without-security/careops-ppg-portable.zip') as bundle:
+                self.assertTrue(set(security_files).isdisjoint(bundle.namelist()))
             (root / 'README.md').write_text('Unreviewed edit\n')
             self.assertNotEqual(run('dirty').returncode, 0)
             self.assertFalse((root / '.local/dirty').exists())

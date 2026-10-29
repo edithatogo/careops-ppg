@@ -15,9 +15,20 @@ function policyEditionQuery(base, config, definition) {
 }
 
 async function maintainPolicyEditions({base,libraryId,fieldConfig,viewConfig}) {
-  if(!base.startsWith('/')||!/^[-0-9a-f]{36}$/i.test(libraryId)||fieldConfig.schemaVersion!==1||viewConfig.schemaVersion!==1)throw Error('Unqualified binding/config');
+  const origin='https://binding.invalid';
+  let qualifiedBase=false;
+  if(typeof base==='string'&&base.startsWith('/')&&!base.startsWith('//')&&!base.endsWith('/')&&!/[\\?#\s]/.test(base)){
+    const parsed=new URL(base,origin);
+    qualifiedBase=parsed.origin===origin&&parsed.pathname===base;
+  }
+  if(!qualifiedBase||typeof libraryId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(libraryId)||fieldConfig.schemaVersion!==1||viewConfig.schemaVersion!==1)throw Error('Unqualified binding/config');
   const lp="/_api/web/lists(guid'"+libraryId+"')",headers={Accept:'application/json;odata=nometadata'};
-  const get=async path=>{const r=await fetch(base+path,{headers,cache:'no-store'});if(!r.ok)throw Error(r.status+' '+path);return r.json();};
+  const get=async path=>{
+    const r=await fetch(base+path,{method:'GET',headers,cache:'no-store'});if(!r.ok)throw Error(r.status+' '+path);
+    const data=await r.json();
+    if(Object.entries(data).some(([key,value])=>key.toLowerCase().includes('nextlink')&&value)||data.d?.__next||(Array.isArray(data.value)&&data.value.length>=5000))throw Error('Incomplete or bounded-limit native collection; no adoption claimed');
+    return data;
+  };
   const normalise=xml=>{
     const doc=new DOMParser().parseFromString('<Query>'+xml+'</Query>','text/xml');if(doc.querySelector('parsererror'))throw Error('Invalid XML');
     const node=e=>[e.nodeName,[...e.attributes].map(a=>[a.name,a.value]).sort(),[...e.childNodes].filter(n=>n.nodeType===1).map(node),[...e.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).join('')];

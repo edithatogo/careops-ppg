@@ -97,6 +97,8 @@ included.
 
 ## Security and publishing boundary
 
+See [the security policy](SECURITY.md) and [source-security alignment](docs/source-security-alignment.md) for the source boundary, reporting and delivery requirements.
+
 [Gitleaks](https://github.com/gitleaks/gitleaks) scans full Git history on pushes,
 pull requests and manual runs. The CLI version, download checksum and checkout
 Action are pinned. The workflow uses read-only permissions and requires no scanner
@@ -117,8 +119,8 @@ scanner result is evidence about the committed material, not a guarantee about
 future files. Keep source records, credentials, real correspondence, private
 bindings and receipts outside Git, including for private repositories.
 
-Project-owned code is licensed under Apache-2.0; see [LICENSE](LICENSE) and
-[NOTICE.md](NOTICE.md). Third-party terms and external-content rights remain separate.
+Project-owned code uses [Apache-2.0](LICENSE). [Notices and exclusions](NOTICE.md)
+preserve upstream terms and exclude external documents, private data and history.
 
 
 ## Source CI and updates
@@ -149,8 +151,9 @@ exact committed scripts, source, templates and fictional test fixtures. It
 refuses dirty source and existing output revisions. An independent unpacked
 consumer runs the Python and JavaScript suites and rebuilds the identical HTML.
 The actual archive receives an SPDX file inventory; main-only OIDC jobs download
-the same bytes and verify exact source, workflow and signer attestations. No
-additional external-content rights are granted, no release is published, and no policy content or
+the same bytes and verify exact source, workflow and signer attestations. The
+package includes the project-owned code licence and retained third-party notices;
+no release is published, and no policy content or
 native service is processed. SharePoint remains the preferred structured-document
 route; packaging does not replace that preference or establish its availability.
 
@@ -210,3 +213,15 @@ prepares a stopped OneDrive URL-upload experiment with overwrite disabled, bound
 completion polling and content readback. It performs no deployment or invocation.
 The experiment requires a native owner, empty run history and actual alert-Off
 readback; durable claims, byte verification and production replay remain separate.
+
+## Lifecycle source contracts
+
+See [the source reconciliation](docs/lifecycle-source-reconciliation.md) for
+relationship journals, version-scoped checkpoints and standard-connector flow
+compilers. These are portable source contracts, not native deployment claims.
+
+## Owner-controlled guide route
+
+[Guide preparation, exact-revision review and controlled filing](docs/owner-controlled-guide.md)
+use the maintained owner rubric and create-only evidence receipts. Portable source
+and fictional tests do not establish native deployment or institutional issuance.

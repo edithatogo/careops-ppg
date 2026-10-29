@@ -22,12 +22,15 @@ def package(output):
     epoch = int(git('show', '-s', '--format=%ct', 'HEAD'))
     output.mkdir(parents=True, exist_ok=False)
     archive = output / 'careops-ppg-portable.zip'
+    security_paths = git('ls-tree', '--name-only', revision, '--',
+                         'SECURITY.md', '.careops-security', '.githooks',
+                         '.gitleaks.toml', 'renovate.json').decode().splitlines()
     subprocess.run(['git', 'archive', '--format=zip', '--output', str(archive.resolve()),
                     revision, 'README.md', 'LICENSE', 'NOTICE.md', 'AGENTS.md', '.gitattributes', '.gitignore', '.github', '.careops', 'conductor', 'docs',
                     '.python-version', '.python-version-atlas', '.node-version', 'requirements-xlsb.lock',
                     'requirements-atlas.lock', 'requirements-atlas-qualification.in',
                     'requirements-external-catalogue.in', 'requirements-external-catalogue.lock',
-                    'requirements-external-catalogue-ci.in', 'requirements-external-catalogue-ci.lock', 'config', 'scripts', 'tools', 'templates', 'tests'],
+                    'requirements-external-catalogue-ci.in', 'requirements-external-catalogue-ci.lock', 'config', 'scripts', 'tools', 'templates', 'tests', *security_paths],
                    cwd=ROOT, check=True)
     page = output / 'PPG-submission-assembler.html'
     build(page)
@@ -42,8 +45,9 @@ def package(output):
     receipt = {'sourceCommit': revision,
                'archiveSha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
                'assemblerSha256': hashlib.sha256(page.read_bytes()).hexdigest(),
-               'nativeWrites': False, 'projectOwnedCodeLicense': 'Apache-2.0',
-               'externalContentRedistributionRightsGranted': False,
+               'nativeWrites': False, 'projectCodeLicense': 'Apache-2.0',
+               'thirdPartyTermsPreserved': True, 'externalContentLicensed': False,
+               'visibilityChanged': False, 'releasePublished': False,
                'scope': 'Portable source and existing fallback assembler; no native qualification or content approval.'}
     (output / 'package.json').write_text(json.dumps(receipt, indent=2) + '\n')
     return receipt

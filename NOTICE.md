@@ -1,12 +1,17 @@
-# Licence, attribution and content boundary
+# Reuse and publication boundary
 
-Project-owned code is licensed under Apache-2.0; see the complete [LICENSE](LICENSE).
-Existing copyright and attribution notices are preserved. Upstream and third-party
-code, fixtures and dependencies retain their own applicable licences and notices;
-they are not relicensed by this repository.
+The repository contains portable implementation code and fictional fixtures,
+curated into a fresh history. Operational data, source-register layouts, native
+deployment adapters, bindings and delivery evidence are excluded.
 
-This code licence grants no redistribution rights over external standards,
-policies, manuscripts, datasets, private evidence or operational history. Those
-materials retain their existing rights and are excluded from the portable source
-package. Repository visibility, publication and native deployment remain separate
-from the code licence. Never commit credentials or protected operational content.
+Project-owned implementation code is licensed under Apache-2.0; the complete
+terms are in LICENSE. Existing copyright and attribution notices remain intact.
+Upstream and third-party material retains its applicable terms; this notice does
+not relabel it. The attributed pandas v2.2.3 fixture retains its BSD 3-Clause
+licence in tests/fixtures/LICENSE.pandas. DocumentFormat.OpenXml and other restored
+dependencies retain their own upstream licences and package notices.
+
+This code licence grants no rights over external documents, manuscripts, policies,
+datasets, private evidence or operational history. It authorises no visibility
+change, release publication, clinical approval or circulation. Keep credentials,
+personal records and protected source material outside Git.

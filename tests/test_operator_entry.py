@@ -195,6 +195,20 @@ class OperatorHandoffTests(unittest.TestCase):
 
 
 class OperatorEntryTests(unittest.TestCase):
+    def test_initiation_writers_explicitly_disable_transport_retries(self):
+        legacy = legacy_fixture()
+        nodes = flatten(legacy['properties']['definition']['actions'])
+        writers = {name: action for name, action in nodes.items()
+                   if action.get('type') == 'OpenApiConnection'
+                   and action['inputs']['parameters']['parameters/method'] != 'GET'}
+        self.assertEqual(set(writers), {'Create_request', 'Create_case'})
+        for action in writers.values():
+            self.assertEqual(action['inputs']['retryPolicy'], {'type': 'none'})
+        # Default composition retains the original initiation writers exactly.
+        composed = flatten(build(legacy)['properties']['definition']['actions'])
+        for name in ('Create_request', 'Create_case'):
+            self.assertEqual(composed[name]['inputs']['retryPolicy'], {'type': 'none'})
+
     def test_integrated_candidate_route_preserves_legacy_and_holds_before_writers(self):
         from test_native_completed_review import NativeCompletedReviewTests
         binding = NativeCompletedReviewTests().runtime_binding()

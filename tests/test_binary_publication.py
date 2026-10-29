@@ -66,6 +66,21 @@ class BinaryPublicationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             m.copy_fragment('https://example.invalid/sites/test', self.src, '/sites/test/isolated/FICTIONAL-issued.docx', '/sites/test/isolated', ref)
 
+    def test_copy_refuses_noncanonical_source_paths_before_creating_fragment(self):
+        for path in ('/sites/test/../other/prepared.docx',
+                     '/sites/test/folder\\prepared.docx'):
+            source = dict(self.src, DocumentReference='https://example.invalid' + path)
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                m.copy_fragment('https://example.invalid/sites/test', source,
+                    '/sites/test/isolated/FICTIONAL-issued.docx', '/sites/test/isolated', self.reference)
+
+    def test_copy_refuses_site_credentials_even_when_source_matches(self):
+        site = 'https://user:password@example.invalid/sites/test'
+        source = dict(self.src, DocumentReference=site + '/prepared.docx')
+        with self.assertRaises(ValueError):
+            m.copy_fragment(site, source, '/sites/test/isolated/FICTIONAL-issued.docx',
+                '/sites/test/isolated', self.reference)
+
     def test_actual_binary_bytes_required_and_opaque_tokens_not_parsed(self):
         proof = self.proof()
         self.assertTrue(proof['independentByteParity'])

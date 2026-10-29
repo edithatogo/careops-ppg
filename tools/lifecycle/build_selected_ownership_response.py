@@ -22,7 +22,8 @@ def build(context, target, binding, probe_only=False):
         'text_3': ('Evidence reference', 'Retained evidence supporting this fictional response.'),
         'text_4': ('Next action', 'What remains to do; no assignment or notification follows.'),
     }
-    row = definition['triggers']['manual']['inputs']['schema']['rows']['items']
+    schema = definition['triggers']['manual']['inputs']['schema']
+    row = schema.get('properties', schema)['rows']['items']
     row['properties'] = {k: {'title': title, 'description': description, 'type': 'string',
         'x-ms-dynamically-added': True, 'x-ms-content-hint': 'TEXT'} for k, (title, description) in fields.items()}
     row['required'] = list(fields)
@@ -113,6 +114,11 @@ def build(context, target, binding, probe_only=False):
         "if(equals(length(body('Read_response_history')?['value']),0),true,and(equals(length(body('Read_response_history')?['value']),1),equals(first(body('Read_response_history')?['value'])?['EventUID'],triggerBody()?['text'])))",
         "not(empty(outputs('Response_parent_before')?['headers']?['ETag']))",
         "not(equals(outputs('Response_parent_before')?['headers']?['ETag'],'*'))"]
+    # A favorable first page cannot establish a unique offer or empty history.
+    # Preserve current no-write holds instead of selecting from partial results.
+    checks += ["empty(body('" + name + "')?['" + marker + "'])"
+               for name in ('Read_current_offer', 'Read_response_history')
+               for marker in ('nextLink', '@nextLink', 'odata.nextLink', '@odata.nextLink', '__next')]
     keys = ['CaseUID', 'DocumentReference', 'ReviewedVersionRef', 'DocumentSHA256']
     checks += ["equals(" + parent + "?['" + k + "']," + context_ref + "?['scope']?['" + k + "'])" for k in keys]
     checks += ["equals(body('Response_parent_before')?['" + k + "']," + parent + "?['" + k + "'])" for k in keys + ['Id', 'EventUID', 'RecordState', 'EventKind', 'SubjectRole', 'FromRole', 'FictionalTest']]

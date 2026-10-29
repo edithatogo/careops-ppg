@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -11,6 +12,30 @@ spec=importlib.util.spec_from_file_location('workbench',Path(__file__).resolve()
 w=importlib.util.module_from_spec(spec);spec.loader.exec_module(w)
 
 class GuidedCLI(unittest.TestCase):
+    def test_draft_package_creates_editable_draft_and_preserves_edits(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            inputs = Path(tmp) / 'inputs.json'
+            output = Path(tmp) / 'draft.md'
+            template = w.ROOT / 'templates/review-package.md'
+            original = template.read_bytes()
+            fields = re.findall(r'\{\{([A-Za-z_][A-Za-z_0-9]*)\}\}', original.decode())
+            data = dict.fromkeys(fields, 'Not recorded')
+            data.update(case_title='Fictional CLI case', CaseUID='fictional-cli',
+                        source_snapshot='fictional-baseline', version='draft-1')
+            inputs.write_text(json.dumps(data))
+            arguments = ['draft-package', '--template', str(template),
+                         '--inputs', str(inputs), '--output', str(output)]
+            self.assertEqual(w.main(arguments), 0)
+            self.assertIn('Status: DRAFT / AWAITING REVIEW', output.read_text())
+            self.assertIn('Fictional CLI case', output.read_text())
+            self.assertNotIn('{{', output.read_text())
+            output.write_text('Retained human edit')
+            self.assertNotEqual(w.main(arguments), 0)
+            self.assertEqual(output.read_text(), 'Retained human edit')
+            self.assertEqual(template.read_bytes(), original)
+            self.assertEqual(json.loads(inputs.read_text()), data)
+
+
     def test_no_shell_and_literal_arguments(self):
         with patch.object(w.subprocess,'run',return_value=subprocess.CompletedProcess([],0)) as run:
             self.assertEqual(w.main(['lookup','--query','$(touch SHOULD_NOT_EXIST); literal']),0)

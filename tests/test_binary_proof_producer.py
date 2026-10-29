@@ -168,6 +168,13 @@ class ProducerTests(unittest.TestCase):
             with self.assertRaises(ValueError): self.inspect()
         self.t.inputs=original;self.t.receipt['publicationCreatedCount']=1
         with self.assertRaises(ValueError): self.inspect()
+    def test_boolean_effect_counts_do_not_qualify_first_copy(self):
+        original=copy.deepcopy(self.t.receipt)
+        for key in ('copyCreatedCount','publicationCreatedCount','caseWrites','sourceWrites','readinessWrites','purposeWrites','notifications'):
+            self.t.receipt=copy.deepcopy(original)
+            self.t.receipt[key]=True if key=='copyCreatedCount' else False
+            with self.subTest(key=key), self.assertRaises(ValueError):self.inspect()
+
     def test_complete_history_refuses_pagination(self):
         for marker in ('nextLink', '@nextLink', 'odata.nextLink', '@odata.nextLink'):
             with self.subTest(marker=marker):

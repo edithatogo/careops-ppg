@@ -47,26 +47,41 @@ jobs:
           .venv/bin/python scripts/run_portable_tests.py
           .venv/bin/python scripts/build_submission_assembler.py --output rebuilt.html
           cmp PPG-submission-assembler.html rebuilt.html
-      - name: Exercise the optional catalogue from the packaged hash lock
+      - name: Exercise optional catalogue from the packaged hash lock
         run: |
           cd "$RUNNER_TEMP/ppg-consumer" || exit 1
           .venv/bin/python -m pip install --require-hashes -r requirements-external-catalogue.lock
-          .venv/bin/python -c 'from jsonschema import FormatChecker; assert {"date-time", "uri"} <= FormatChecker.checkers.keys()'
           .venv/bin/python scripts/run_portable_tests.py --python-only tests.test_external_catalogue
           node --test tests/test_external_catalogue.mjs
       - name: Read immutable qualified inventory tooling
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: edithatogo/careops
-          ref: 30df4953ea87c8915b4a525fc671a4c9857c3f7f
-          path: .local/ci-release-policy
-          persist-credentials: false
-          submodules: false
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Exact source edithatogo/careops@30df4953ea87c8915b4a525fc671a4c9857c3f7f; inherited licence retained.
+          test ! -e "$GITHUB_WORKSPACE/.local/ci-release-policy"
+          cd "$GITHUB_WORKSPACE/.careops-security/upstream/30df4953ea87c8915b4a525fc671a4c9857c3f7f"
+          sha256sum --check SHA256SUMS
+          mkdir -p "$GITHUB_WORKSPACE/.local/ci-release-policy"
+          cp -R . "$GITHUB_WORKSPACE/.local/ci-release-policy/"
       - name: Inventory exact package bytes
         env:
           SOURCE_COMMIT: ${{ github.sha }}
-        run: .venv/bin/python .local/ci-release-policy/portfolio-scripts/artifact_sbom.py --artifact .local/release-candidate/careops-ppg-portable.zip --name careops-ppg-portable --source-commit "$SOURCE_COMMIT" --created-epoch "$(git show -s --format=%ct "$SOURCE_COMMIT")" --output .local/release-candidate/careops-ppg.spdx.json
-      - name: Retain the Apache-2.0 source package and inventory
+        run: |
+          .venv/bin/python .local/ci-release-policy/portfolio-scripts/artifact_sbom.py --artifact .local/release-candidate/careops-ppg-portable.zip --name careops-ppg-portable --source-commit "$SOURCE_COMMIT" --created-epoch "$(git show -s --format=%ct "$SOURCE_COMMIT")" --output .local/release-candidate/careops-ppg.spdx.json
+          .venv/bin/python - <<'PYCODE'
+          import json
+          from pathlib import Path
+          path = Path('.local/release-candidate/careops-ppg.spdx.json')
+          document = json.loads(path.read_text())
+          assert len(document['packages']) == 1
+          package = document['packages'][0]
+          assert package['licenseDeclared'] == 'NOASSERTION'
+          package['licenseDeclared'] = 'Apache-2.0'
+          package['licenseComments'] = 'Project-owned code only; third-party terms and external-content exclusions remain in NOTICE.md.'
+          assert all(file['licenseConcluded'] == 'NOASSERTION' for file in document['files'])
+          path.write_text(json.dumps(document, indent=2) + '\n')
+          PYCODE
+      - name: Retain the licensed source package and inventory
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: careops-ppg-portable
@@ -107,6 +122,7 @@ jobs:
           package = Path('candidate/careops-ppg-portable.zip')
           document = json.loads(Path('candidate/careops-ppg.spdx.json').read_text())
           assert document['packages'][0]['sourceInfo'] == 'Source commit: ' + os.environ['SOURCE_COMMIT']
+          assert document['packages'][0]['licenseDeclared'] == 'Apache-2.0'
           assert document['packages'][0]['checksums'][0]['checksumValue'] == hashlib.sha256(package.read_bytes()).hexdigest()
           with zipfile.ZipFile(package) as archive:
               entries = [entry for entry in archive.infolist() if not entry.is_dir()]

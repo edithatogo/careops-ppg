@@ -4,6 +4,7 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools/lifecycle'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_prepared_readiness_check import build_actions
 from build_selected_event_routes import audit_actions
 from test_selected_event_routes import fixtures
@@ -16,6 +17,24 @@ class PreparedReadinessTests(unittest.TestCase):
             'readinessCollectionUri': "_api/web/lists(guid'00000000-0000-4000-8000-000000000009')/items",
             'consultationCollectionUri': "_api/web/lists/getbytitle('PPG Consultation and Handoff Events')/items",
             'requiredFictionalRoles': ['FICTIONAL content-review role']}
+
+    def test_all_native_finding_and_condition_choices_preserve_readiness_gate(self):
+        from test_prepared_closure_check import Expressions
+        graph = build_actions(self.context, self.binding)['Check_prepared_readiness']['actions']
+        expression = graph['Readiness_finding_consistent']['inputs']
+        row = {'Id':1, 'GUID':'fictional-native-row', 'odata.etag':'"1"',
+               'EventUID':'FICTIONAL-readiness-matrix', 'FictionalTest':True,
+               'AssessorName':'FICTIONAL technical fixture', 'AssessedOn':'2026-01-01T00:00:00Z',
+               'FindingSummary':'Declared fictional test; no human assessment',
+               'EvidenceReference':'fixture:readiness-matrix', 'SupersedesEventUID':None}
+        for finding in ['Not assessed','Needs changes','Ready for decision','Not applicable']:
+            for condition in ['Unknown','None recorded','Open','Resolved']:
+                selected = {**row,'Finding':finding,'ConditionsState':condition}
+                bodies = {'Readiness_scope':[selected], 'Readiness_identity_rows':[selected],
+                          'Readiness_superseders':[]}
+                with self.subTest(finding=finding, condition=condition):
+                    self.assertEqual(Expressions(bodies).evaluate(expression),
+                        finding == 'Ready for decision' and condition in ['None recorded','Resolved'])
 
     def test_no_connector_effect_or_form_pin_enters_observer(self):
         before = copy.deepcopy((self.context, self.binding))
