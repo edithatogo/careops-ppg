@@ -1,0 +1,189 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {}
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {},
+              "required": []
+            }
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Metadata_before": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/GetFileById('__PPG_INSTALL_00271__')?$select=UniqueId,Name,Length,ETag,MajorVersion,MinorVersion,TimeLastModified,ServerRelativeUrl",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "HttpRequest",
+              "connectionName": "shared_sharepointonline"
+            },
+            "retryPolicy": {
+              "type": "none"
+            }
+          }
+        },
+        "Require_expected_source": {
+          "actions": {},
+          "runAfter": {
+            "Metadata_before": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_SOURCE_PIN": {
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "SOURCE_PIN",
+                    "message": "Selected source pin changed or is incomplete; no accepted result."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(equals(toLower(string(body('Metadata_before')?['UniqueId'])),'__PPG_INSTALL_00271__'),equals(string(body('Metadata_before')?['Name']),'ce-source-20261022-r2-edition-one.txt'),equals(string(body('Metadata_before')?['Length']),'220'),equals(string(body('Metadata_before')?['ETag']),'\"{__PPG_INSTALL_00272__},1\"'),equals(string(body('Metadata_before')?['MajorVersion']),'1'),equals(string(body('Metadata_before')?['MinorVersion']),'0'),equals(string(body('Metadata_before')?['TimeLastModified']),'2026-10-22T11:49:01Z'),equals(string(body('Metadata_before')?['ServerRelativeUrl']),'__PPG_INSTALL_00084__/PPG-unattended-qualification/ce-source-20261022-r2-edition-one.txt'))",
+                  "@bool('true')"
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Read_content": {
+          "runAfter": {
+            "Require_expected_source": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "/PPG Review Evidence/PPG-unattended-qualification/ce-source-20261022-r2-edition-one.txt",
+              "inferContentType": false
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "GetFileContentByPath",
+              "connectionName": "shared_sharepointonline"
+            },
+            "retryPolicy": {
+              "type": "none"
+            }
+          }
+        },
+        "Metadata_after": {
+          "runAfter": {
+            "Read_content": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/GetFileById('__PPG_INSTALL_00271__')?$select=UniqueId,Name,Length,ETag,MajorVersion,MinorVersion,TimeLastModified,ServerRelativeUrl",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "HttpRequest",
+              "connectionName": "shared_sharepointonline"
+            },
+            "retryPolicy": {
+              "type": "none"
+            }
+          }
+        },
+        "Require_unchanged_source": {
+          "actions": {},
+          "runAfter": {
+            "Metadata_after": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_SOURCE_CHANGED": {
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "SOURCE_CHANGED",
+                    "message": "Selected source pin changed or is incomplete; no accepted result."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(equals(toLower(string(body('Metadata_after')?['UniqueId'])),'__PPG_INSTALL_00271__'),equals(string(body('Metadata_after')?['Name']),'ce-source-20261022-r2-edition-one.txt'),equals(string(body('Metadata_after')?['Length']),'220'),equals(string(body('Metadata_after')?['ETag']),'\"{__PPG_INSTALL_00272__},1\"'),equals(string(body('Metadata_after')?['MajorVersion']),'1'),equals(string(body('Metadata_after')?['MinorVersion']),'0'),equals(string(body('Metadata_after')?['TimeLastModified']),'2026-10-22T11:49:01Z'),equals(string(body('Metadata_after')?['ServerRelativeUrl']),'__PPG_INSTALL_00084__/PPG-unattended-qualification/ce-source-20261022-r2-edition-one.txt'))",
+                  "@bool('true')"
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Selected_source_result": {
+          "runAfter": {
+            "Require_unchanged_source": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@setProperty(setProperty(json('{\"schemaVersion\":1,\"sourceId\":\"edition-one\",\"canonicalUrl\":\"__PPG_INSTALL_00133__ Review Evidence/PPG-unattended-qualification/ce-source-20261022-r2-edition-one.txt\",\"nativeUniqueId\":\"__PPG_INSTALL_00271__\",\"nativeVersionRef\":\"1.0\",\"nativePin\":{\"UniqueId\":\"__PPG_INSTALL_00271__\",\"Name\":\"ce-source-20261022-r2-edition-one.txt\",\"Length\":\"220\",\"ETag\":\"\\\"{__PPG_INSTALL_00272__},1\\\"\",\"MajorVersion\":\"1\",\"MinorVersion\":\"0\",\"TimeLastModified\":\"2026-10-22T11:49:01Z\",\"ServerRelativeUrl\":\"__PPG_INSTALL_00084__/PPG-unattended-qualification/ce-source-20261022-r2-edition-one.txt\"},\"authorityLabel\":\"captured-reference-unconfirmed\",\"contentBoundary\":\"Opaque native connector content; no extracted-text or citation-locator claim.\",\"sha256\":null,\"binarySHA256\":null,\"textExtractionQualified\":false,\"nativeAssistantRuntimeQualified\":false,\"status\":\"selected-source-read\"}'),'retrievedAtUtc',utcNow()),'content',body('Read_content'))"
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,620 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {}
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "title": "Capture or Reconcile",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT",
+                  "enum": [
+                    "Capture",
+                    "Reconcile"
+                  ]
+                },
+                "sourceId": {
+                  "type": "string",
+                  "title": "Procedure section item ID (Capture)",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                },
+                "contextKey": {
+                  "type": "string",
+                  "title": "New review snapshot name (Capture)",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                },
+                "contextId": {
+                  "type": "string",
+                  "title": "Review context item ID (Reconcile)",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                },
+                "guideRevision": {
+                  "type": "string",
+                  "title": "New guide revision (Reconcile)",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                },
+                "guideText": {
+                  "type": "string",
+                  "title": "Complete reconciled guide text (Reconcile)",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                },
+                "rationale": {
+                  "type": "string",
+                  "title": "Reason and reconciliation notes (Reconcile)",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "mode"
+              ]
+            }
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Initialise_anchor": {
+          "runAfter": {},
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "AnchorId",
+                "type": "integer",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "Resolve_mode": {
+          "actions": {
+            "Set_capture_anchor": {
+              "runAfter": {},
+              "type": "SetVariable",
+              "inputs": {
+                "name": "AnchorId",
+                "value": "@int(triggerBody()?['sourceId'])"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialise_anchor": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Read_context": {
+                "runAfter": {},
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "HttpRequest"
+                  },
+                  "parameters": {
+                    "dataset": "__PPG_INSTALL_00101__",
+                    "parameters/method": "GET",
+                    "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00047__'')/items(', string(int(triggerBody()?['contextId'])), ')')",
+                    "parameters/headers": {
+                      "Accept": "application/json;odata=nometadata"
+                    }
+                  },
+                  "retryPolicy": {
+                    "type": "none"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                }
+              },
+              "Set_context_anchor": {
+                "runAfter": {
+                  "Read_context": [
+                    "Succeeded"
+                  ]
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "AnchorId",
+                  "value": "@int(body('Read_context')?['SourceAnchorId'])"
+                }
+              }
+            }
+          },
+          "expression": "@equals(triggerBody()?['mode'],'Capture')",
+          "type": "If"
+        },
+        "Read_anchor": {
+          "runAfter": {
+            "Resolve_mode": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00087__'')/items(', string(variables('AnchorId')), ')')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_sections": {
+          "runAfter": {
+            "Read_anchor": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00087__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Filter_sections": {
+          "runAfter": {
+            "Read_sections": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Read_sections')?['value']",
+            "where": "@and(equals(item()?['DocumentUID'],body('Read_anchor')?['DocumentUID']),equals(item()?['ProposalRevision'],body('Read_anchor')?['ProposalRevision']))"
+          }
+        },
+        "Snapshot": {
+          "runAfter": {
+            "Filter_sections": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Filter_sections')",
+            "select": {
+              "Id": "@item()?['Id']",
+              "SectionKey": "@item()?['SectionKey']",
+              "SectionId": "@item()?['SectionId']",
+              "Title": "@item()?['Title']",
+              "Text": "@item()?['ProposedText']",
+              "Definition": "@item()?['SectionJSON']",
+              "ModuleKind": "@item()?['ModuleKind']",
+              "TemplateHeading": "@item()?['TemplateHeading']",
+              "Version": "@coalesce(item()?['OData__UIVersionString'],item()?['_UIVersionString'])"
+            }
+          }
+        },
+        "Review_lines": {
+          "runAfter": {
+            "Snapshot": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Snapshot')",
+            "select": "@concat(item()?['Title'],' [',string(item()?['Version']),']',decodeUriComponent('%0A'),item()?['Text'])"
+          }
+        },
+        "Validate_snapshot": {
+          "actions": {
+            "Choose_operation": {
+              "actions": {
+                "Validate_capture": {
+                  "actions": {
+                    "Read_existing_contexts": {
+                      "runAfter": {},
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "HttpRequest"
+                        },
+                        "parameters": {
+                          "dataset": "__PPG_INSTALL_00101__",
+                          "parameters/method": "GET",
+                          "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00047__')/items?$top=5000",
+                          "parameters/headers": {
+                            "Accept": "application/json;odata=nometadata"
+                          }
+                        },
+                        "retryPolicy": {
+                          "type": "none"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    },
+                    "Match_context": {
+                      "runAfter": {
+                        "Read_existing_contexts": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@body('Read_existing_contexts')?['value']",
+                        "where": "@equals(item()?['ContextKey'],triggerBody()?['contextKey'])"
+                      }
+                    },
+                    "Create_or_reuse_context": {
+                      "actions": {
+                        "Safe_Create_or_reuse_context": {
+                          "actions": {
+                            "Create_context": {
+                              "runAfter": {},
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                  "connectionName": "shared_sharepointonline",
+                                  "operationId": "HttpRequest"
+                                },
+                                "parameters": {
+                                  "dataset": "__PPG_INSTALL_00101__",
+                                  "parameters/method": "POST",
+                                  "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00047__')/items",
+                                  "parameters/headers": {
+                                    "Accept": "application/json;odata=nometadata",
+                                    "Content-Type": "application/json;odata=nometadata"
+                                  },
+                                  "parameters/body": {
+                                    "Title": "@triggerBody()?['contextKey']",
+                                    "ContextKey": "@triggerBody()?['contextKey']",
+                                    "SourceAnchorId": "@variables('AnchorId')",
+                                    "DocumentUID": "@body('Read_anchor')?['DocumentUID']",
+                                    "ProposalRevision": "@body('Read_anchor')?['ProposalRevision']",
+                                    "SnapshotJSON": "@string(body('Snapshot'))",
+                                    "SourceReviewText": "@join(body('Review_lines'),decodeUriComponent('%0A%0A'))"
+                                  }
+                                },
+                                "retryPolicy": {
+                                  "type": "none"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                              }
+                            }
+                          },
+                          "runAfter": {},
+                          "else": {
+                            "actions": {
+                              "Check_existing_context": {
+                                "actions": {
+                                  "Context_reused": {
+                                    "runAfter": {},
+                                    "type": "Compose",
+                                    "inputs": "Existing matching context retained"
+                                  }
+                                },
+                                "runAfter": {},
+                                "else": {
+                                  "actions": {
+                                    "Hold_context": {
+                                      "runAfter": {},
+                                      "type": "Terminate",
+                                      "inputs": {
+                                        "runStatus": "Failed",
+                                        "runError": {
+                                          "code": "ReconciliationHeld",
+                                          "message": "Context key already exists with different evidence; choose a new snapshot name"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "expression": "@and(equals(length(body('Match_context')),1),equals(first(body('Match_context'))?['SnapshotJSON'],string(body('Snapshot'))))",
+                                "type": "If"
+                              }
+                            }
+                          },
+                          "expression": "@equals(length(body('Match_context')),0)",
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {
+                        "Match_context": [
+                          "Succeeded"
+                        ]
+                      },
+                      "else": {
+                        "actions": {
+                          "Hold_Create_or_reuse_context": {
+                            "runAfter": {},
+                            "type": "Terminate",
+                            "inputs": {
+                              "runStatus": "Failed",
+                              "runError": {
+                                "code": "ReconciliationHeld",
+                                "message": "Partial existing-output inventory"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "expression": "@and(less(length(body('Read_existing_contexts')?['value']),5000),empty(body('Read_existing_contexts')?['odata.nextLink']),empty(body('Read_existing_contexts')?['@odata.nextLink']))",
+                      "type": "If"
+                    }
+                  },
+                  "runAfter": {},
+                  "else": {
+                    "actions": {
+                      "Hold_capture": {
+                        "runAfter": {},
+                        "type": "Terminate",
+                        "inputs": {
+                          "runStatus": "Failed",
+                          "runError": {
+                            "code": "ReconciliationHeld",
+                            "message": "Snapshot name required, maximum 100 characters"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": "@and(not(empty(trim(coalesce(triggerBody()?['contextKey'],'')))),lessOrEquals(length(triggerBody()?['contextKey']),100))",
+                  "type": "If"
+                }
+              },
+              "runAfter": {},
+              "else": {
+                "actions": {
+                  "Validate_reconciliation": {
+                    "actions": {
+                      "Guide_key": {
+                        "runAfter": {},
+                        "type": "Compose",
+                        "inputs": "@concat(string(body('Read_context')?['Id']),':',triggerBody()?['guideRevision'])"
+                      },
+                      "Read_existing_guides": {
+                        "runAfter": {
+                          "Guide_key": [
+                            "Succeeded"
+                          ]
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                            "connectionName": "shared_sharepointonline",
+                            "operationId": "HttpRequest"
+                          },
+                          "parameters": {
+                            "dataset": "__PPG_INSTALL_00101__",
+                            "parameters/method": "GET",
+                            "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00057__')/items?$top=5000",
+                            "parameters/headers": {
+                              "Accept": "application/json;odata=nometadata"
+                            }
+                          },
+                          "retryPolicy": {
+                            "type": "none"
+                          },
+                          "authentication": "@parameters('$authentication')"
+                        }
+                      },
+                      "Match_guide": {
+                        "runAfter": {
+                          "Read_existing_guides": [
+                            "Succeeded"
+                          ]
+                        },
+                        "type": "Query",
+                        "inputs": {
+                          "from": "@body('Read_existing_guides')?['value']",
+                          "where": "@equals(item()?['GuideKey'],outputs('Guide_key'))"
+                        }
+                      },
+                      "Create_or_reuse_guide": {
+                        "actions": {
+                          "Safe_Create_or_reuse_guide": {
+                            "actions": {
+                              "Create_guide": {
+                                "runAfter": {},
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                    "connectionName": "shared_sharepointonline",
+                                    "operationId": "HttpRequest"
+                                  },
+                                  "parameters": {
+                                    "dataset": "__PPG_INSTALL_00101__",
+                                    "parameters/method": "POST",
+                                    "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00057__')/items",
+                                    "parameters/headers": {
+                                      "Accept": "application/json;odata=nometadata",
+                                      "Content-Type": "application/json;odata=nometadata"
+                                    },
+                                    "parameters/body": {
+                                      "Title": "@concat('UNAPPROVED ',triggerBody()?['guideRevision'])",
+                                      "GuideKey": "@outputs('Guide_key')",
+                                      "ContextId": "@body('Read_context')?['Id']",
+                                      "GuideRevision": "@triggerBody()?['guideRevision']",
+                                      "GuideText": "@triggerBody()?['guideText']",
+                                      "Rationale": "@triggerBody()?['rationale']",
+                                      "DocumentUID": "@body('Read_anchor')?['DocumentUID']",
+                                      "ProposalRevision": "@body('Read_anchor')?['ProposalRevision']",
+                                      "SnapshotJSON": "@string(body('Snapshot'))"
+                                    }
+                                  },
+                                  "retryPolicy": {
+                                    "type": "none"
+                                  },
+                                  "authentication": "@parameters('$authentication')"
+                                }
+                              }
+                            },
+                            "runAfter": {},
+                            "else": {
+                              "actions": {
+                                "Verify_existing_guide": {
+                                  "actions": {
+                                    "Guide_reused": {
+                                      "runAfter": {},
+                                      "type": "Compose",
+                                      "inputs": "Matching guide revision retained; no write"
+                                    }
+                                  },
+                                  "runAfter": {},
+                                  "else": {
+                                    "actions": {
+                                      "Hold_guide": {
+                                        "runAfter": {},
+                                        "type": "Terminate",
+                                        "inputs": {
+                                          "runStatus": "Failed",
+                                          "runError": {
+                                            "code": "ReconciliationHeld",
+                                            "message": "Guide revision exists with different content; preserve edits and choose a new revision"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "expression": "@and(equals(length(body('Match_guide')),1),equals(first(body('Match_guide'))?['GuideText'],triggerBody()?['guideText']),equals(first(body('Match_guide'))?['Rationale'],triggerBody()?['rationale']),equals(first(body('Match_guide'))?['SnapshotJSON'],string(body('Snapshot'))))",
+                                  "type": "If"
+                                }
+                              }
+                            },
+                            "expression": "@equals(length(body('Match_guide')),0)",
+                            "type": "If"
+                          }
+                        },
+                        "runAfter": {
+                          "Match_guide": [
+                            "Succeeded"
+                          ]
+                        },
+                        "else": {
+                          "actions": {
+                            "Hold_Create_or_reuse_guide": {
+                              "runAfter": {},
+                              "type": "Terminate",
+                              "inputs": {
+                                "runStatus": "Failed",
+                                "runError": {
+                                  "code": "ReconciliationHeld",
+                                  "message": "Partial existing-output inventory"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "expression": "@and(less(length(body('Read_existing_guides')?['value']),5000),empty(body('Read_existing_guides')?['odata.nextLink']),empty(body('Read_existing_guides')?['@odata.nextLink']))",
+                        "type": "If"
+                      }
+                    },
+                    "runAfter": {},
+                    "else": {
+                      "actions": {
+                        "Hold_reconciliation": {
+                          "runAfter": {},
+                          "type": "Terminate",
+                          "inputs": {
+                            "runStatus": "Failed",
+                            "runError": {
+                              "code": "ReconciliationHeld",
+                              "message": "Source changed or guide revision/text/rationale missing; capture a fresh review snapshot"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "expression": "@and(equals(triggerBody()?['mode'],'Reconcile'),equals(body('Read_context')?['DocumentUID'],body('Read_anchor')?['DocumentUID']),equals(body('Read_context')?['ProposalRevision'],body('Read_anchor')?['ProposalRevision']),equals(body('Read_context')?['SnapshotJSON'],string(body('Snapshot'))),not(empty(trim(coalesce(triggerBody()?['guideRevision'],'')))),lessOrEquals(length(triggerBody()?['guideRevision']),100),not(empty(trim(coalesce(triggerBody()?['guideText'],'')))),not(empty(trim(coalesce(triggerBody()?['rationale'],'')))))",
+                    "type": "If"
+                  }
+                }
+              },
+              "expression": "@equals(triggerBody()?['mode'],'Capture')",
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Review_lines": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Hold_snapshot": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "ReconciliationHeld",
+                    "message": "Missing/partial/oversized source snapshot; no output created"
+                  }
+                }
+              }
+            }
+          },
+          "expression": "@and(not(empty(body('Snapshot'))),less(length(body('Read_sections')?['value']),5000),empty(body('Read_sections')?['odata.nextLink']),empty(body('Read_sections')?['@odata.nextLink']),lessOrEquals(length(string(body('Snapshot'))),60000))",
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

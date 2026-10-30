@@ -1,0 +1,451 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {},
+      "shared_excelonlinebusiness": {}
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "documentUID": {
+                  "type": "string",
+                  "title": "Document UID",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                },
+                "documentVersion": {
+                  "type": "string",
+                  "title": "Document version",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "documentUID",
+                "documentVersion"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Read_frameworks": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00041__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_requirements": {
+          "runAfter": {
+            "Read_frameworks": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00091__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_mappings": {
+          "runAfter": {
+            "Read_requirements": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00095__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_crosswalks": {
+          "runAfter": {
+            "Read_mappings": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00065__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_relationships": {
+          "runAfter": {
+            "Read_crosswalks": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00025__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_catalogue": {
+          "runAfter": {
+            "Read_relationships": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Validation_request": {
+          "runAfter": {
+            "Read_catalogue": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "kind": "ppg-standards-context-v1",
+            "native": {
+              "frameworks": "@body('Read_frameworks')",
+              "requirements": "@body('Read_requirements')",
+              "mappings": "@body('Read_mappings')",
+              "crosswalks": "@body('Read_crosswalks')",
+              "relationships": "@body('Read_relationships')",
+              "catalogue": "@body('Read_catalogue')"
+            },
+            "documentUID": "@triggerBody()?['documentUID']",
+            "documentVersion": "@triggerBody()?['documentVersion']"
+          }
+        },
+        "Run_standards_check": {
+          "runAfter": {
+            "Validation_request": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+              "connectionName": "shared_excelonlinebusiness",
+              "operationId": "RunScriptProdV2"
+            },
+            "parameters": {
+              "source": "__PPG_INSTALL_00101__",
+              "drive": "__PPG_INSTALL_00190__",
+              "file": "__PPG_INSTALL_00257__",
+              "scriptSource": "__PPG_INSTALL_00101__",
+              "scriptDrive": "__PPG_INSTALL_00190__",
+              "scriptId": "01JB7U52DD4NQFRMUCOVEIV7P2BBWXBSMC",
+              "ScriptParameters/requestJson": "@string(outputs('Validation_request'))"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Parsed_context": {
+          "runAfter": {
+            "Run_standards_check": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@json(body('Run_standards_check')?['result'])"
+        },
+        "Recheck_frameworks": {
+          "runAfter": {
+            "Parsed_context": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00041__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Recheck_requirements": {
+          "runAfter": {
+            "Recheck_frameworks": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00091__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Recheck_mappings": {
+          "runAfter": {
+            "Recheck_requirements": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00095__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Recheck_crosswalks": {
+          "runAfter": {
+            "Recheck_mappings": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00065__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Recheck_relationships": {
+          "runAfter": {
+            "Recheck_crosswalks": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00025__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Recheck_catalogue": {
+          "runAfter": {
+            "Recheck_relationships": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Source_snapshot_stable": {
+          "actions": {
+            "Report_context": {
+              "runAfter": {},
+              "type": "Compose",
+              "inputs": {
+                "context": "@outputs('Parsed_context')",
+                "scriptSHA256": "__PPG_INSTALL_00276__",
+                "contractSHA256": "__PPG_INSTALL_00277__",
+                "nativeWrites": 0,
+                "notificationsEnabled": false
+              }
+            }
+          },
+          "runAfter": {
+            "Recheck_catalogue": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Hold_changed_source": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "StandardsSourceChanged",
+                    "message": "Standards or catalogue changed during validation. No record changed; inspect and run a fresh check."
+                  }
+                }
+              }
+            }
+          },
+          "expression": "@and(equals(body('Read_frameworks'),body('Recheck_frameworks')),equals(body('Read_requirements'),body('Recheck_requirements')),equals(body('Read_mappings'),body('Recheck_mappings')),equals(body('Read_crosswalks'),body('Recheck_crosswalks')),equals(body('Read_relationships'),body('Recheck_relationships')),equals(body('Read_catalogue'),body('Recheck_catalogue')))",
+          "type": "If"
+        },
+        "Relationship_recheck_summary": {
+          "runAfter": {
+            "Source_snapshot_stable": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "documentUID": "@triggerBody()?['documentUID']",
+            "requestedVersion": "@triggerBody()?['documentVersion']",
+            "outgoingDependencies": "@length(outputs('Parsed_context')?['outgoingDependencies'])",
+            "incomingDependencies": "@length(outputs('Parsed_context')?['incomingDependencies'])",
+            "otherEditionLinks": "@length(outputs('Parsed_context')?['otherEditionLinks'])",
+            "recheckRequired": "@outputs('Parsed_context')?['recheckRequired']",
+            "directAccepted": "@length(outputs('Parsed_context')?['directAccepted'])",
+            "currentAuthorityVerified": false,
+            "productionRecordWrites": 0
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

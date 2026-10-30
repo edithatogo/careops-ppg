@@ -1,0 +1,762 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {},
+      "shared_excelonlinebusiness": {}
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "asOf": {
+                  "type": "string",
+                  "title": "As-of date (YYYY-MM-DD)",
+                  "description": "Explicit Gregorian date; historical appointments and decisions are preserved.",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "asOf"
+              ]
+            }
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Read_roles": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00053__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_assignments": {
+          "runAfter": {
+            "Read_roles": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00067__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_appointments": {
+          "runAfter": {
+            "Read_assignments": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00085__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_handovers": {
+          "runAfter": {
+            "Read_appointments": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00069__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Projection_request": {
+          "runAfter": {
+            "Read_handovers": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "kind": "ppg-role-projection-v1",
+            "asOf": "@triggerBody()?['asOf']",
+            "native": {
+              "roles": "@body('Read_roles')",
+              "assignments": "@body('Read_assignments')",
+              "appointments": "@body('Read_appointments')",
+              "handovers": "@body('Read_handovers')"
+            },
+            "scriptSHA256": "__PPG_INSTALL_00254__",
+            "roleContractSHA256": "__PPG_INSTALL_00255__"
+          }
+        },
+        "Run_role_projection": {
+          "runAfter": {
+            "Projection_request": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+              "connectionName": "shared_excelonlinebusiness",
+              "operationId": "RunScriptProdV2"
+            },
+            "parameters": {
+              "source": "__PPG_INSTALL_00101__",
+              "drive": "__PPG_INSTALL_00190__",
+              "file": "__PPG_INSTALL_00252__",
+              "scriptSource": "__PPG_INSTALL_00101__",
+              "scriptDrive": "__PPG_INSTALL_00190__",
+              "scriptId": "__PPG_INSTALL_00253__",
+              "ScriptParameters/requestJson": "@string(outputs('Projection_request'))"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Parsed_projection": {
+          "runAfter": {
+            "Run_role_projection": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@json(body('Run_role_projection')?['result'])"
+        },
+        "Recheck_roles": {
+          "runAfter": {
+            "Initialise_snapshot_conflict": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00053__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Recheck_assignments": {
+          "runAfter": {
+            "Recheck_roles": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00067__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Recheck_appointments": {
+          "runAfter": {
+            "Recheck_assignments": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00085__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Recheck_handovers": {
+          "runAfter": {
+            "Recheck_appointments": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00069__')/items?$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Source_snapshot_stable": {
+          "actions": {
+            "Preflight_snapshots": {
+              "foreach": "@outputs('Parsed_projection')?['records']",
+              "actions": {
+                "Lookup_preflight": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00071__'')/items?$top=2&$filter=SnapshotKey eq ''', items('Preflight_snapshots')?['SnapshotKey'], '''')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Existing_or_absent": {
+                  "actions": {},
+                  "runAfter": {
+                    "Lookup_preflight": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Validate_existing": {
+                        "actions": {
+                          "Compare_Preflight_snapshots": {
+                            "actions": {
+                              "Exact_Preflight_snapshots": {
+                                "runAfter": {},
+                                "type": "Compose",
+                                "inputs": "Exact snapshot"
+                              }
+                            },
+                            "runAfter": {},
+                            "else": {
+                              "actions": {
+                                "Flag_edited_Preflight_snapshots": {
+                                  "runAfter": {},
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "SnapshotConflict",
+                                    "value": true
+                                  }
+                                }
+                              }
+                            },
+                            "expression": "@and(equals(length(body('Lookup_preflight')?['value']),1),and(equals(first(body('Lookup_preflight')?['value'])?['Title'],items('Preflight_snapshots')?['Title']),equals(first(body('Lookup_preflight')?['value'])?['SnapshotKey'],items('Preflight_snapshots')?['SnapshotKey']),equals(first(body('Lookup_preflight')?['value'])?['RunKey'],items('Preflight_snapshots')?['RunKey']),equals(first(body('Lookup_preflight')?['value'])?['AsOfDate'],items('Preflight_snapshots')?['AsOfDate']),equals(first(body('Lookup_preflight')?['value'])?['SourceSHA256'],items('Preflight_snapshots')?['SourceSHA256']),equals(first(body('Lookup_preflight')?['value'])?['DocumentUID'],items('Preflight_snapshots')?['DocumentUID']),equals(first(body('Lookup_preflight')?['value'])?['AssignmentKey'],items('Preflight_snapshots')?['AssignmentKey']),equals(first(body('Lookup_preflight')?['value'])?['RoleKey'],items('Preflight_snapshots')?['RoleKey']),equals(first(body('Lookup_preflight')?['value'])?['ResponsibilityType'],items('Preflight_snapshots')?['ResponsibilityType']),equals(first(body('Lookup_preflight')?['value'])?['HolderKey'],items('Preflight_snapshots')?['HolderKey']),equals(first(body('Lookup_preflight')?['value'])?['ResolutionState'],items('Preflight_snapshots')?['ResolutionState']),equals(first(body('Lookup_preflight')?['value'])?['Projection'],items('Preflight_snapshots')?['Projection']),equals(first(body('Lookup_preflight')?['value'])?['SourceManifest'],items('Preflight_snapshots')?['SourceManifest'])))",
+                            "type": "If"
+                          }
+                        },
+                        "runAfter": {},
+                        "else": {
+                          "actions": {
+                            "Flag_cardinality_Preflight_snapshots": {
+                              "runAfter": {},
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "SnapshotConflict",
+                                "value": true
+                              }
+                            }
+                          }
+                        },
+                        "expression": "@equals(length(body('Lookup_preflight')?['value']),1)",
+                        "type": "If"
+                      }
+                    }
+                  },
+                  "expression": "@equals(length(body('Lookup_preflight')?['value']),0)",
+                  "type": "If"
+                }
+              },
+              "runAfter": {},
+              "type": "Foreach",
+              "runtimeConfiguration": {
+                "concurrency": {
+                  "repetitions": 1
+                }
+              }
+            },
+            "Preflight_snapshots_exact": {
+              "actions": {
+                "Persist_snapshots": {
+                  "foreach": "@outputs('Parsed_projection')?['records']",
+                  "actions": {
+                    "Continue_if_exact": {
+                      "actions": {
+                        "Lookup_snapshot": {
+                          "runAfter": {},
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "HttpRequest"
+                            },
+                            "parameters": {
+                              "dataset": "__PPG_INSTALL_00101__",
+                              "parameters/method": "GET",
+                              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00071__'')/items?$top=2&$filter=SnapshotKey eq ''', items('Persist_snapshots')?['SnapshotKey'], '''')",
+                              "parameters/headers": {
+                                "Accept": "application/json;odata=nometadata"
+                              }
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        },
+                        "Create_if_absent": {
+                          "actions": {
+                            "Create_snapshot": {
+                              "runAfter": {},
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                  "connectionName": "shared_sharepointonline",
+                                  "operationId": "HttpRequest"
+                                },
+                                "parameters": {
+                                  "dataset": "__PPG_INSTALL_00101__",
+                                  "parameters/method": "POST",
+                                  "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00071__')/items",
+                                  "parameters/headers": {
+                                    "Accept": "application/json;odata=nometadata",
+                                    "Content-Type": "application/json;odata=nometadata"
+                                  },
+                                  "parameters/body": "@string(items('Persist_snapshots'))"
+                                },
+                                "retryPolicy": {
+                                  "type": "none"
+                                },
+                                "authentication": "@parameters('$authentication')"
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Lookup_snapshot": [
+                              "Succeeded"
+                            ]
+                          },
+                          "else": {
+                            "actions": {}
+                          },
+                          "expression": "@equals(length(body('Lookup_snapshot')?['value']),0)",
+                          "type": "If"
+                        },
+                        "Read_saved_snapshot": {
+                          "runAfter": {
+                            "Create_if_absent": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                              "connectionName": "shared_sharepointonline",
+                              "operationId": "HttpRequest"
+                            },
+                            "parameters": {
+                              "dataset": "__PPG_INSTALL_00101__",
+                              "parameters/method": "GET",
+                              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00071__'')/items?$top=2&$filter=SnapshotKey eq ''', items('Persist_snapshots')?['SnapshotKey'], '''')",
+                              "parameters/headers": {
+                                "Accept": "application/json;odata=nometadata"
+                              }
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        },
+                        "Verify_saved_snapshot": {
+                          "actions": {
+                            "Compare_Persist_snapshots": {
+                              "actions": {
+                                "Exact_Persist_snapshots": {
+                                  "runAfter": {},
+                                  "type": "Compose",
+                                  "inputs": "Exact snapshot"
+                                }
+                              },
+                              "runAfter": {},
+                              "else": {
+                                "actions": {
+                                  "Flag_edited_Persist_snapshots": {
+                                    "runAfter": {},
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                      "name": "SnapshotConflict",
+                                      "value": true
+                                    }
+                                  }
+                                }
+                              },
+                              "expression": "@and(equals(length(body('Read_saved_snapshot')?['value']),1),and(equals(first(body('Read_saved_snapshot')?['value'])?['Title'],items('Persist_snapshots')?['Title']),equals(first(body('Read_saved_snapshot')?['value'])?['SnapshotKey'],items('Persist_snapshots')?['SnapshotKey']),equals(first(body('Read_saved_snapshot')?['value'])?['RunKey'],items('Persist_snapshots')?['RunKey']),equals(first(body('Read_saved_snapshot')?['value'])?['AsOfDate'],items('Persist_snapshots')?['AsOfDate']),equals(first(body('Read_saved_snapshot')?['value'])?['SourceSHA256'],items('Persist_snapshots')?['SourceSHA256']),equals(first(body('Read_saved_snapshot')?['value'])?['DocumentUID'],items('Persist_snapshots')?['DocumentUID']),equals(first(body('Read_saved_snapshot')?['value'])?['AssignmentKey'],items('Persist_snapshots')?['AssignmentKey']),equals(first(body('Read_saved_snapshot')?['value'])?['RoleKey'],items('Persist_snapshots')?['RoleKey']),equals(first(body('Read_saved_snapshot')?['value'])?['ResponsibilityType'],items('Persist_snapshots')?['ResponsibilityType']),equals(first(body('Read_saved_snapshot')?['value'])?['HolderKey'],items('Persist_snapshots')?['HolderKey']),equals(first(body('Read_saved_snapshot')?['value'])?['ResolutionState'],items('Persist_snapshots')?['ResolutionState']),equals(first(body('Read_saved_snapshot')?['value'])?['Projection'],items('Persist_snapshots')?['Projection']),equals(first(body('Read_saved_snapshot')?['value'])?['SourceManifest'],items('Persist_snapshots')?['SourceManifest'])))",
+                              "type": "If"
+                            }
+                          },
+                          "runAfter": {
+                            "Read_saved_snapshot": [
+                              "Succeeded"
+                            ]
+                          },
+                          "else": {
+                            "actions": {
+                              "Flag_cardinality_Persist_snapshots": {
+                                "runAfter": {},
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "SnapshotConflict",
+                                  "value": true
+                                }
+                              }
+                            }
+                          },
+                          "expression": "@equals(length(body('Read_saved_snapshot')?['value']),1)",
+                          "type": "If"
+                        }
+                      },
+                      "runAfter": {},
+                      "else": {
+                        "actions": {}
+                      },
+                      "expression": "@equals(variables('SnapshotConflict'),false)",
+                      "type": "If"
+                    }
+                  },
+                  "runAfter": {},
+                  "type": "Foreach",
+                  "runtimeConfiguration": {
+                    "concurrency": {
+                      "repetitions": 1
+                    }
+                  }
+                },
+                "Final_read_roles": {
+                  "runAfter": {
+                    "Persist_snapshots": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00053__')/items?$top=5000",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Final_read_assignments": {
+                  "runAfter": {
+                    "Final_read_roles": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00067__')/items?$top=5000",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Final_read_appointments": {
+                  "runAfter": {
+                    "Final_read_assignments": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00085__')/items?$top=5000",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Final_read_handovers": {
+                  "runAfter": {
+                    "Final_read_appointments": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00069__')/items?$top=5000",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Saved_snapshots_exact": {
+                  "actions": {
+                    "Confirm_completed_snapshot": {
+                      "actions": {
+                        "Report_projection": {
+                          "runAfter": {},
+                          "type": "Compose",
+                          "inputs": {
+                            "state": "completed_dated_snapshot",
+                            "snapshotCount": "@length(outputs('Parsed_projection')?['records'])",
+                            "runKey": "@outputs('Parsed_projection')?['manifest']?['runKey']",
+                            "projection": "@outputs('Parsed_projection')",
+                            "operatorNote": "Use this run key and expected count; partial failed runs are not completed snapshots."
+                          }
+                        }
+                      },
+                      "runAfter": {},
+                      "else": {
+                        "actions": {
+                          "Source_changed_after_persistence": {
+                            "runAfter": {},
+                            "type": "Terminate",
+                            "inputs": {
+                              "runStatus": "Failed",
+                              "runError": {
+                                "code": "RoleSourceChangedAfterSave",
+                                "message": "Role inputs changed after saving; retain partial rows and reconcile this run. No completed snapshot is declared."
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "expression": "@and(equals(body('Read_roles'),body('Final_read_roles')),equals(body('Read_assignments'),body('Final_read_assignments')),equals(body('Read_appointments'),body('Final_read_appointments')),equals(body('Read_handovers'),body('Final_read_handovers')))",
+                      "type": "If"
+                    }
+                  },
+                  "runAfter": {
+                    "Final_read_handovers": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Hold_saved_snapshot_conflict": {
+                        "runAfter": {},
+                        "type": "Terminate",
+                        "inputs": {
+                          "runStatus": "Failed",
+                          "runError": {
+                            "code": "RoleSnapshotChangedDuringSave",
+                            "message": "A saved snapshot is missing, duplicated or edited; preserve rows and reconcile the exact run before retry."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": "@equals(variables('SnapshotConflict'),false)",
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Preflight_snapshots": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Hold_existing_snapshot_conflict": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "RoleSnapshotConflict",
+                        "message": "An existing snapshot differs from the expected record. No snapshots were created. Preserve the existing wording and refer the conflict to the operator."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": "@equals(variables('SnapshotConflict'),false)",
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Recheck_handovers": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Hold_changed_source": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "RoleSourceChanged",
+                    "message": "Role inputs changed during projection; no source or assignment is modified."
+                  }
+                }
+              }
+            }
+          },
+          "expression": "@and(equals(body('Read_roles'),body('Recheck_roles')),equals(body('Read_assignments'),body('Recheck_assignments')),equals(body('Read_appointments'),body('Recheck_appointments')),equals(body('Read_handovers'),body('Recheck_handovers')))",
+          "type": "If"
+        },
+        "Initialise_snapshot_conflict": {
+          "runAfter": {
+            "Parsed_projection": [
+              "Succeeded"
+            ]
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "SnapshotConflict",
+                "type": "boolean",
+                "value": false
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
