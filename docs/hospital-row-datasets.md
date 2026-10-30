@@ -22,9 +22,21 @@ Missing records are marked absent, not deleted. Unchanged rows keep their prior
 capture reference. SharePoint ObservedAt readback has whole-second precision;
 retain the original full timestamp in the immutable capture index/payload.
 
-Initial population uses the retained successful native API captures. This does
-not yet establish recurring row synchronisation: the existing enabled daily
-collector still captures JSON and writes the capture index. Wiring its output
-to these row datasets and adopting the two newest collectors into the existing
-solution remain unfinished. No newsletter, API-access or cross-tenant blocker is
-resolved by creating these lists. Cross-tenant recovery remains deferred.
+`ppg_dataset_refresh.extend(flow, binding, contracts)` adds current-row refresh
+to the existing capture collector. Supply the capture `listId`, exact `site`,
+`rowLists` keyed by contract key, and publisher `attribution` privately. Each
+dataset captures first, pages existing rows, validates source keys and totals,
+then serially submits batches of twenty conditional updates or creates. Batch
+updates use the MERGE verb and each decoded multipart child status is checked.
+Only successful synchronisation advances the capture state to Synchronised.
+Failed datasets remain visible while independent datasets continue. Reconcile
+uncertain effects before another run; batches are not atomic.
+
+Use `ppg_source_environment.parameterise` for literal bindings, including quoted
+WDL expression literals, then package the definitions with the existing solution
+connection references and environment variables. Preserve existing flow IDs.
+Keep native exports, deployment hashes, bindings and run receipts private.
+Qualify a manual run and destination readback before restoring the daily 07:00
+Brisbane trigger; newsletter collectors retain their normal arrival trigger.
+These source tools do not establish another tenant's runtime acceptance or
+resolve publisher/access blockers. Cross-tenant recovery remains deferred.
