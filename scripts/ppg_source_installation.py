@@ -18,12 +18,14 @@ from ppg_dataset_refresh import extend
 from ppg_source_environment import parameterise
 from check_email_safety import email_actions
 
-VERSION = '1.0.0.0'
+VERSION = '1.1.0.0'
 NAMESPACE = UUID('946a7858-5e95-5d88-a5dd-8de1ce81b059')
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def schemas():
+def schemas(suffix=""):
+    if suffix and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 -]{0,50}", suffix):
+        raise ValueError("Simple isolated list suffix required")
     leads = json.loads((ROOT/'config/source-update-leads.json').read_text())
     captures = {'title':'PPG Hospital Dataset Captures', 'fields':[
         {'name':n,'type':t} for n,t in [('SourceKey','Text'),('ObservedAt','DateTime'),
@@ -37,6 +39,7 @@ def schemas():
         result[c['key']] = {'title':c['title'], 'keyFields':c['keyFields'],
                             'fields':deepcopy(c['fields'])+deepcopy(common)}
     for s in result.values():
+        if suffix: s['title'] += ' - ' + suffix
         s.update(schemaVersion=1, baseTemplate=100, enableVersioning=True, enableAttachments=False)
     return result
 
@@ -164,7 +167,7 @@ def build(settings, output):
     settings_out={'EnvironmentVariables':[{'SchemaName':k,'Value':v} for k,v in sorted(allvars.items())],
                   'ConnectionReferences':[{'LogicalName':k,'ConnectionId':v['connectionId'],'ConnectorId':v['connectorId']} for k,v in sorted(refs.items())]}
     private_json(output.parent/(output.name+'-deployment-settings.json'), settings_out)
-    receipt={'version':VERSION,'solutionName':name,'flows':flows,'datasets':schemas(),
+    receipt={'version':VERSION,'solutionName':name,'flows':flows,'datasets':schemas(settings.get('listSuffix','')),
              'nativeWrites':0,'crossTenantRecovery':'deferred','activation':'separate qualification required',
              'files':{p.relative_to(output).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(output.rglob('*')) if p.is_file()}}
     private_json(output.parent/(output.name+'-manifest.json'), receipt)
@@ -173,8 +176,8 @@ def build(settings, output):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__); p.add_argument('--settings',type=Path)
-    p.add_argument('--output',type=Path); p.add_argument('--schemas',action='store_true'); a=p.parse_args()
-    if a.schemas: print(json.dumps(schemas(),indent=2)); return
+    p.add_argument('--list-suffix',default=''); p.add_argument('--output',type=Path); p.add_argument('--schemas',action='store_true'); a=p.parse_args()
+    if a.schemas: print(json.dumps(schemas(a.list_suffix),indent=2)); return
     if not a.settings or not a.output or '.local' not in a.settings.resolve().parts: p.error('Private --settings and --output required')
     r=build(json.loads(a.settings.read_text()),a.output)
     print(json.dumps({'version':r['version'],'flows':len(r['flows']),'datasets':len(r['datasets']),'nativeWrites':0}))

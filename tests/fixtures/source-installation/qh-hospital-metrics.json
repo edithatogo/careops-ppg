@@ -1,0 +1,62 @@
+{
+  "success": true,
+  "result": {
+    "total": 2,
+    "records": [
+      {
+        "_id": 1,
+        "FacilityCode": "001",
+        "DataUpdatedTimestamp": "Fictional",
+        "Waiting": "Fictional",
+        "MedianWaitAllCat": "Fictional",
+        "MedianWaitCat45": "Fictional",
+        "DataStatus": "Fictional",
+        "FacilityDataDelayHours": 3
+      },
+      {
+        "_id": 2,
+        "FacilityCode": "002",
+        "DataUpdatedTimestamp": null,
+        "Waiting": null,
+        "MedianWaitAllCat": null,
+        "MedianWaitCat45": null,
+        "DataStatus": null,
+        "FacilityDataDelayHours": null
+      }
+    ],
+    "fields": [
+      {
+        "id": "_id",
+        "type": "numeric"
+      },
+      {
+        "id": "FacilityCode",
+        "type": "text"
+      },
+      {
+        "id": "DataUpdatedTimestamp",
+        "type": "text"
+      },
+      {
+        "id": "Waiting",
+        "type": "text"
+      },
+      {
+        "id": "MedianWaitAllCat",
+        "type": "text"
+      },
+      {
+        "id": "MedianWaitCat45",
+        "type": "text"
+      },
+      {
+        "id": "DataStatus",
+        "type": "text"
+      },
+      {
+        "id": "FacilityDataDelayHours",
+        "type": "numeric"
+      }
+    ]
+  }
+}

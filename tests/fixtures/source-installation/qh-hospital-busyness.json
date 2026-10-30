@@ -1,0 +1,62 @@
+{
+  "success": true,
+  "result": {
+    "total": 2,
+    "records": [
+      {
+        "_id": 1,
+        "FacilityCode": "001",
+        "DayOfWeekNo": 1,
+        "DayName": "Fictional",
+        "DayNameLong": "Fictional",
+        "TimeBandNumber": 1,
+        "DataValue": 3,
+        "DataUploadedTimestamp": "2026-10-30 07:00:00"
+      },
+      {
+        "_id": 2,
+        "FacilityCode": "002",
+        "DayOfWeekNo": 2,
+        "DayName": null,
+        "DayNameLong": null,
+        "TimeBandNumber": 2,
+        "DataValue": null,
+        "DataUploadedTimestamp": "2026-10-30 07:00:00"
+      }
+    ],
+    "fields": [
+      {
+        "id": "_id",
+        "type": "numeric"
+      },
+      {
+        "id": "FacilityCode",
+        "type": "text"
+      },
+      {
+        "id": "DayOfWeekNo",
+        "type": "numeric"
+      },
+      {
+        "id": "DayName",
+        "type": "text"
+      },
+      {
+        "id": "DayNameLong",
+        "type": "text"
+      },
+      {
+        "id": "TimeBandNumber",
+        "type": "numeric"
+      },
+      {
+        "id": "DataValue",
+        "type": "numeric"
+      },
+      {
+        "id": "DataUploadedTimestamp",
+        "type": "text"
+      }
+    ]
+  }
+}
