@@ -172,3 +172,13 @@ class SourceUpdatesTests(unittest.TestCase):
         self.assertEqual(email_actions(f),[])
         b['sourceSite']='https://contoso.sharepoint.com/sites/internal'
         with self.assertRaises(ValueError):build('sharepoint',b,source=source)
+
+    def test_internal_native_category_can_differ_from_search_title(self):
+        b=self.binding();b.update(sourceSite=b['site'],sourceListId=str(UUID(int=2,version=4)),sourceTitle='Fictional category',sourceMatchField='Category',sourceTitleField='Summary')
+        source=dict(key='fictional-register',publisher='Example',name='Notices',fallbackUrl=b['site']+'/Lists/Notices/DispForm.aspx')
+        a=build('sharepoint',b,source=source)['properties']['definition']['actions']['Collect_source']['actions']
+        self.assertIn('Category%20eq%20',a['Read_source']['inputs']['parameters']['parameters/uri'])
+        self.assertIn('$select=Id,GUID,Summary,Modified',a['Read_source']['inputs']['parameters']['parameters/uri'])
+        self.assertIn("['Summary']",a['Collect']['actions']['Observation']['inputs']['title'])
+        b['sourceMatchField']="Category or 1 eq 1"
+        with self.assertRaises(ValueError):build('sharepoint',b,source=source)

@@ -101,13 +101,16 @@ def build(channel, binding, *, manual=False, pending_sender=False, source=None):
                 raise ValueError('Exact source list required')
             selector=binding.get('sourceTitle')
             if not isinstance(selector,str) or not selector.strip():raise ValueError('Bounded source title selector required')
+            match_field=binding.get('sourceMatchField','Title');title_field=binding.get('sourceTitleField','Title')
+            if any(not isinstance(f,str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*',f) for f in (match_field,title_field)):
+                raise ValueError('Exact native field names required')
             from urllib.parse import quote
-            source_uri="_api/web/lists(guid'"+source_list+"')/items?$select=Id,GUID,Title,Modified,OData__UIVersionString&$filter="+quote("Title eq '"+selector.replace("'","''")+"'",safe='')+"&$top=5000"
+            source_uri="_api/web/lists(guid'"+source_list+"')/items?$select=Id,GUID,"+title_field+",Modified,OData__UIVersionString&$filter="+quote(match_field+" eq '"+selector.replace("'","''")+"'",safe='')+"&$top=5000"
             actions['Read_source']=http('GET',source_uri)
             actions['Read_source']['inputs']['parameters']['dataset']=source_site
             actions['Require_complete_source']={'type':'ParseJson','runAfter':{'Read_source':['Succeeded']},'inputs':{'content':{'complete':"@and(empty(body('Read_source')?['odata.nextLink']),empty(body('Read_source')?['@odata.nextLink']))"},'schema':{'type':'object','required':['complete'],'properties':{'complete':{'type':'boolean','enum':[True]}}}}}
             collection="@body('Read_source')?['value']";after={'Require_complete_source':['Succeeded']}
-            source_id="@coalesce(item()?['GUID'],'')";title="@item()?['Title']";date=None
+            source_id="@coalesce(item()?['GUID'],'')";title="@if(empty(item()?["+quoted(title_field)+"]),"+quoted(config["name"])+",item()?["+quoted(title_field)+"])";date=None
             link="@concat("+quoted(config['fallbackUrl'])+",'?ID=',string(item()?['Id']))"
         base="_api/web/lists(guid'"+list_id+"')/items"
         observation={'sourceId':source_id,'title':title,'link':link,'publishedAt':date}
