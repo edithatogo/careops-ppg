@@ -20,6 +20,9 @@ class RefreshTests(unittest.TestCase):
         self.assertIn("not(variables('example_facilities_sync_failed'))",batch['expression'])
         self.assertEqual(batch['actions'][prefix+'pace']['inputs']['interval']['count'],10)
         self.assertEqual(batch['actions'][prefix+'stop']['inputs']['value'],True)
+        cooldown=batch['actions'][prefix+'cooldown']
+        self.assertEqual(cooldown['runAfter'],{prefix+'stop':['Succeeded']})
+        self.assertIn("max(120,int(coalesce(outputs('example_facilities_sync_send')?['headers']?['Retry-After'],'120')))",cooldown['inputs']['interval']['count'])
         self.assertEqual(a[prefix+'index_parts']['runAfter'],{prefix+'known_rows':['Succeeded']})
         self.assertIn('startsWith',a[prefix+'unknown_rows']['inputs']['where'])
         self.assertEqual(a[prefix+'reset_rows']['runAfter'],{prefix+'batches':['Succeeded']})

@@ -32,6 +32,16 @@ Only successful synchronisation advances the capture state to Synchronised.
 Failed datasets remain visible while independent datasets continue. Reconcile
 uncertain effects before another run; batches are not atomic.
 
+The generated collector limits concurrency to one and waits ten seconds before
+each batch of twenty. It stops further writes in that dataset on the first failed
+or uncertain batch, then waits at least 120 seconds or the server's longer
+`Retry-After` before independent work continues. It does not blindly retry writes.
+Retained-capture recovery re-reads destination state and sends only remaining
+changes; unchanged rows keep their earlier capture references and item IDs.
+These controls reduce load but cannot guarantee that a shared service never
+throttles. Keep failure records visible and success checkpoints conditional on
+complete destination readback. See [Microsoft's throttling guidance](https://learn.microsoft.com/en-us/sharepoint/dev/general-development/how-to-avoid-getting-throttled-or-blocked-in-sharepoint-online).
+
 Use `ppg_source_environment.parameterise` for literal bindings, including quoted
 WDL expression literals, then package the definitions with the existing solution
 connection references and environment variables. Preserve existing flow IDs.
