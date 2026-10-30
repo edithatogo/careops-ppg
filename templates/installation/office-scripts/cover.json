@@ -1,0 +1,7 @@
+{
+  "version": "0.3.0",
+  "description": "PPG bounded ZIP v5; explicit existing-artifact provenance; no workbook or network operations",
+  "noCodeMetadata": "",
+  "apiInfo": "{\"variant\": \"synchronous\", \"variantVersion\": 2}",
+  "parameterInfo": "{\"version\": 1, \"originalParameterOrder\": [{\"name\": \"jobJson\", \"index\": 0}, {\"name\": \"membersJson\", \"index\": 1}], \"parameterSchema\": {\"type\": \"object\", \"properties\": {\"jobJson\": {\"type\": \"string\"}, \"membersJson\": {\"type\": \"string\"}}, \"required\": [\"jobJson\", \"membersJson\"]}, \"returnSchema\": {\"type\": \"object\", \"properties\": {\"schemaVersion\": {\"type\": \"number\"}, \"jobId\": {\"type\": \"string\"}, \"outputRevision\": {\"type\": \"string\"}, \"jobSHA256\": {\"type\": \"string\"}, \"packageSHA256\": {\"type\": \"string\"}, \"packageBytes\": {\"type\": \"number\"}, \"memberCount\": {\"type\": \"number\"}, \"zipBase64\": {\"type\": \"string\"}, \"status\": {\"type\": \"string\"}, \"sourceWrites\": {\"type\": \"boolean\"}, \"sent\": {\"type\": \"boolean\"}, \"wordGenerationPerformed\": {\"type\": \"boolean\"}}}, \"signature\": {\"comment\": \"Bounded PPG ZIP packaging\", \"parameters\": [{\"name\": \"workbook\", \"comment\": \"\"}, {\"name\": \"jobJson\", \"comment\": \"\"}, {\"name\": \"membersJson\", \"comment\": \"\"}]}}"
+}

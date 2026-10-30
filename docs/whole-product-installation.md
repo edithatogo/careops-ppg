@@ -27,3 +27,47 @@ The isolated installation completed on 30 October 2026 with 51 objects and 66 as
 Installation is not operational acceptance of all business workflows. The lifecycle templates retain their explicit request/record/hash guards. Destination source baselines, Office Script hosts, institutional workbook references, role identities and operator requests must be supplied and qualified before those workflows run. No real records, permissions, subscriptions or credentials are migrated. Existing production collectors retain their identities and settings.
 
 METEOR access/signing and permitted connector route, Ahpra exchange agreement/interface, AusUDID automated release semantics, missing genuine newsletter samples and inaccessible structured internal sources remain external blockers. Blocked preparations are excluded from the active collector package. Cross-tenant recovery remains deferred. A Power BI dashboard remains on the roadmap; this release includes the existing CSV/reporting flows, not a dashboard.
+
+
+## Office Script and source bindings (1.0.1)
+
+Build the seven maintained Office Script packages and six detached hosts with
+`.venv/bin/python scripts/ppg_office_runtime.py --output .local/office-runtime`.
+For a real catalogue source, pass its explicit `--source-system` identity; the
+fictional default is not a tenant identity. The catalogue script reads a newly
+acquired source copy, not a blank workbook. The other six profiles do not read or
+write workbook cells. Preserve the original script revisions and hosts.
+
+`config/product-office-scripts.json` identifies each script's source, parameter
+schema, hash and action names. Install `.osts` and `.xlsx` assets create-only in
+the qualified destination library; resolve its drive and exact item IDs through
+SharePoint's supported v2 drive read. The executable command is
+`node scripts/ppg_office_provision.mjs --adapter .local/adapter.mjs --site https://example.sharepoint.com/sites/ppg --folder /sites/ppg/Runtime --assets .local/office-runtime --catalogue-drive EXPLICIT_COPY_DRIVE --receipt .local/office-bindings.json`.
+It verifies exact script bytes and an empty Runtime sheet in scratch workbooks,
+allowing only service metadata/formatting parts. Added cells, formulas, external
+relationships or extra sheets stop installation; files are never overwritten. Keep these IDs in private settings under
+`officeScripts`, keyed by profile. Each profile supplies `source`, `drive`, `file`,
+`scriptSource`, `scriptDrive`, `scriptId`; catalogue may retain its dynamic copy
+filename, but its workbook drive must be the copy's destination drive. The package
+builder binds nested actions without replacing inputs or connection references.
+Site-relative library paths are rebound too, including connector folder paths and
+provenance links; already isolated paths remain unchanged.
+
+The existing-tenant qualification installed all seven scripts and six new hosts.
+Role projection, standards context and digest preview completed with fictional
+inputs. The standards source now includes the maintained relationship/dependency
+behavior. Existing institutional source metadata was read successfully. Native
+script/content hashes and bindings remain private.
+
+New Button flows require a first-run Logic Flows connection separate from solution
+connection references. The current CLI runner returned connection-not-found; the
+native Run form established it and submitted each fictional request. Subsequent
+results, definition edits and exports use CLI. A management trigger invocation
+without the required payload is not a successful run.
+
+Document generation remains guarded by a selected document/case request and its
+version-bound package/template evidence. Catalogue reconciliation still needs the
+new installation's reviewed identity ledger and matching catalogue baseline; the
+installation's one fictional report row is not that baseline. Neither imports
+real records or accepts publisher assertions merely because source access works.
+These are explicit commissioning inputs, separate from external API/access blockers.
