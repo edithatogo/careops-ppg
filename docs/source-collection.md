@@ -1,5 +1,9 @@
 # Reusable PPG source collectors
 
+For a complete source-module solution and its five destination schemas, use the
+[CLI installation package](source-installation.md). Existing flow adoption preserves
+original identities; the clean installer deliberately creates stopped components.
+
 Use `scripts/ppg_source_update_flows.py` with a small source profile and a private
 binding. The committed profile catalogue contains Commission and individual TGA
 RSS endpoints, plus a fictional newsletter preparation profile. Endpoint availability is not
