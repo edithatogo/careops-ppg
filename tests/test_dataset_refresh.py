@@ -16,7 +16,13 @@ class RefreshTests(unittest.TestCase):
         prefix='example_facilities_sync_'
         self.assertEqual(a[prefix+'pages']['runAfter'],{prefix+'valid_keys':['Succeeded']})
         self.assertEqual(a[prefix+'batches']['runtimeConfiguration']['concurrency']['repetitions'],1)
-        self.assertEqual(a[prefix+'done']['runAfter'],{prefix+'batches':['Succeeded']})
+        self.assertEqual(a[prefix+'index_parts']['runAfter'],{prefix+'known_rows':['Succeeded']})
+        self.assertIn('startsWith',a[prefix+'unknown_rows']['inputs']['where'])
+        self.assertEqual(a[prefix+'reset_rows']['runAfter'],{prefix+'batches':['Succeeded']})
+        self.assertEqual(a[prefix+'done']['runAfter'],{prefix+'verified':['Succeeded']})
+        self.assertIn('readback_mismatch',a[prefix+'verified']['inputs']['content']['valid'])
+        self.assertIn('readback_provenance',a[prefix+'verified']['inputs']['content']['valid'])
+        self.assertIn('readback_absent',a[prefix+'verified']['inputs']['content']['valid'])
         expression=a[prefix+'requests']['inputs']['select']
         self.assertIn('IF-MATCH: ',expression)
         self.assertIn("'POST ','MERGE '",expression)
