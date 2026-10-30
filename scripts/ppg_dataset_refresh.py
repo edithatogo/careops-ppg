@@ -59,6 +59,14 @@ def extend(flow, binding, contracts):
         result="base64ToString(body("+q(send)+")?['$content'])"
         good="equals(add(sub(length(split("+result+",'HTTP/1.1 201')),1),sub(length(split("+result+",'HTTP/1.1 204')),1)),length(outputs("+q(chunk)+")))"
         a[loop]={'type':'Foreach','runAfter':{name('requests'):['Succeeded']},'foreach':expr("range(0,div(add(length(body("+q(name('requests'))+")),19),20))"),'runtimeConfiguration':{'concurrency':{'repetitions':1}},'actions':{chunk:{'type':'Compose','runAfter':{},'inputs':expr("take(skip(body("+q(name('requests'))+"),mul(items("+q(loop)+"),20)),20)")},send:request,validate:{'type':'ParseJson','runAfter':{send:['Succeeded']},'inputs':{'content':{'complete':expr(good)},'schema':{'type':'object','properties':{'complete':{'enum':[True]}},'required':['complete']}}}}}
+        # Pace writes and stop sending after any uncertain/failed batch. A later
+        # invocation re-reads persisted state instead of retrying a mutation.
+        failed=name('failed');initial.append({'name':failed,'type':'boolean','value':False})
+        batch=a[loop]['actions'];pause=name('pace')
+        batch[pause]={'type':'Wait','runAfter':{chunk:['Succeeded']},'inputs':{'interval':{'count':10,'unit':'Second'}}}
+        batch[send]['runAfter']={pause:['Succeeded']}
+        batch[name('stop')]={'type':'SetVariable','runAfter':{validate:['Failed','TimedOut','Skipped']},'inputs':{'name':failed,'value':True}}
+        a[loop]['actions']={name('can_send'):{'type':'If','runAfter':{},'expression':expr('not(variables('+q(failed)+'))'),'actions':batch,'else':{'actions':{}}}}
         # Re-read persisted rows before the durable synchronisation checkpoint.
         add('reset_rows','SetVariable',{'name':rows_var,'value':[]},'batches')
         add('reset_next','SetVariable',{'name':next_var,'value':base+'?$top=2000&$orderby=ID asc'},'reset_rows')
