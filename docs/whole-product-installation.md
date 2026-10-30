@@ -26,7 +26,7 @@ The isolated installation completed on 30 October 2026 with 51 objects and 66 as
 
 Installation is not operational acceptance of all business workflows. The lifecycle templates retain their explicit request/record/hash guards. Destination source baselines, Office Script hosts, institutional workbook references, role identities and operator requests must be supplied and qualified before those workflows run. No real records, permissions, subscriptions or credentials are migrated. Existing production collectors retain their identities and settings.
 
-METEOR access/signing and permitted connector route, Ahpra exchange agreement/interface, AusUDID automated release semantics, missing genuine newsletter samples and inaccessible structured internal sources remain external blockers. Blocked preparations are excluded from the active collector package. Cross-tenant recovery remains deferred. A Power BI dashboard remains on the roadmap; this release includes the existing CSV/reporting flows, not a dashboard.
+METEOR access/signing and permitted connector route, Ahpra exchange agreement/interface, AusUDID automated release semantics, missing genuine newsletter samples and inaccessible structured internal sources remain external blockers. Blocked preparations are excluded from the active collector package. Cross-tenant recovery is removed from commissioned scope (31 October 2026); clean same-tenant installation/recovery remains supported. A Power BI dashboard remains on the roadmap; this release includes the existing CSV/reporting flows, not a dashboard.
 
 
 ## Office Script and source bindings (1.0.1)
@@ -71,3 +71,5 @@ new installation's reviewed identity ledger and matching catalogue baseline; the
 installation's one fictional report row is not that baseline. Neither imports
 real records or accepts publisher assertions merely because source access works.
 These are explicit commissioning inputs, separate from external API/access blockers.
+
+See [catalogue and selected-case commissioning](product-commissioning.md) for the usable CLI routes and exact external dependencies.
