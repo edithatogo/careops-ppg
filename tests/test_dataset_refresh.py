@@ -16,6 +16,10 @@ class RefreshTests(unittest.TestCase):
         prefix='example_facilities_sync_'
         self.assertEqual(a[prefix+'pages']['runAfter'],{prefix+'valid_keys':['Succeeded']})
         self.assertEqual(a[prefix+'batches']['runtimeConfiguration']['concurrency']['repetitions'],1)
+        batch=a[prefix+'batches']['actions'][prefix+'can_send']
+        self.assertIn("not(variables('example_facilities_sync_failed'))",batch['expression'])
+        self.assertEqual(batch['actions'][prefix+'pace']['inputs']['interval']['count'],10)
+        self.assertEqual(batch['actions'][prefix+'stop']['inputs']['value'],True)
         self.assertEqual(a[prefix+'index_parts']['runAfter'],{prefix+'known_rows':['Succeeded']})
         self.assertIn('startsWith',a[prefix+'unknown_rows']['inputs']['where'])
         self.assertEqual(a[prefix+'reset_rows']['runAfter'],{prefix+'batches':['Succeeded']})
