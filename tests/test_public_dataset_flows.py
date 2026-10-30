@@ -9,8 +9,11 @@ class DatasetTests(unittest.TestCase):
     def test_capture_is_immutable_and_complete_before_staging(self):
         flow=build(self.binding,[{'key':'example-data','name':'Example data','url':'https://example.com/data.json'}])
         a=flow['properties']['definition']['actions']['Collect_datasets']['actions']
+        self.assertFalse(flow['properties']['flowFailureAlertSubscribed'])
+        self.assertEqual(a['example_data_poll']['limit'],{'count':12,'timeout':'PT2M'})
+        self.assertEqual(a['example_data_poll']['actions']['example_data_metadata']['inputs']['retryPolicy'],{'type':'none'})
         self.assertFalse(a['example_data_download']['inputs']['parameters']['overwrite'])
-        self.assertEqual(a['example_data_read']['runAfter'],{'example_data_download':['Succeeded']})
+        self.assertEqual(a['example_data_read']['runAfter'],{'example_data_ready':['Succeeded']})
         self.assertEqual(a['example_data_payload']['runAfter'],{'example_data_complete':['Succeeded']})
         self.assertEqual(a['example_data_complete']['inputs']['schema']['properties']['complete']['enum'],[True])
         self.assertEqual(a['example_data_download']['inputs']['retryPolicy'],{'type':'none'})

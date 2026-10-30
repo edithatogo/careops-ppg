@@ -123,3 +123,11 @@ readback, and enabled daily schedule or arrival trigger. Natural scheduled runs
 and arrivals are no longer completion prerequisites. Do not send test emails or
 enrol subscriptions. Keep sources without a genuine newsletter sample, supported
 endpoint, required access or an allowed connector explicitly blocked.
+
+Only specific systematic sources qualify: external feeds, documented APIs,
+delivered newsletters or supported structured download services; internally, exact
+SharePoint lists/controlled libraries with stable identities and modification or
+version fields. A webpage or loose file collection is not an integration source.
+Stored JSON files are captures of a qualified API, not substitutes for one.
+URL uploads use bounded metadata polling (12 attempts, two minutes) before reading;
+the upload itself is never retried. Always verify native failure alerts are Off.
