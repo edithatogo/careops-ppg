@@ -43,9 +43,9 @@ schema, hash and action names. Install `.osts` and `.xlsx` assets create-only in
 the qualified destination library; resolve its drive and exact item IDs through
 SharePoint's supported v2 drive read. The executable command is
 `node scripts/ppg_office_provision.mjs --adapter .local/adapter.mjs --site https://example.sharepoint.com/sites/ppg --folder /sites/ppg/Runtime --assets .local/office-runtime --catalogue-drive EXPLICIT_COPY_DRIVE --receipt .local/office-bindings.json`.
-It verifies exact initial bytes and refuses changed existing files, including a
-host workbook subsequently normalised by Excel; preserve that host and its receipt
-rather than overwriting it during a later installation. Keep these IDs in private settings under
+It verifies exact script bytes and an empty Runtime sheet in scratch workbooks,
+allowing only service metadata/formatting parts. Added cells, formulas, external
+relationships or extra sheets stop installation; files are never overwritten. Keep these IDs in private settings under
 `officeScripts`, keyed by profile. Each profile supplies `source`, `drive`, `file`,
 `scriptSource`, `scriptDrive`, `scriptId`; catalogue may retain its dynamic copy
 filename, but its workbook drive must be the copy's destination drive. The package

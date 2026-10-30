@@ -229,6 +229,7 @@
     "scripts/ppg_newsletter_routing.py",
     "scripts/ppg_observation_measures.py",
     "scripts/ppg_office_bindings.py",
+    "scripts/ppg_office_host_integrity.py",
     "scripts/ppg_office_provision.mjs",
     "scripts/ppg_office_runtime.py",
     "scripts/ppg_owner_master.py",

@@ -14,3 +14,17 @@ class OfficeInstallation(unittest.TestCase):
  def test_materialised_profiles_and_custom_source_identity(self):
   with tempfile.TemporaryDirectory() as t:
    p=Path(t)/'.local/assets';m=build(p,'fictional-source');self.assertEqual(len(m['profiles']),7);self.assertEqual(len(m['assets']),13);j=json.loads((p/'ppg-catalogue.osts').read_text());self.assertIn('ledger.sourceSystemId !== "fictional-source"',j['body']);self.assertNotIn('example-ppg-register',j['body'])
+
+ def test_scratch_host_rejects_added_cells(self):
+  import io,zipfile
+  from scripts.ppg_office_runtime import blank_workbook
+  from scripts.ppg_office_host_integrity import verify
+  with tempfile.TemporaryDirectory() as t:
+   p=Path(t)/'host.xlsx';blank_workbook(p);original=p.read_bytes();self.assertTrue(verify(original,original)['emptyHostPreserved'])
+   changed=io.BytesIO()
+   with zipfile.ZipFile(io.BytesIO(original)) as old,zipfile.ZipFile(changed,'w') as new:
+    for name in old.namelist():
+     data=old.read(name)
+     if name=='xl/worksheets/sheet1.xml':data=data.replace(b'<sheetData/>',b'<sheetData><row r="1"><c r="A1"><v>1</v></c></row></sheetData>')
+     new.writestr(name,data)
+   with self.assertRaises(ValueError):verify(original,changed.getvalue())
