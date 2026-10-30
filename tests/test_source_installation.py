@@ -44,6 +44,16 @@ class InstallationTests(unittest.TestCase):
             p=Path(t)/'.local/out'
             with self.assertRaises(ValueError):build(s,p)
             self.assertFalse(p.exists())
+    def test_duplicate_source_writers_refused(self):
+        from copy import deepcopy
+        for index in (0,3):
+            s=fixture();other=deepcopy(s['collectors'][index]);other['key']='second-writer'
+            s['collectors'].append(other)
+            with tempfile.TemporaryDirectory() as t:
+                p=Path(t)/'.local/out'
+                with self.assertRaisesRegex(ValueError,'Multiple writers'):build(s,p)
+                self.assertFalse(p.exists())
+
     def test_schema_preserves_source_types_and_human_notes(self):
         s=schemas();self.assertEqual(len(s),5)
         for key,d in s.items():

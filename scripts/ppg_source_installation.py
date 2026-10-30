@@ -71,7 +71,7 @@ def build(settings, output):
         raise ValueError('Invalid publisher prefix')
     if settings.get('schemaVersion') != 1 or not settings.get('collectors'):
         raise ValueError('Explicit nonempty collectors required')
-    definitions = []; keys = set(); allvars = {}; refs = {}
+    definitions = []; keys = set(); writers = set(); allvars = {}; refs = {}
     bindings = settings['bindings']; site = bindings['site']
     lists = bindings['lists']; contracts = json.loads((ROOT/'config/hospital-datasets.json').read_text())
     for c in settings['collectors']:
@@ -79,6 +79,15 @@ def build(settings, output):
         if not re.fullmatch(r'[a-z][a-z0-9-]{1,80}',key) or key in keys:
             raise ValueError('Unique stable collector key required')
         keys.add(key)
+        if c['type']=='hospital':
+            namespaces=[('rows', site.lower().rstrip('/'), lists[x['key']].lower()) for x in contracts]
+        else:
+            source_key=c['source']['key']
+            namespace='rss' if c['type']=='rss' and source_key=='acsqhc-rss' else c['type']+':'+source_key
+            namespaces=[('leads', site.lower().rstrip('/'), lists['leads'].lower(), namespace)]
+        if any(namespace in writers for namespace in namespaces):
+            raise ValueError('Multiple writers for the same destination source namespace')
+        writers.update(namespaces)
         if any(k in c.get('binding',{}) for k in ('site','listId','sharepoint','rss','outlook','onedrive')):
             raise ValueError('Destination and connections belong in installation bindings')
         b = {**bindings.get('connections',{}), 'site':site, 'listId':lists['leads'], **c.get('binding',{})}
