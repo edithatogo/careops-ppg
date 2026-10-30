@@ -1,0 +1,262 @@
+[
+  {
+    "key": "qh-hospital-facilities",
+    "title": "PPG Hospital Facilities",
+    "keyFields": [
+      "FacilityCode"
+    ],
+    "fields": [
+      {
+        "source": "_id",
+        "name": "SourceRecordId",
+        "type": "Number",
+        "indexed": false
+      },
+      {
+        "source": "FacilityCode",
+        "name": "FacilityCode",
+        "type": "Text",
+        "indexed": true
+      },
+      {
+        "source": "FacilityName",
+        "name": "FacilityName",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "Address",
+        "name": "Address",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "ContactPhone",
+        "name": "ContactPhone",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "FacilityLatitude",
+        "name": "FacilityLatitude",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "FacilityLongitude",
+        "name": "FacilityLongitude",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "FacilityType",
+        "name": "FacilityType",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "NumberOfTreatmentSpaces",
+        "name": "NumberOfTreatmentSpaces",
+        "type": "Number",
+        "indexed": false
+      },
+      {
+        "source": "OpenHours",
+        "name": "OpenHours",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "OpenDays",
+        "name": "OpenDays",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "FacilityDescription",
+        "name": "FacilityDescription",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "TreatmentSpacesUpdatedDate",
+        "name": "TreatmentSpacesUpdatedDate",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "WebUrl",
+        "name": "WebUrl",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "LimitedOpenHours",
+        "name": "LimitedOpenHours",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "OpenTime",
+        "name": "OpenTime",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "CloseTime",
+        "name": "CloseTime",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "DataUploadedTimestamp",
+        "name": "DataUploadedTimestamp",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "FacilityNameShort",
+        "name": "FacilityNameShort",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "FacilityFirstNationName",
+        "name": "FacilityFirstNationName",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "CustomAlertActive",
+        "name": "CustomAlertActive",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "CustomAlertMessage",
+        "name": "CustomAlertMessage",
+        "type": "Note",
+        "indexed": false
+      }
+    ],
+    "attribution": "Required from the qualified source binding"
+  },
+  {
+    "key": "qh-hospital-metrics",
+    "title": "PPG Hospital Current Metrics",
+    "keyFields": [
+      "FacilityCode"
+    ],
+    "fields": [
+      {
+        "source": "_id",
+        "name": "SourceRecordId",
+        "type": "Number",
+        "indexed": false
+      },
+      {
+        "source": "FacilityCode",
+        "name": "FacilityCode",
+        "type": "Text",
+        "indexed": true
+      },
+      {
+        "source": "DataUpdatedTimestamp",
+        "name": "DataUpdatedTimestamp",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "Waiting",
+        "name": "Waiting",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "MedianWaitAllCat",
+        "name": "MedianWaitAllCat",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "MedianWaitCat45",
+        "name": "MedianWaitCat45",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "DataStatus",
+        "name": "DataStatus",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "FacilityDataDelayHours",
+        "name": "FacilityDataDelayHours",
+        "type": "Number",
+        "indexed": false
+      }
+    ],
+    "attribution": "Required from the qualified source binding"
+  },
+  {
+    "key": "qh-hospital-busyness",
+    "title": "PPG Hospital Busyness Trends",
+    "keyFields": [
+      "FacilityCode",
+      "DayOfWeekNo",
+      "TimeBandNumber"
+    ],
+    "fields": [
+      {
+        "source": "_id",
+        "name": "SourceRecordId",
+        "type": "Number",
+        "indexed": false
+      },
+      {
+        "source": "FacilityCode",
+        "name": "FacilityCode",
+        "type": "Text",
+        "indexed": true
+      },
+      {
+        "source": "DayOfWeekNo",
+        "name": "DayOfWeekNo",
+        "type": "Number",
+        "indexed": true
+      },
+      {
+        "source": "DayName",
+        "name": "DayName",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "DayNameLong",
+        "name": "DayNameLong",
+        "type": "Text",
+        "indexed": false
+      },
+      {
+        "source": "TimeBandNumber",
+        "name": "TimeBandNumber",
+        "type": "Number",
+        "indexed": false
+      },
+      {
+        "source": "DataValue",
+        "name": "DataValue",
+        "type": "Number",
+        "indexed": false
+      },
+      {
+        "source": "DataUploadedTimestamp",
+        "name": "DataUploadedTimestamp",
+        "type": "Text",
+        "indexed": false
+      }
+    ],
+    "attribution": "Required from the qualified source binding"
+  }
+]
