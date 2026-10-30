@@ -3,12 +3,23 @@
  * No records, permissions, subscriptions, flows or source libraries are modified.
  */
 import fs from 'node:fs';
+import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {pathToFileURL} from 'node:url';
+import {pathToFileURL,fileURLToPath} from 'node:url';
 import path from 'node:path';
 const hash=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const quote=s=>s.replaceAll("'","''");
 const xml=s=>s.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
+export function sameViewQuery(actual, expected) {
+ if(typeof actual!=='string'||typeof expected!=='string')return false;
+ if(actual===expected)return true;
+ // Reuse the installer's pinned Python stdlib instead of introducing an XML dependency.
+ const python=new URL('../.venv/bin/python',import.meta.url);
+ const code="import json,sys,xml.etree.ElementTree as E; assert sys.version_info[:3]==(3,15,1) and sys.version_info.releaselevel=='final'; a,b=json.load(sys.stdin); print(E.canonicalize('<Query>'+a+'</Query>')==E.canonicalize('<Query>'+b+'</Query>'))";
+ const r=spawnSync(fileURLToPath(python),['-c',code],{input:JSON.stringify([actual,expected]),encoding:'utf8',timeout:10000});
+ if(r.error||r.status!==0)throw Error('VIEW_XML_COMPARISON_FAILED');
+ return r.stdout.trim()==='True';
+}
 export async function provision(client, schemas, {apply=false}={}) {
  const result={lists:{},created:0,fieldsCreated:0,viewsCreated:0,verified:!apply};
  if(!schemas||typeof schemas!=='object'||!Object.keys(schemas).length)throw Error('SCHEMAS_REQUIRED');
@@ -51,7 +62,7 @@ export async function provision(client, schemas, {apply=false}={}) {
     await client.send({key:'install-'+key+'-view-'+hash(v).slice(0,12),route:base+'/views/add',payload,payloadSHA256:hash(payload)});
     views=await client.all(base+'/views');matches=views.filter(x=>x.Title===v.title);result.viewsCreated++;
    }
-   if(matches.length!==1||matches[0].ViewQuery!==v.query||matches[0].RowLimit!==v.rowLimit||matches[0].Paged!==true)throw Error('INCOMPATIBLE_VIEW_'+key);
+   if(matches.length!==1||!sameViewQuery(matches[0].ViewQuery,v.query)||matches[0].RowLimit!==v.rowLimit||matches[0].Paged!==true)throw Error('INCOMPATIBLE_VIEW_'+key);
    const nativeFields=await client.get(base+"/views(guid'"+matches[0].Id+"')/ViewFields");
    if(JSON.stringify(nativeFields.Items)!==JSON.stringify(v.fields))throw Error('INCOMPATIBLE_VIEW_FIELDS_'+key);
   }

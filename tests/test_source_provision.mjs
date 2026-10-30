@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {provision} from '../scripts/ppg_source_provision.mjs';
+import {provision,sameViewQuery} from '../scripts/ppg_source_provision.mjs';
 const schema={leads:{title:'PPG Test Leads',baseTemplate:100,enableVersioning:true,enableAttachments:false,fields:[{name:'SourceKey',type:'Text',indexed:true,unique:true}]}};
 function fake(){let lists=[],fields=[],writes=0,authorised=0;return{get writes(){return writes;},get authorised(){return authorised;},fields,
  async all(route){return route.endsWith('/fields')?fields:lists;},
@@ -17,4 +17,13 @@ test('views expose exact fields and replay preserves a changed view',async()=>{
  assert.equal((await provision(c,s,{apply:true})).viewsCreated,1);
  assert.equal((await provision(c,s,{apply:true})).viewsCreated,0);
  fields=['Title'];await assert.rejects(provision(c,s,{apply:true}),/INCOMPATIBLE_VIEW_FIELDS/);assert.deepEqual(fields,['Title']);
+});
+
+test('CAML formatting is equivalent but query meaning is preserved',()=>{
+ const query='<OrderBy><FieldRef Name="ID" Ascending="FALSE" /></OrderBy>';
+ assert.equal(sameViewQuery(query,"<OrderBy><FieldRef Ascending='FALSE' Name='ID'></FieldRef></OrderBy>"),true);
+ assert.equal(sameViewQuery(query,'<OrderBy><FieldRef Name="ID" Ascending="FALSE"/></OrderBy>'),true);
+ assert.equal(sameViewQuery(query,query.replace('FALSE','TRUE')),false);
+ assert.equal(sameViewQuery('<Where><Eq><Value Type="Text"> x </Value></Eq></Where>','<Where><Eq><Value Type="Text">x</Value></Eq></Where>'),false);
+ assert.throws(()=>sameViewQuery('<Where>',query),/VIEW_XML_COMPARISON_FAILED/);
 });
