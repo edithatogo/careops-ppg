@@ -99,3 +99,27 @@ broader sender filing rules without replacing them. Read back the saved rule and
 folder-bound trigger before enabling collection. Never run a rule over historical
 messages or send a test message as part of this operation. Natural arrival remains
 separate runtime evidence; rule creation is not subscription enrolment.
+
+## Public API snapshots through standard connectors
+
+`ppg_public_dataset_flows.build` uses OneDrive for Business **Upload file from URL**
+and **Get file content using path**, followed by the existing SharePoint writer.
+This is a standard-connector route for suitable unauthenticated JSON GET endpoints;
+it does not make every API premium, or replace authenticated/custom HTTP operations.
+The actual captured file is read and parsed: the download action's success alone
+is insufficient. Responses must declare success and contain all records claimed
+by their total. Partial responses fail visibly instead of advancing collection.
+
+Use a separate operational staging list with Title, SourceKey (Text), ObservedAt
+(DateTime), CapturePath (Note), RecordCount (Number), SourceLink (Note) and
+ProcessingState (Text). Immutable JSON captures retain the original fields, nulls,
+source timestamps and dataset identity. Staging rows index captures; they are not
+normalised analytical rows or policy review leads. Each invocation is a distinct
+capture, including when the source is unchanged. Files are never overwritten and
+mutations are not retried automatically. Preserve source attribution with bindings.
+
+Acceptance: one successful triggered manual run, exact destination/definition
+readback, and enabled daily schedule or arrival trigger. Natural scheduled runs
+and arrivals are no longer completion prerequisites. Do not send test emails or
+enrol subscriptions. Keep sources without a genuine newsletter sample, supported
+endpoint, required access or an allowed connector explicitly blocked.
