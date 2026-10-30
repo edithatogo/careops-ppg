@@ -20,6 +20,14 @@ class RefreshTests(unittest.TestCase):
         self.assertIn("not(variables('example_facilities_sync_failed'))",batch['expression'])
         self.assertEqual(batch['actions'][prefix+'pace']['inputs']['interval']['count'],10)
         self.assertEqual(batch['actions'][prefix+'stop']['inputs']['value'],True)
+        cooldown=batch['actions'][prefix+'cooldown']
+        self.assertEqual(cooldown['runAfter'],{prefix+'cooldown_headers':['Succeeded']})
+        self.assertIn("max(union(createArray(120,int(coalesce(outputs('example_facilities_sync_send')?['headers']?['Retry-After']",cooldown['inputs']['interval']['count'])
+        self.assertIn("body('example_facilities_sync_cooldown_headers')",cooldown['inputs']['interval']['count'])
+        headers=batch['actions'][prefix+'cooldown_headers']
+        self.assertEqual(headers['runAfter'],{prefix+'stop':['Succeeded']})
+        self.assertIn("'retry-after:'",headers['inputs']['from'])
+        self.assertIn('toLower(base64ToString',headers['inputs']['from'])
         self.assertEqual(a[prefix+'index_parts']['runAfter'],{prefix+'known_rows':['Succeeded']})
         self.assertIn('startsWith',a[prefix+'unknown_rows']['inputs']['where'])
         self.assertEqual(a[prefix+'reset_rows']['runAfter'],{prefix+'batches':['Succeeded']})

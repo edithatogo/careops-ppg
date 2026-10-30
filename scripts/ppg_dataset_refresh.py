@@ -66,6 +66,14 @@ def extend(flow, binding, contracts):
         batch[pause]={'type':'Wait','runAfter':{chunk:['Succeeded']},'inputs':{'interval':{'count':10,'unit':'Second'}}}
         batch[send]['runAfter']={pause:['Succeeded']}
         batch[name('stop')]={'type':'SetVariable','runAfter':{validate:['Failed','TimedOut','Skipped']},'inputs':{'name':failed,'value':True}}
+        # Respect the server cooldown before any independent dataset/failure
+        # record can access SharePoint. Never retry an uncertain batch here.
+        # A successful outer batch can contain throttled children. Their headers
+        # are CRLF-delimited MIME headers and SharePoint supplies numeric seconds.
+        retry_parts="skip(split(toLower(base64ToString(coalesce(body("+q(send)+")?['$content'],''))),concat("+cr+",'retry-after:')),1)"
+        batch[name('cooldown_headers')]={'type':'Select','runAfter':{name('stop'):['Succeeded']},'inputs':{'from':expr(retry_parts),'select':expr("int(trim(first(split(item(),"+cr+"))))")}}
+        delay="max(union(createArray(120,int(coalesce(outputs("+q(send)+")?['headers']?['Retry-After'],outputs("+q(send)+")?['headers']?['retry-after'],'120'))),body("+q(name('cooldown_headers'))+")))"
+        batch[name('cooldown')]={'type':'Wait','runAfter':{name('cooldown_headers'):['Succeeded']},'inputs':{'interval':{'count':expr(delay),'unit':'Second'}}}
         a[loop]['actions']={name('can_send'):{'type':'If','runAfter':{},'expression':expr('not(variables('+q(failed)+'))'),'actions':batch,'else':{'actions':{}}}}
         # Re-read persisted rows before the durable synchronisation checkpoint.
         add('reset_rows','SetVariable',{'name':rows_var,'value':[]},'batches')
