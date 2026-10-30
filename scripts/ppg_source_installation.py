@@ -38,7 +38,17 @@ def schemas(suffix=""):
     for c in json.loads((ROOT/'config/hospital-datasets.json').read_text()):
         result[c['key']] = {'title':c['title'], 'keyFields':c['keyFields'],
                             'fields':deepcopy(c['fields'])+deepcopy(common)}
-    for s in result.values():
+    for key, s in result.items():
+        fields = [f['name'] for f in s['fields']]
+        visible = (['Title','ChannelKey','ObservedAt','ProcessingState','SourceLink'] if key=='leads'
+                   else ['Title','ObservedAt','RecordCount','ProcessingState','CapturePath'] if key=='captures'
+                   else ['FacilityCode']+[n for n in fields if n not in ('SourceRecordId','FacilityCode')][:5]+['SourcePresent'])
+        query = '<OrderBy><FieldRef Name="ID" Ascending="FALSE" /></OrderBy>'
+        if key.startswith('qh-'):
+            query = '<OrderBy><FieldRef Name="FacilityCode" /></OrderBy>'
+        if key.endswith('busyness'):
+            query = '<Where><Eq><FieldRef Name="DayOfWeekNo" /><Value Type="Number">1</Value></Eq></Where>'+query
+        s['views']=[{'title':'PPG source records','fields':visible,'query':query,'rowLimit':100}]
         if suffix: s['title'] += ' - ' + suffix
         s.update(schemaVersion=1, baseTemplate=100, enableVersioning=True, enableAttachments=False)
     return result
@@ -50,10 +60,10 @@ def private_json(path, value):
         f.write("\n")
 
 
-def write_xml(path, root):
+def write_xml(path, root, *, declaration=True):
     path.parent.mkdir(parents=True, exist_ok=True)
     ET.indent(root)
-    ET.ElementTree(root).write(path, encoding='utf-8', xml_declaration=True)
+    ET.ElementTree(root).write(path, encoding='utf-8', xml_declaration=declaration)
 
 
 def text(parent, name, value):
@@ -119,9 +129,14 @@ def build(settings, output):
                 'connection':{'connectionReferenceLogicalName':logical},
                 'api':{'name':alias}}
         if email_actions(f): raise ValueError('Communication action refused')
+        f['schemaVersion']='1.0.0.0'
         f['properties']['state']='Stopped'; f['properties']['flowFailureAlertSubscribed']=False
         f['properties']['definition']['contentVersion']=VERSION
-        definitions.append((key,f))
+        display_name=f['properties']['displayName']
+        # Dataverse clientdata uses the exported solution envelope, not the Flow API body.
+        f={'schemaVersion':'1.0.0.0','properties':{k:f['properties'][k] for k in ('connectionReferences','definition')}}
+        f['properties']['templateName']=None
+        definitions.append((key,display_name,f))
     output.mkdir(parents=True, mode=0o700)
     solution=ET.Element('ImportExportXml',{'version':'9.2','SolutionPackageVersion':'9.2','languagecode':'1033','generatedBy':'CrmLive'})
     manifest=ET.SubElement(solution,'SolutionManifest')
@@ -146,20 +161,20 @@ def build(settings, output):
         text(el,'defaultvalue',value)
         ET.SubElement(ET.SubElement(el,'displayname'),'label',{'description':schema,'languagecode':'1033'})
         text(el,'type',100000000); text(el,'iscustomizable',1)
-        write_xml(output/'environmentvariabledefinitions'/schema/'environmentvariabledefinition.xml',el)
+        write_xml(output/'environmentvariabledefinitions'/schema/'environmentvariabledefinition.xml',el,declaration=False)
     flows=[]
-    for key,flow in definitions:
+    for key,display_name,flow in definitions:
         wid=str(uuid5(NAMESPACE,name+':'+key)); filename=key+'-'+wid+'.json'
         target=output/'Workflows'/filename; target.parent.mkdir(exist_ok=True)
         target.write_text(json.dumps(flow,indent=2)+'\n')
-        meta=ET.Element('Workflow',{'WorkflowId':'{'+wid+'}', 'Name':flow['properties']['displayName']})
+        meta=ET.Element('Workflow',{'WorkflowId':'{'+wid+'}', 'Name':display_name})
         for k,v in {'JsonFileName':'/Workflows/'+filename,'Type':1,'Subprocess':0,'Category':5,
                     'Mode':0,'Scope':4,'OnDemand':0,'TriggerOnCreate':0,'TriggerOnDelete':0,
                     'AsyncAutodelete':0,'SyncWorkflowLogOnFailure':0,'StateCode':0,'StatusCode':1,
                     'RunAs':1,'IsTransacted':1,'IntroducedVersion':VERSION,'IsCustomizable':1,
                     'BusinessProcessType':0,'IsCustomProcessingStepAllowedForOtherPublishers':1,
                     'ModernFlowType':0,'PrimaryEntity':'none'}.items():text(meta,k,v)
-        ET.SubElement(ET.SubElement(meta,'LocalizedNames'),'LocalizedName',{'description':flow['properties']['displayName'],'languagecode':'1033'})
+        ET.SubElement(ET.SubElement(meta,'LocalizedNames'),'LocalizedName',{'description':display_name,'languagecode':'1033'})
         write_xml(target.with_name(filename+'.data.xml'),meta)
         ET.SubElement(roots,'RootComponent',{'type':'29','id':'{'+wid+'}','behavior':'0'})
         flows.append({'key':key,'workflowId':wid,'state':'Stopped'})

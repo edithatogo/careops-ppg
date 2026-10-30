@@ -21,7 +21,7 @@ is an external input, never a destination created or copied by this installer.
    Remove unqualified sources rather than enabling a guessed binding.
 2. Emit the destination schemas and provision missing objects through the existing
    qualified SharePoint adapter. The default command is read-only verification;
-   `--apply` creates only missing lists and fields. Existing incompatible schemas
+   `--apply` creates only missing lists, fields and named views. Existing incompatible schemas
    stop the affected installation; records, annotations and permissions are retained.
 
    ```sh
@@ -32,16 +32,20 @@ is an external input, never a destination created or copied by this installer.
      --receipt .local/source-provisioned.json --apply
    ```
 
-   The adapter exports `connect()` returning `all(route)`, `send(operation)` and
+   The adapter exports `connect()` returning `all(route)`, `get(route)`, `send(operation)` and
    `authorizeSchema(scope)`. Reuse the existing workload's authenticated adapter;
    do not copy credentials or start a second authentication owner. `all` must read
    all pages within its pinned site. `send` must retain an exclusive one-send
    journal keyed by `key`, validate `payloadSHA256`, and never blindly retry.
    `authorizeSchema` checks the exact site/list's receivers, subscriptions and rules
-   before writes; unknown notification effects must stop. This adapter is
+   before writes (including `create-view`); unknown notification effects must stop. This adapter is
    destination-specific private configuration, not supplied authentication.
    A failed/uncertain send stops immediately. Reinvoke only after readback reconciles
    it: existing matching lists/fields are reused and are not sent again.
+   For isolated qualification, add `--list-suffix "Clean install example"` when
+   emitting schemas and set the same `listSuffix` in private installation settings.
+   Use a distinct solution name and publisher prefix so existing objects are untouched.
+
 3. Insert the returned list IDs into the private settings `bindings.lists`, and
    supply the qualified connection names. Keep a stable `solutionName` and
    `publisherPrefix` for upgrades: component IDs derive from solution and collector
@@ -73,13 +77,13 @@ existing immutable per-run file naming. Preserve its captures with recovery data
 
 ## Versioning and boundaries
 
-Installer release **1.0.0.0** emits deterministic component IDs, definition versions,
+Installer release **1.1.0.0** emits deterministic component IDs, definition versions,
 list schema versions, deployment settings and a SHA-256 file manifest. Commit
 reusable code/configuration; retain generated bindings, ZIPs and receipts privately.
 Record the Git commit alongside each private deployment manifest. All flows start
 stopped, with no send/notification actions. Lists are versioned; current hospital
 rows preserve source keys, original timestamp text, nulls, annotations and capture
-links. Trends use indexed facility/day fields and a unique SourceKey.
+links. Trends use indexed facility/day fields and a unique SourceKey. Named paged views expose source columns; trends use a bounded day filter.
 
 Keep the three hospital APIs together: they share schedule and capture handling,
 while each dataset has an independent failure scope. Split only if ownership,
@@ -101,6 +105,20 @@ module is not a claim that the entire product is a one-command clean installatio
 
 Focused tests cover deterministic stopped packages, binding replacement, schema
 preservation, duplicate keys, create/replay and reconciliation after uncertain
-writes. PAC packed the full 14-collector example. Native read-only provisioning
-verified all five current destination schemas with zero writes. These checks do
-not claim a fresh destination installation or a cross-tenant restore has run.
+writes. On 30 October 2026, a fresh isolated installation in the existing tenant
+created five lists, 72 fields and five paged views. Provisioning replay created
+zero lists, fields or views. Native solution export verified version 1.1.0.0,
+14 workflows and 11 environment-variable definitions.
+
+All 14 qualification collectors passed one triggered run. Exact readback found
+427 proposed source leads, three synchronised capture records and two fictional
+rows in each hospital dataset. Source fields, nulls, leading-zero keys and capture
+references matched the fixtures. Newsletter proof used three existing genuine
+messages; it did not test a new arrival or send mail. Hospital qualification used
+immutable fictional responses rather than copying the production dataset again.
+
+Qualification copies retain their normal recurrence/arrival definitions and are
+stopped to avoid duplicate collection. The 14 qualified production collectors
+remain enabled; two blocked preparations remain stopped. These results prove the
+source module in isolated objects in the existing tenant, not a whole-product
+installation or a cross-tenant restore. See [artefact scope](solution-artifact-scope.md).

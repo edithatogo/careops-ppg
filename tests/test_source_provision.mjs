@@ -7,3 +7,14 @@ function fake(){let lists=[],fields=[],writes=0,authorised=0;return{get writes()
 test('fresh create and unchanged replay preserve identities without writes',async()=>{const c=fake();const first=await provision(c,schema,{apply:true});assert.equal(first.created,1);assert.equal(first.fieldsCreated,1);assert.equal(c.authorised,2);const n=c.writes;assert.deepEqual((await provision(c,schema,{apply:true})).lists,first.lists);assert.equal(c.writes,n);assert.equal((await provision(c,schema)).verified,true);});
 test('read only never creates; incompatible fields stop',async()=>{const c=fake();await assert.rejects(provision(c,schema),/MISSING_LIST/);assert.equal(c.writes,0);await provision(c,schema,{apply:true});c.fields[0].TypeAsString='Number';const n=c.writes;await assert.rejects(provision(c,schema,{apply:true}),/INCOMPATIBLE_FIELD/);assert.equal(c.writes,n);});
 test('uncertain write is not retried and reconciled on next invocation',async()=>{const c=fake();const send=c.send;c.send=async p=>{await send(p);throw Error('uncertain');};await assert.rejects(provision(c,schema,{apply:true}),/uncertain/);assert.equal(c.writes,1);c.send=send;await provision(c,schema,{apply:true});assert.equal(c.writes,2);});
+
+test('views expose exact fields and replay preserves a changed view',async()=>{
+ const c=fake(),all=c.all,send=c.send;let views=[],fields=[];
+ c.all=async route=>route.endsWith('/views')?views:all(route);
+ c.get=async()=>({Items:fields});
+ c.send=async op=>{if(op.route.endsWith('/views/add')){const p=op.payload.parameters;views=[{Id:'00000000-0000-4000-8000-000000000002',Title:p.Title,ViewQuery:p.Query,RowLimit:p.RowLimit,Paged:p.Paged}];fields=p.ViewFields;}else await send(op);};
+ const s=structuredClone(schema);s.leads.views=[{title:'PPG source records',fields:['Title','SourceKey'],query:'',rowLimit:100}];
+ assert.equal((await provision(c,s,{apply:true})).viewsCreated,1);
+ assert.equal((await provision(c,s,{apply:true})).viewsCreated,0);
+ fields=['Title'];await assert.rejects(provision(c,s,{apply:true}),/INCOMPATIBLE_VIEW_FIELDS/);assert.deepEqual(fields,['Title']);
+});

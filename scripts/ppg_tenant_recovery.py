@@ -7,6 +7,7 @@ Offline only: no authentication, native mutation, ACL copying or implied access.
 from copy import deepcopy
 import hashlib
 import json
+import re
 from pathlib import Path
 from urllib.parse import urlsplit, unquote
 from uuid import UUID
@@ -32,6 +33,11 @@ def prepare(envelope, destination=None):
     source_tenant = UUID(payload['sourceTenantId'])
     entities = payload['entities']
     files = payload['files']
+    for key, file in files.items():
+        if (not isinstance(key,str) or not key or not isinstance(file,dict)
+                or not re.fullmatch(r'[a-f0-9]{64}',file.get('sha256',''))
+                or type(file.get('bytes')) is not int or file['bytes'] < 0):
+            raise ValueError('Valid sealed file hash and byte length required')
     record_keys = set()
     for entity, group in entities.items():
         if not group.get('fields') or not isinstance(group.get('records'), list):
@@ -64,7 +70,7 @@ def prepare(envelope, destination=None):
                         raise ValueError('Unsupported file reference part')
     result = dict(exportSHA256=envelope['sha256'], nativeWrites=0, nativeRestoreVerified=False,
                   readyForNativeQualification=False, copyPermissions=False, activateAutomation=False,
-                  sourcePreserved=True, unresolved=[], records=[])
+                  sourcePreserved=True, unresolved=[], records=[], files=[], sourceTenantId=str(source_tenant))
     if destination is None:
         result['unresolved'] = ['destination tenant, site and bindings required']
         return result
@@ -79,12 +85,21 @@ def prepare(envelope, destination=None):
         url = site_url(target['url'])
         if (url.netloc.lower() != site.netloc.lower()
                 or not unquote(url.path).startswith(unquote(site.path).rstrip('/')+'/')
+                or type(target.get('bytes')) is not int
                 or target['sha256'] != source['sha256'] or target['bytes'] != source['bytes']):
             raise ValueError('Destination file location or bytes conflict')
         UUID(target['uniqueId'])
         if not isinstance(target.get('version'), str) or not target['version'].strip():
             raise ValueError('Destination file version required')
         return target
+    result['destinationTenantId'] = str(UUID(destination['tenantId']))
+    result['destinationSiteUrl'] = destination['siteUrl']
+    for key, source in files.items():
+        target = file_binding(key)
+        if target is None:
+            result['unresolved'].append('file:'+key)
+        else:
+            result['files'].append(dict(key=key, source=deepcopy(source), destination=deepcopy(target)))
     for entity, group in entities.items():
         list_id = destination.get('lists', {}).get(entity)
         if list_id is None:
@@ -118,7 +133,10 @@ def prepare(envelope, destination=None):
                     values[field] = None  # Never leave a source physical reference in a destination plan.
                 else:
                     values[field] = target
-            result['records'].append(dict(entity=entity, key=row['key'], listId=list_id, fields=values))
+            result['records'].append(dict(entity=entity, key=row['key'], listId=list_id, fields=values,
+                provenance=dict(sourceTenantId=str(source_tenant), sourceEntity=entity, sourceKey=row['key'],
+                                sourceReferences=deepcopy(row.get('references',{})),
+                                retained=deepcopy(row.get('provenance',{})))))
     result['readyForNativeQualification'] = not result['unresolved']
     return result
 

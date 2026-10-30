@@ -43,3 +43,11 @@ The caller still needs a designated destination, supported destination-specific
 login, exact target/effects qualification, schema preparation, native readback,
 version/history handling and unchanged replay. Export adapters must declare all
 native references; this is not a blind search-and-replace tool for arbitrary JSON.
+
+The plan now accounts for every sealed file, including files not referenced by a
+record. Missing destination copies remain explicit holds. File hashes and lengths
+are validated, and each mapped row retains its source tenant/entity/key,
+references and supplied provenance separately from writable destination fields.
+Source version provenance is not a claim that native version history was restored.
+Actual destination authentication, copy execution and readback are still required;
+no destination has been selected merely by identifying another available account.
