@@ -1,0 +1,948 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {}
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "Monthly": {
+          "recurrence": {
+            "frequency": "Month",
+            "interval": 1,
+            "timeZone": "E. Australia Standard Time",
+            "startTime": "2026-11-01T08:00:00"
+          },
+          "evaluatedRecurrence": {
+            "frequency": "Month",
+            "interval": 1,
+            "timeZone": "E. Australia Standard Time",
+            "startTime": "2026-11-01T08:00:00"
+          },
+          "type": "Recurrence",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Report_time": {
+          "runAfter": {},
+          "type": "Compose",
+          "inputs": "@utcNow()"
+        },
+        "Month": {
+          "runAfter": {
+            "Report_time": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@formatDateTime(convertTimeZone(outputs('Report_time'),'UTC','E. Australia Standard Time'),'yyyy-MM')"
+        },
+        "Window_end": {
+          "runAfter": {
+            "Month": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@formatDateTime(addToTime(concat(outputs('Month'),'-01T00:00:00Z'),3,'Month'),'yyyy-MM')"
+        },
+        "Read_Checkpoint": {
+          "runAfter": {
+            "Window_end": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='__PPG_INSTALL_00084__/qw3-last-successful.json')/$value",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Checkpoint": {
+          "runAfter": {
+            "Read_Checkpoint": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(contains(body('Read_Checkpoint'),'$content'),json(base64ToString(body('Read_Checkpoint')?['$content'])),json(string(body('Read_Checkpoint'))))"
+        },
+        "Read_Candidate": {
+          "runAfter": {
+            "Checkpoint": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/',outputs('Checkpoint')?['candidateFile'],''')/$value')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Candidate": {
+          "runAfter": {
+            "Read_Candidate": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(contains(body('Read_Candidate'),'$content'),json(base64ToString(body('Read_Candidate')?['$content'])),json(string(body('Read_Candidate'))))"
+        },
+        "Read_Source": {
+          "runAfter": {
+            "Candidate": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='__PPG_INSTALL_00084__/qw3-source-state.json')/$value",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Source": {
+          "runAfter": {
+            "Read_Source": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(contains(body('Read_Source'),'$content'),json(base64ToString(body('Read_Source')?['$content'])),json(string(body('Read_Source'))))"
+        },
+        "Read_Catalogue": {
+          "runAfter": {
+            "Source": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items?$select=DocumentUID,rawSourceRecordRef,sourceAsOfUtc,sourceCustodian,sourceDocumentId,sourceNextReviewDateRaw,sourceNextReviewMonth,sourceRisk,sourceRowNumber,sourceSnapshotRef,sourceStatus,sourceTitle&$top=5000",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Catalogue": {
+          "runAfter": {
+            "Read_Catalogue": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(contains(body('Read_Catalogue'),'$content'),json(base64ToString(body('Read_Catalogue')?['$content'])),json(string(body('Read_Catalogue'))))"
+        },
+        "Candidate_fields": {
+          "runAfter": {
+            "Catalogue": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Candidate')?['operations']",
+            "select": {
+              "DocumentUID": "@item()?['DocumentUID']",
+              "rawSourceRecordRef": "@item()?['fields']?['rawSourceRecordRef']",
+              "sourceAsOfUtc": "@item()?['fields']?['sourceAsOfUtc']",
+              "sourceCustodian": "@item()?['fields']?['sourceCustodian']",
+              "sourceDocumentId": "@item()?['fields']?['sourceDocumentId']",
+              "sourceNextReviewDateRaw": "@item()?['fields']?['sourceNextReviewDateRaw']",
+              "sourceNextReviewMonth": "@item()?['fields']?['sourceNextReviewMonth']",
+              "sourceRisk": "@item()?['fields']?['sourceRisk']",
+              "sourceRowNumber": "@int(item()?['fields']?['sourceRowNumber'])",
+              "sourceSnapshotRef": "@item()?['fields']?['sourceSnapshotRef']",
+              "sourceStatus": "@item()?['fields']?['sourceStatus']",
+              "sourceTitle": "@item()?['fields']?['sourceTitle']"
+            }
+          }
+        },
+        "Retained_UIDs": {
+          "runAfter": {
+            "Candidate_fields": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@coalesce(outputs('Checkpoint')?['retainedAbsentUIDs'],json('[]'))"
+        },
+        "Retained_catalogue": {
+          "runAfter": {
+            "Retained_UIDs": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Catalogue')?['value']",
+            "where": "@contains(outputs('Retained_UIDs'),item()?['DocumentUID'])"
+          }
+        },
+        "Active_catalogue": {
+          "runAfter": {
+            "Retained_catalogue": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@outputs('Catalogue')?['value']",
+            "where": "@not(contains(outputs('Retained_UIDs'),item()?['DocumentUID']))"
+          }
+        },
+        "Catalogue_fields": {
+          "runAfter": {
+            "Active_catalogue": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Active_catalogue')",
+            "select": {
+              "DocumentUID": "@item()?['DocumentUID']",
+              "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+              "sourceAsOfUtc": "@item()?['sourceAsOfUtc']",
+              "sourceCustodian": "@item()?['sourceCustodian']",
+              "sourceDocumentId": "@item()?['sourceDocumentId']",
+              "sourceNextReviewDateRaw": "@item()?['sourceNextReviewDateRaw']",
+              "sourceNextReviewMonth": "@item()?['sourceNextReviewMonth']",
+              "sourceRisk": "@item()?['sourceRisk']",
+              "sourceRowNumber": "@int(item()?['sourceRowNumber'])",
+              "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+              "sourceStatus": "@item()?['sourceStatus']",
+              "sourceTitle": "@item()?['sourceTitle']"
+            }
+          }
+        },
+        "All_UIDs": {
+          "runAfter": {
+            "Catalogue_fields": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Catalogue')?['value']",
+            "select": "@item()?['DocumentUID']"
+          }
+        },
+        "Ledger_UIDs": {
+          "runAfter": {
+            "All_UIDs": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Checkpoint')?['identityLedger']?['aliases']",
+            "select": "@coalesce(item()?['documentUID'],item()?['DocumentUID'])"
+          }
+        },
+        "Ledger_aliases": {
+          "runAfter": {
+            "Ledger_UIDs": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Checkpoint')?['identityLedger']?['aliases']",
+            "select": "@coalesce(item()?['sourceDocumentId'],item()?['alias'])"
+          }
+        },
+        "Ledger_pairs": {
+          "runAfter": {
+            "Ledger_aliases": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Checkpoint')?['identityLedger']?['aliases']",
+            "select": {
+              "DocumentUID": "@coalesce(item()?['documentUID'],item()?['DocumentUID'])",
+              "sourceDocumentId": "@coalesce(item()?['sourceDocumentId'],item()?['alias'])"
+            }
+          }
+        },
+        "Candidate_pairs": {
+          "runAfter": {
+            "Ledger_pairs": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@outputs('Candidate')?['operations']",
+            "select": {
+              "DocumentUID": "@item()?['DocumentUID']",
+              "sourceDocumentId": "@item()?['fields']?['sourceDocumentId']"
+            }
+          }
+        },
+        "All_acknowledgement_UIDs": {
+          "runAfter": {
+            "Candidate_pairs": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@coalesce(outputs('Checkpoint')?['identityLedger']?['sourceAbsenceAcknowledgements'],json('[]'))",
+            "select": "@item()?['DocumentUID']"
+          }
+        },
+        "Current_acknowledgements": {
+          "runAfter": {
+            "All_acknowledgement_UIDs": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@coalesce(outputs('Checkpoint')?['identityLedger']?['sourceAbsenceAcknowledgements'],json('[]'))",
+            "where": "@contains(outputs('Retained_UIDs'),item()?['DocumentUID'])"
+          }
+        },
+        "Acknowledged_UIDs": {
+          "runAfter": {
+            "Current_acknowledgements": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Current_acknowledgements')",
+            "select": "@item()?['DocumentUID']"
+          }
+        },
+        "Invalid_acknowledgements": {
+          "runAfter": {
+            "Acknowledged_UIDs": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@body('Current_acknowledgements')",
+            "where": "@not(and(equals(item()?['sourceSha256'],outputs('Checkpoint')?['sourceSha256']),equals(item()?['effect'],'retain_unchanged'),not(empty(trim(string(item()?['actor'])))),not(empty(trim(string(item()?['evidenceReference'])))),not(empty(trim(string(item()?['decisionEvidence'])))),not(empty(trim(string(item()?['baseContractHash']))))))"
+          }
+        },
+        "Identities": {
+          "runAfter": {
+            "Invalid_acknowledgements": [
+              "Succeeded"
+            ]
+          },
+          "type": "Select",
+          "inputs": {
+            "from": "@body('Catalogue_fields')",
+            "select": {
+              "id": "@item()?['DocumentUID']"
+            }
+          }
+        },
+        "Mismatched_routes": {
+          "runAfter": {
+            "Identities": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@range(0,length(outputs('Candidate')?['operations']))",
+            "where": "@not(and(equals(outputs('Candidate')?['operations'][item()]?['sourceRow'],outputs('Candidate')?['rawRecords'][item()]?['sourceRow']),equals(outputs('Candidate')?['operations'][item()]?['fields'],outputs('Candidate')?['rawRecords'][item()]?['projectedFields']),equals(outputs('Candidate')?['operations'][item()]?['fields']?['sourceDocumentId'],outputs('Candidate')?['rawRecords'][item()]?['fields']?['sourceDocumentId'])))"
+          }
+        },
+        "Guard_checks": {
+          "runAfter": {
+            "Mismatched_routes": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "check_1": "@equals(outputs('Checkpoint')?['status'],'completed')",
+            "check_2": "@equals(outputs('Candidate')?['allowed'],json('[\"rawSourceRecordRef\",\"sourceAsOfUtc\",\"sourceCustodian\",\"sourceDocumentId\",\"sourceNextReviewDateRaw\",\"sourceNextReviewMonth\",\"sourceRisk\",\"sourceRowNumber\",\"sourceSnapshotRef\",\"sourceStatus\",\"sourceTitle\"]'))",
+            "check_3": "@equals(length(outputs('Candidate')?['exceptions']),0)",
+            "check_4": "@equals(length(outputs('Candidate')?['missingUIDs']),length(outputs('Retained_UIDs')))",
+            "check_5": "@equals(length(union(outputs('Retained_UIDs'),outputs('Retained_UIDs'))),length(outputs('Retained_UIDs')))",
+            "check_6": "@equals(length(intersection(outputs('Candidate')?['missingUIDs'],outputs('Retained_UIDs'))),length(outputs('Retained_UIDs')))",
+            "check_7": "@equals(length(coalesce(outputs('Candidate')?['acknowledgedMissingUIDs'],json('[]'))),length(outputs('Retained_UIDs')))",
+            "check_8": "@equals(length(intersection(coalesce(outputs('Candidate')?['acknowledgedMissingUIDs'],json('[]')),outputs('Retained_UIDs'))),length(outputs('Retained_UIDs')))",
+            "check_9": "@equals(length(body('Retained_catalogue')),length(outputs('Retained_UIDs')))",
+            "check_10": "@equals(length(body('All_UIDs')),coalesce(outputs('Checkpoint')?['catalogueReadbackCount'],outputs('Checkpoint')?['readbackCount']))",
+            "check_11": "@equals(length(union(body('All_UIDs'),body('All_UIDs'))),length(body('All_UIDs')))",
+            "check_12": "@equals(length(union(body('Ledger_UIDs'),body('Ledger_UIDs'))),length(body('All_UIDs')))",
+            "check_13": "@equals(length(intersection(body('All_UIDs'),body('Ledger_UIDs'))),length(body('All_UIDs')))",
+            "check_14": "@equals(length(union(body('Ledger_aliases'),body('Ledger_aliases'))),length(body('Ledger_aliases')))",
+            "check_15": "@equals(outputs('Checkpoint')?['identityLedger']?['sourceSystemId'],outputs('Candidate')?['source'])",
+            "check_16": "@equals(length(body('Acknowledged_UIDs')),length(outputs('Retained_UIDs')))",
+            "check_17": "@equals(length(intersection(body('Acknowledged_UIDs'),outputs('Retained_UIDs'))),length(outputs('Retained_UIDs')))",
+            "check_18": "@equals(length(body('Invalid_acknowledgements')),0)",
+            "check_19": "@equals(length(union(body('All_acknowledgement_UIDs'),body('All_acknowledgement_UIDs'))),length(body('All_acknowledgement_UIDs')))",
+            "check_20": "@equals(length(intersection(body('All_acknowledgement_UIDs'),body('All_UIDs'))),length(body('All_acknowledgement_UIDs')))",
+            "check_21": "@equals(length(intersection(body('Candidate_pairs'),body('Ledger_pairs'))),length(body('Candidate_pairs')))",
+            "check_22": "@or(empty(outputs('Retained_UIDs')),and(equals(outputs('Checkpoint')?['retainedAbsentUnchanged'],true),equals(outputs('Checkpoint')?['retainedAbsentReadbackCount'],length(outputs('Retained_UIDs'))),not(empty(outputs('Checkpoint')?['lastIdentityApplicationHash'])),not(empty(outputs('Checkpoint')?['runId']))))",
+            "check_23": "@equals(outputs('Candidate')?['sourceSha256'],outputs('Checkpoint')?['sourceSha256'])",
+            "check_24": "@equals(outputs('Candidate')?['contractHash'],outputs('Checkpoint')?['identityContractHash'])",
+            "check_25": "@greater(length(body('Catalogue_fields')),0)",
+            "check_26": "@equals(length(body('Catalogue_fields')),outputs('Checkpoint')?['readbackCount'])",
+            "check_27": "@equals(length(body('Catalogue_fields')),outputs('Candidate')?['inputCount'])",
+            "check_28": "@equals(length(body('Candidate_fields')),length(body('Catalogue_fields')))",
+            "check_29": "@equals(length(intersection(body('Catalogue_fields'),body('Candidate_fields'))),length(body('Catalogue_fields')))",
+            "check_30": "@equals(length(union(body('Identities'),body('Identities'))),length(body('Identities')))",
+            "check_31": "@not(contains(body('Identities'),json('{\"id\":null}')))",
+            "check_32": "@not(contains(body('Identities'),json('{\"id\":\"\"}')))",
+            "check_33": "@not(contains(outputs('Catalogue'),'odata.nextLink'))",
+            "check_34": "@not(contains(outputs('Catalogue'),'@odata.nextLink'))",
+            "check_35": "@equals(length(body('Mismatched_routes')),0)",
+            "check_36": "@equals(length(outputs('Candidate')?['rawRecords']),length(body('Candidate_fields')))"
+          }
+        },
+        "Guard": {
+          "runAfter": {
+            "Guard_checks": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@and(equals(outputs('Checkpoint')?['status'],'completed'),equals(outputs('Candidate')?['allowed'],json('[\"rawSourceRecordRef\",\"sourceAsOfUtc\",\"sourceCustodian\",\"sourceDocumentId\",\"sourceNextReviewDateRaw\",\"sourceNextReviewMonth\",\"sourceRisk\",\"sourceRowNumber\",\"sourceSnapshotRef\",\"sourceStatus\",\"sourceTitle\"]')),equals(length(outputs('Candidate')?['exceptions']),0),equals(length(outputs('Candidate')?['missingUIDs']),length(outputs('Retained_UIDs'))),equals(length(union(outputs('Retained_UIDs'),outputs('Retained_UIDs'))),length(outputs('Retained_UIDs'))),equals(length(intersection(outputs('Candidate')?['missingUIDs'],outputs('Retained_UIDs'))),length(outputs('Retained_UIDs'))),equals(length(coalesce(outputs('Candidate')?['acknowledgedMissingUIDs'],json('[]'))),length(outputs('Retained_UIDs'))),equals(length(intersection(coalesce(outputs('Candidate')?['acknowledgedMissingUIDs'],json('[]')),outputs('Retained_UIDs'))),length(outputs('Retained_UIDs'))),equals(length(body('Retained_catalogue')),length(outputs('Retained_UIDs'))),equals(length(body('All_UIDs')),coalesce(outputs('Checkpoint')?['catalogueReadbackCount'],outputs('Checkpoint')?['readbackCount'])),equals(length(union(body('All_UIDs'),body('All_UIDs'))),length(body('All_UIDs'))),equals(length(union(body('Ledger_UIDs'),body('Ledger_UIDs'))),length(body('All_UIDs'))),equals(length(intersection(body('All_UIDs'),body('Ledger_UIDs'))),length(body('All_UIDs'))),equals(length(union(body('Ledger_aliases'),body('Ledger_aliases'))),length(body('Ledger_aliases'))),equals(outputs('Checkpoint')?['identityLedger']?['sourceSystemId'],outputs('Candidate')?['source']),equals(length(body('Acknowledged_UIDs')),length(outputs('Retained_UIDs'))),equals(length(intersection(body('Acknowledged_UIDs'),outputs('Retained_UIDs'))),length(outputs('Retained_UIDs'))),equals(length(body('Invalid_acknowledgements')),0),equals(length(union(body('All_acknowledgement_UIDs'),body('All_acknowledgement_UIDs'))),length(body('All_acknowledgement_UIDs'))),equals(length(intersection(body('All_acknowledgement_UIDs'),body('All_UIDs'))),length(body('All_acknowledgement_UIDs'))),equals(length(intersection(body('Candidate_pairs'),body('Ledger_pairs'))),length(body('Candidate_pairs'))),or(empty(outputs('Retained_UIDs')),and(equals(outputs('Checkpoint')?['retainedAbsentUnchanged'],true),equals(outputs('Checkpoint')?['retainedAbsentReadbackCount'],length(outputs('Retained_UIDs'))),not(empty(outputs('Checkpoint')?['lastIdentityApplicationHash'])),not(empty(outputs('Checkpoint')?['runId'])))),equals(outputs('Candidate')?['sourceSha256'],outputs('Checkpoint')?['sourceSha256']),equals(outputs('Candidate')?['contractHash'],outputs('Checkpoint')?['identityContractHash']),greater(length(body('Catalogue_fields')),0),equals(length(body('Catalogue_fields')),outputs('Checkpoint')?['readbackCount']),equals(length(body('Catalogue_fields')),outputs('Candidate')?['inputCount']),equals(length(body('Candidate_fields')),length(body('Catalogue_fields'))),equals(length(intersection(body('Catalogue_fields'),body('Candidate_fields'))),length(body('Catalogue_fields'))),equals(length(union(body('Identities'),body('Identities'))),length(body('Identities'))),not(contains(body('Identities'),json('{\"id\":null}'))),not(contains(body('Identities'),json('{\"id\":\"\"}'))),not(contains(outputs('Catalogue'),'odata.nextLink')),not(contains(outputs('Catalogue'),'@odata.nextLink')),equals(length(body('Mismatched_routes')),0),equals(length(outputs('Candidate')?['rawRecords']),length(body('Candidate_fields'))))"
+        },
+        "Generate_if_verified": {
+          "actions": {
+            "Rows": {
+              "runAfter": {},
+              "type": "Select",
+              "inputs": {
+                "from": "@range(0,length(outputs('Candidate')?['operations']))",
+                "select": {
+                  "Bucket": "@if(not(and(equals(length(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],'')),7),equals(length(split(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],''),'-')),2),equals(length(first(split(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],''),'-'))),4),equals(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(first(split(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],''),'-')),'0',''),'1',''),'2',''),'3',''),'4',''),'5',''),'6',''),'7',''),'8',''),'9',''),''),not(equals(first(split(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],''),'-')),'0000')),contains(createArray('01','02','03','04','05','06','07','08','09','10','11','12'),last(split(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],''),'-'))))),'Date exception',if(less(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],''),outputs('Month')),'Overdue',if(equals(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],''),outputs('Month')),'Due this month',if(lessOrEquals(coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],''),outputs('Window_end')),'Due next three months','Later'))))",
+                  "Review month": "@coalesce(outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewMonth'],'')",
+                  "Custodian": "@coalesce(outputs('Candidate')?['rawRecords'][item()]?['fields']?['sourceCustodian'],'')",
+                  "Authorising officer": "@coalesce(outputs('Candidate')?['rawRecords'][item()]?['fields']?['sourceAuthorisingOfficer'],'')",
+                  "Operational hierarchy": "@coalesce(outputs('Candidate')?['rawRecords'][item()]?['fields']?['sourceExecutiveHierarchy'],'')",
+                  "Service director": "@coalesce(outputs('Candidate')?['rawRecords'][item()]?['fields']?['sourceServiceDirector'],'')",
+                  "Service": "@coalesce(outputs('Candidate')?['rawRecords'][item()]?['fields']?['sourceServiceIndex'],'')",
+                  "DocumentUID": "@outputs('Candidate')?['operations'][item()]?['DocumentUID']",
+                  "Document ID": "@outputs('Candidate')?['operations'][item()]?['fields']?['sourceDocumentId']",
+                  "Title": "@outputs('Candidate')?['operations'][item()]?['fields']?['sourceTitle']",
+                  "Source status": "@outputs('Candidate')?['operations'][item()]?['fields']?['sourceStatus']",
+                  "Risk": "@outputs('Candidate')?['operations'][item()]?['fields']?['sourceRisk']",
+                  "Source comments": "@coalesce(outputs('Candidate')?['rawRecords'][item()]?['fields']?['sourceComments'],'')",
+                  "Review date raw": "@outputs('Candidate')?['operations'][item()]?['fields']?['sourceNextReviewDateRaw']",
+                  "Evidence": "@outputs('Candidate')?['operations'][item()]?['fields']?['rawSourceRecordRef']"
+                }
+              }
+            },
+            "Sorted_rows": {
+              "runAfter": {
+                "Rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@sort(sort(sort(body('Rows'),'Custodian'),'Operational hierarchy'),'Authorising officer')"
+            },
+            "Overdue": {
+              "runAfter": {
+                "Sorted_rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Sorted_rows')",
+                "where": "@equals(item()?['Bucket'],'Overdue')"
+              }
+            },
+            "Due_now": {
+              "runAfter": {
+                "Overdue": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Sorted_rows')",
+                "where": "@equals(item()?['Bucket'],'Due this month')"
+              }
+            },
+            "Due_soon": {
+              "runAfter": {
+                "Due_now": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Sorted_rows')",
+                "where": "@equals(item()?['Bucket'],'Due next three months')"
+              }
+            },
+            "Exceptions": {
+              "runAfter": {
+                "Due_soon": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Sorted_rows')",
+                "where": "@equals(item()?['Bucket'],'Date exception')"
+              }
+            },
+            "Later": {
+              "runAfter": {
+                "Exceptions": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Sorted_rows')",
+                "where": "@equals(item()?['Bucket'],'Later')"
+              }
+            },
+            "Freshness": {
+              "runAfter": {
+                "Later": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@if(not(equals(outputs('Source')?['sourceETag'],outputs('Checkpoint')?['centralSourceETag'])),'SOURCE CHANGED / RECONCILIATION PENDING - last verified catalogue only',if(or(empty(outputs('Source')?['checkedUtc']),greater(ticks(outputs('Report_time')),ticks(addMinutes(coalesce(outputs('Source')?['checkedUtc'],'__PPG_INSTALL_00242__'),90)))),'SOURCE CHECK STALE OR UNKNOWN - last verified catalogue only','Latest observed source matches verified catalogue; policy currency not assessed'))"
+            },
+            "Reportable_rows": {
+              "runAfter": {
+                "Freshness": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Sorted_rows')",
+                "where": "@not(equals(item()?['Bucket'],'Later'))"
+              }
+            },
+            "CSV_safe_rows": {
+              "runAfter": {
+                "Reportable_rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Reportable_rows')",
+                "select": {
+                  "Bucket": "@if(or(startsWith(trim(string(coalesce(item()?['Bucket'],''))),'='),startsWith(trim(string(coalesce(item()?['Bucket'],''))),'+'),startsWith(trim(string(coalesce(item()?['Bucket'],''))),'-'),startsWith(trim(string(coalesce(item()?['Bucket'],''))),'@'),startsWith(string(coalesce(item()?['Bucket'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Bucket'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Bucket'],''))),string(coalesce(item()?['Bucket'],'')))",
+                  "Review month": "@if(or(startsWith(trim(string(coalesce(item()?['Review month'],''))),'='),startsWith(trim(string(coalesce(item()?['Review month'],''))),'+'),startsWith(trim(string(coalesce(item()?['Review month'],''))),'-'),startsWith(trim(string(coalesce(item()?['Review month'],''))),'@'),startsWith(string(coalesce(item()?['Review month'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Review month'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Review month'],''))),string(coalesce(item()?['Review month'],'')))",
+                  "Custodian": "@if(or(startsWith(trim(string(coalesce(item()?['Custodian'],''))),'='),startsWith(trim(string(coalesce(item()?['Custodian'],''))),'+'),startsWith(trim(string(coalesce(item()?['Custodian'],''))),'-'),startsWith(trim(string(coalesce(item()?['Custodian'],''))),'@'),startsWith(string(coalesce(item()?['Custodian'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Custodian'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Custodian'],''))),string(coalesce(item()?['Custodian'],'')))",
+                  "Authorising officer": "@if(or(startsWith(trim(string(coalesce(item()?['Authorising officer'],''))),'='),startsWith(trim(string(coalesce(item()?['Authorising officer'],''))),'+'),startsWith(trim(string(coalesce(item()?['Authorising officer'],''))),'-'),startsWith(trim(string(coalesce(item()?['Authorising officer'],''))),'@'),startsWith(string(coalesce(item()?['Authorising officer'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Authorising officer'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Authorising officer'],''))),string(coalesce(item()?['Authorising officer'],'')))",
+                  "Operational hierarchy": "@if(or(startsWith(trim(string(coalesce(item()?['Operational hierarchy'],''))),'='),startsWith(trim(string(coalesce(item()?['Operational hierarchy'],''))),'+'),startsWith(trim(string(coalesce(item()?['Operational hierarchy'],''))),'-'),startsWith(trim(string(coalesce(item()?['Operational hierarchy'],''))),'@'),startsWith(string(coalesce(item()?['Operational hierarchy'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Operational hierarchy'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Operational hierarchy'],''))),string(coalesce(item()?['Operational hierarchy'],'')))",
+                  "Service director": "@if(or(startsWith(trim(string(coalesce(item()?['Service director'],''))),'='),startsWith(trim(string(coalesce(item()?['Service director'],''))),'+'),startsWith(trim(string(coalesce(item()?['Service director'],''))),'-'),startsWith(trim(string(coalesce(item()?['Service director'],''))),'@'),startsWith(string(coalesce(item()?['Service director'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Service director'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Service director'],''))),string(coalesce(item()?['Service director'],'')))",
+                  "Service": "@if(or(startsWith(trim(string(coalesce(item()?['Service'],''))),'='),startsWith(trim(string(coalesce(item()?['Service'],''))),'+'),startsWith(trim(string(coalesce(item()?['Service'],''))),'-'),startsWith(trim(string(coalesce(item()?['Service'],''))),'@'),startsWith(string(coalesce(item()?['Service'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Service'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Service'],''))),string(coalesce(item()?['Service'],'')))",
+                  "DocumentUID": "@if(or(startsWith(trim(string(coalesce(item()?['DocumentUID'],''))),'='),startsWith(trim(string(coalesce(item()?['DocumentUID'],''))),'+'),startsWith(trim(string(coalesce(item()?['DocumentUID'],''))),'-'),startsWith(trim(string(coalesce(item()?['DocumentUID'],''))),'@'),startsWith(string(coalesce(item()?['DocumentUID'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['DocumentUID'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['DocumentUID'],''))),string(coalesce(item()?['DocumentUID'],'')))",
+                  "Document ID": "@if(or(startsWith(trim(string(coalesce(item()?['Document ID'],''))),'='),startsWith(trim(string(coalesce(item()?['Document ID'],''))),'+'),startsWith(trim(string(coalesce(item()?['Document ID'],''))),'-'),startsWith(trim(string(coalesce(item()?['Document ID'],''))),'@'),startsWith(string(coalesce(item()?['Document ID'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Document ID'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Document ID'],''))),string(coalesce(item()?['Document ID'],'')))",
+                  "Title": "@if(or(startsWith(trim(string(coalesce(item()?['Title'],''))),'='),startsWith(trim(string(coalesce(item()?['Title'],''))),'+'),startsWith(trim(string(coalesce(item()?['Title'],''))),'-'),startsWith(trim(string(coalesce(item()?['Title'],''))),'@'),startsWith(string(coalesce(item()?['Title'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Title'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Title'],''))),string(coalesce(item()?['Title'],'')))",
+                  "Source status": "@if(or(startsWith(trim(string(coalesce(item()?['Source status'],''))),'='),startsWith(trim(string(coalesce(item()?['Source status'],''))),'+'),startsWith(trim(string(coalesce(item()?['Source status'],''))),'-'),startsWith(trim(string(coalesce(item()?['Source status'],''))),'@'),startsWith(string(coalesce(item()?['Source status'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Source status'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Source status'],''))),string(coalesce(item()?['Source status'],'')))",
+                  "Risk": "@if(or(startsWith(trim(string(coalesce(item()?['Risk'],''))),'='),startsWith(trim(string(coalesce(item()?['Risk'],''))),'+'),startsWith(trim(string(coalesce(item()?['Risk'],''))),'-'),startsWith(trim(string(coalesce(item()?['Risk'],''))),'@'),startsWith(string(coalesce(item()?['Risk'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Risk'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Risk'],''))),string(coalesce(item()?['Risk'],'')))",
+                  "Source comments": "@if(or(startsWith(trim(string(coalesce(item()?['Source comments'],''))),'='),startsWith(trim(string(coalesce(item()?['Source comments'],''))),'+'),startsWith(trim(string(coalesce(item()?['Source comments'],''))),'-'),startsWith(trim(string(coalesce(item()?['Source comments'],''))),'@'),startsWith(string(coalesce(item()?['Source comments'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Source comments'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Source comments'],''))),string(coalesce(item()?['Source comments'],'')))",
+                  "Review date raw": "@if(or(startsWith(trim(string(coalesce(item()?['Review date raw'],''))),'='),startsWith(trim(string(coalesce(item()?['Review date raw'],''))),'+'),startsWith(trim(string(coalesce(item()?['Review date raw'],''))),'-'),startsWith(trim(string(coalesce(item()?['Review date raw'],''))),'@'),startsWith(string(coalesce(item()?['Review date raw'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Review date raw'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Review date raw'],''))),string(coalesce(item()?['Review date raw'],'')))",
+                  "Evidence": "@if(or(startsWith(trim(string(coalesce(item()?['Evidence'],''))),'='),startsWith(trim(string(coalesce(item()?['Evidence'],''))),'+'),startsWith(trim(string(coalesce(item()?['Evidence'],''))),'-'),startsWith(trim(string(coalesce(item()?['Evidence'],''))),'@'),startsWith(string(coalesce(item()?['Evidence'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Evidence'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Evidence'],''))),string(coalesce(item()?['Evidence'],'')))",
+                  "Report month": "@outputs('Month')",
+                  "Freshness": "@outputs('Freshness')",
+                  "Last successful UTC": "@outputs('Checkpoint')?['asOfUtc']",
+                  "Source SHA256": "@outputs('Checkpoint')?['sourceSha256']",
+                  "Generated UTC": "@outputs('Report_time')"
+                }
+              }
+            },
+            "CSV": {
+              "runAfter": {
+                "CSV_safe_rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('CSV_safe_rows')",
+                "format": "CSV"
+              }
+            },
+            "Retained_rows": {
+              "runAfter": {
+                "CSV": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Retained_catalogue')",
+                "select": {
+                  "DocumentUID": "@item()?['DocumentUID']",
+                  "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+                  "sourceAsOfUtc": "@item()?['sourceAsOfUtc']",
+                  "sourceCustodian": "@item()?['sourceCustodian']",
+                  "sourceDocumentId": "@item()?['sourceDocumentId']",
+                  "sourceNextReviewDateRaw": "@item()?['sourceNextReviewDateRaw']",
+                  "sourceNextReviewMonth": "@item()?['sourceNextReviewMonth']",
+                  "sourceRisk": "@item()?['sourceRisk']",
+                  "sourceRowNumber": "@item()?['sourceRowNumber']",
+                  "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+                  "sourceStatus": "@item()?['sourceStatus']",
+                  "sourceTitle": "@item()?['sourceTitle']",
+                  "Accounting": "Retained source absence; current clinical status unresolved; original recorded fields preserved"
+                }
+              }
+            },
+            "Retained_safe_rows": {
+              "runAfter": {
+                "Retained_rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Retained_rows')",
+                "select": {
+                  "DocumentUID": "@if(or(startsWith(trim(string(coalesce(item()?['DocumentUID'],''))),'='),startsWith(trim(string(coalesce(item()?['DocumentUID'],''))),'+'),startsWith(trim(string(coalesce(item()?['DocumentUID'],''))),'-'),startsWith(trim(string(coalesce(item()?['DocumentUID'],''))),'@'),startsWith(string(coalesce(item()?['DocumentUID'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['DocumentUID'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['DocumentUID'],''))),string(coalesce(item()?['DocumentUID'],'')))",
+                  "rawSourceRecordRef": "@if(or(startsWith(trim(string(coalesce(item()?['rawSourceRecordRef'],''))),'='),startsWith(trim(string(coalesce(item()?['rawSourceRecordRef'],''))),'+'),startsWith(trim(string(coalesce(item()?['rawSourceRecordRef'],''))),'-'),startsWith(trim(string(coalesce(item()?['rawSourceRecordRef'],''))),'@'),startsWith(string(coalesce(item()?['rawSourceRecordRef'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['rawSourceRecordRef'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['rawSourceRecordRef'],''))),string(coalesce(item()?['rawSourceRecordRef'],'')))",
+                  "sourceAsOfUtc": "@if(or(startsWith(trim(string(coalesce(item()?['sourceAsOfUtc'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceAsOfUtc'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceAsOfUtc'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceAsOfUtc'],''))),'@'),startsWith(string(coalesce(item()?['sourceAsOfUtc'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceAsOfUtc'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceAsOfUtc'],''))),string(coalesce(item()?['sourceAsOfUtc'],'')))",
+                  "sourceCustodian": "@if(or(startsWith(trim(string(coalesce(item()?['sourceCustodian'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceCustodian'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceCustodian'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceCustodian'],''))),'@'),startsWith(string(coalesce(item()?['sourceCustodian'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceCustodian'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceCustodian'],''))),string(coalesce(item()?['sourceCustodian'],'')))",
+                  "sourceDocumentId": "@if(or(startsWith(trim(string(coalesce(item()?['sourceDocumentId'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceDocumentId'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceDocumentId'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceDocumentId'],''))),'@'),startsWith(string(coalesce(item()?['sourceDocumentId'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceDocumentId'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceDocumentId'],''))),string(coalesce(item()?['sourceDocumentId'],'')))",
+                  "sourceNextReviewDateRaw": "@if(or(startsWith(trim(string(coalesce(item()?['sourceNextReviewDateRaw'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceNextReviewDateRaw'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceNextReviewDateRaw'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceNextReviewDateRaw'],''))),'@'),startsWith(string(coalesce(item()?['sourceNextReviewDateRaw'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceNextReviewDateRaw'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceNextReviewDateRaw'],''))),string(coalesce(item()?['sourceNextReviewDateRaw'],'')))",
+                  "sourceNextReviewMonth": "@if(or(startsWith(trim(string(coalesce(item()?['sourceNextReviewMonth'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceNextReviewMonth'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceNextReviewMonth'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceNextReviewMonth'],''))),'@'),startsWith(string(coalesce(item()?['sourceNextReviewMonth'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceNextReviewMonth'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceNextReviewMonth'],''))),string(coalesce(item()?['sourceNextReviewMonth'],'')))",
+                  "sourceRisk": "@if(or(startsWith(trim(string(coalesce(item()?['sourceRisk'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceRisk'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceRisk'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceRisk'],''))),'@'),startsWith(string(coalesce(item()?['sourceRisk'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceRisk'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceRisk'],''))),string(coalesce(item()?['sourceRisk'],'')))",
+                  "sourceRowNumber": "@if(or(startsWith(trim(string(coalesce(item()?['sourceRowNumber'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceRowNumber'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceRowNumber'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceRowNumber'],''))),'@'),startsWith(string(coalesce(item()?['sourceRowNumber'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceRowNumber'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceRowNumber'],''))),string(coalesce(item()?['sourceRowNumber'],'')))",
+                  "sourceSnapshotRef": "@if(or(startsWith(trim(string(coalesce(item()?['sourceSnapshotRef'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceSnapshotRef'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceSnapshotRef'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceSnapshotRef'],''))),'@'),startsWith(string(coalesce(item()?['sourceSnapshotRef'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceSnapshotRef'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceSnapshotRef'],''))),string(coalesce(item()?['sourceSnapshotRef'],'')))",
+                  "sourceStatus": "@if(or(startsWith(trim(string(coalesce(item()?['sourceStatus'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceStatus'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceStatus'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceStatus'],''))),'@'),startsWith(string(coalesce(item()?['sourceStatus'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceStatus'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceStatus'],''))),string(coalesce(item()?['sourceStatus'],'')))",
+                  "sourceTitle": "@if(or(startsWith(trim(string(coalesce(item()?['sourceTitle'],''))),'='),startsWith(trim(string(coalesce(item()?['sourceTitle'],''))),'+'),startsWith(trim(string(coalesce(item()?['sourceTitle'],''))),'-'),startsWith(trim(string(coalesce(item()?['sourceTitle'],''))),'@'),startsWith(string(coalesce(item()?['sourceTitle'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['sourceTitle'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['sourceTitle'],''))),string(coalesce(item()?['sourceTitle'],'')))",
+                  "Accounting": "@if(or(startsWith(trim(string(coalesce(item()?['Accounting'],''))),'='),startsWith(trim(string(coalesce(item()?['Accounting'],''))),'+'),startsWith(trim(string(coalesce(item()?['Accounting'],''))),'-'),startsWith(trim(string(coalesce(item()?['Accounting'],''))),'@'),startsWith(string(coalesce(item()?['Accounting'],'')),decodeUriComponent('%09')),startsWith(string(coalesce(item()?['Accounting'],'')),decodeUriComponent('%0D'))),concat('''',string(coalesce(item()?['Accounting'],''))),string(coalesce(item()?['Accounting'],'')))"
+                }
+              }
+            },
+            "Retained_CSV": {
+              "runAfter": {
+                "Retained_safe_rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Table",
+              "inputs": {
+                "from": "@body('Retained_safe_rows')",
+                "format": "CSV"
+              }
+            },
+            "Recheck_checkpoint": {
+              "runAfter": {
+                "Retained_CSV": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='__PPG_INSTALL_00084__/qw3-last-successful.json')/$value",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata"
+                  }
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Checkpoint_after": {
+              "runAfter": {
+                "Recheck_checkpoint": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@if(contains(body('Recheck_checkpoint'),'$content'),json(base64ToString(body('Recheck_checkpoint')?['$content'])),json(string(body('Recheck_checkpoint'))))"
+            },
+            "Write_if_stable": {
+              "actions": {
+                "Write_CSV": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "POST",
+                      "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__'')/Files/add(url=''',concat('PPG-monthly-review-',outputs('Month'),''),'.csv'',overwrite=true)')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata",
+                        "Content-Type": "application/octet-stream"
+                      },
+                      "parameters/body": "@body('CSV')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Readback_CSV": {
+                  "runAfter": {
+                    "Write_CSV": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/',concat('PPG-monthly-review-',outputs('Month'),''),'.csv'')/$value')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "CSV_readback": {
+                  "runAfter": {
+                    "Readback_CSV": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Compose",
+                  "inputs": "@if(contains(coalesce(body('Readback_CSV'),''),'$content'),base64ToString(body('Readback_CSV')?['$content']),string(body('Readback_CSV')))"
+                },
+                "Write_retained_CSV": {
+                  "runAfter": {
+                    "CSV_readback": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "POST",
+                      "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__'')/Files/add(url=''',concat('PPG-monthly-review-',outputs('Month'),''),'-retained.csv'',overwrite=true)')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata",
+                        "Content-Type": "application/octet-stream"
+                      },
+                      "parameters/body": "@body('Retained_CSV')"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Readback_retained_CSV": {
+                  "runAfter": {
+                    "Write_retained_CSV": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/',concat('PPG-monthly-review-',outputs('Month'),''),'-retained.csv'')/$value')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Retained_CSV_readback": {
+                  "runAfter": {
+                    "Readback_retained_CSV": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Compose",
+                  "inputs": "@if(contains(coalesce(body('Readback_retained_CSV'),''),'$content'),base64ToString(body('Readback_retained_CSV')?['$content']),string(body('Readback_retained_CSV')))"
+                },
+                "Commit_summary": {
+                  "actions": {
+                    "Write_summary": {
+                      "runAfter": {},
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                          "connectionName": "shared_sharepointonline",
+                          "operationId": "HttpRequest"
+                        },
+                        "parameters": {
+                          "dataset": "__PPG_INSTALL_00101__",
+                          "parameters/method": "POST",
+                          "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__'')/Files/add(url=''',concat('PPG-monthly-review-',outputs('Month'),''),'.md'',overwrite=true)')",
+                          "parameters/headers": {
+                            "Accept": "application/json;odata=nometadata",
+                            "Content-Type": "application/octet-stream"
+                          },
+                          "parameters/body": "@concat('# Monthly review report \u2014 ',outputs('Month'),decodeUriComponent('%0A%0A'),'**',outputs('Freshness'),'**',decodeUriComponent('%0A%0A'),'Active source rows: ',string(length(body('Rows'))),'; retained absent rows: ',string(length(body('Retained_rows'))),'; total catalogue identities: ',string(length(body('All_UIDs'))),'; overdue: ',string(length(body('Overdue'))),'; due this month: ',string(length(body('Due_now'))),'; following three months through ',outputs('Window_end'),': ',string(length(body('Due_soon'))),'; date exceptions: ',string(length(body('Exceptions'))),'; later: ',string(length(body('Later'))),decodeUriComponent('%0A%0A'),'[Download the full grouped CSV](__PPG_INSTALL_00241__',concat('PPG-monthly-review-',outputs('Month'),''),'.csv)',decodeUriComponent('%0A%0A'),'[Retained source absences CSV](__PPG_INSTALL_00241__',concat('PPG-monthly-review-',outputs('Month'),''),'-retained.csv)',decodeUriComponent('%0A%0A'),'Retained absences are excluded from active-source date buckets and shown separately with original recorded fields. Absence does not establish clinical retirement or current approval. ','Source-bound absence acknowledgements: ',string(body('Current_acknowledgements')),decodeUriComponent('%0A%0A'),'Open in Excel; overdue, current-month, next-three-month and date-exception rows are already selected. Filter recorded roles as needed. Later rows are accounted for in the total above; no status-based exclusions. ','Month precision: earlier months are overdue; the current month is due this month; the following three calendar months are due soon. No day is invented and no review interval is recalculated. ','Recorded roles and source status/comments are source assertions. Status may disagree with date classification. Roles are not recipient selections or assignments. ','Report preparation only; no distribution, approval, publication, source edits or case edits.',decodeUriComponent('%0A%0A'),'Last successful reconciliation UTC: ',outputs('Checkpoint')?['asOfUtc'],decodeUriComponent('%0A'),'Source metadata checked UTC: ',coalesce(outputs('Source')?['checkedUtc'],'unknown'),decodeUriComponent('%0A'),'Source snapshot SHA256: ',outputs('Checkpoint')?['sourceSha256'],decodeUriComponent('%0A'),'Generated UTC: ',outputs('Report_time'),decodeUriComponent('%0A'))"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Retained_CSV_readback": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Readback_failure": {
+                        "type": "Terminate",
+                        "inputs": {
+                          "runStatus": "Failed",
+                          "runError": {
+                            "code": "ReportReadbackMismatch",
+                            "message": "CSV readback differs; summary not committed."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "expression": "@and(equals(outputs('CSV_readback'),body('CSV')),equals(outputs('Retained_CSV_readback'),body('Retained_CSV')))",
+                  "type": "If"
+                }
+              },
+              "runAfter": {
+                "Checkpoint_after": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Moving_checkpoint": {
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "MovingCheckpoint",
+                        "message": "Checkpoint changed; rerun report from the new baseline."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": "@equals(outputs('Checkpoint'),outputs('Checkpoint_after'))",
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Guard": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Unverified_catalogue": {
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "UnverifiedCatalogue",
+                    "message": "Catalogue/candidate/checkpoint mismatch or incomplete source roles; no report written."
+                  }
+                }
+              }
+            }
+          },
+          "expression": "@outputs('Guard')",
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

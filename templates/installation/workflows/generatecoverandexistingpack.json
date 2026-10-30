@@ -1,0 +1,4373 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {},
+      "shared_excelonlinebusiness": {},
+      "shared_onedriveforbusiness": {}
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "requestItemId": {
+                  "type": "string",
+                  "title": "Package request ID (optional)",
+                  "description": "Leave blank for the maintained PPG request."
+                }
+              },
+              "required": []
+            }
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Request_ID": {
+          "runAfter": {},
+          "type": "Compose",
+          "inputs": "@int(if(empty(trim(string(coalesce(triggerBody()?['requestItemId'],'')))),'1533',triggerBody()?['requestItemId']))"
+        },
+        "Read_request_properties": {
+          "runAfter": {
+            "Request_ID": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00083__'')/items(',string(outputs('Request_ID')),')')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_request_pin": {
+          "runAfter": {
+            "Read_request_properties": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00083__'')/items(',string(outputs('Request_ID')),')/File?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Request_property_pin": {
+          "runAfter": {
+            "Read_request_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "Id": "@body('Read_request_properties')?['Id']",
+            "GUID": "@body('Read_request_properties')?['GUID']",
+            "Modified": "@body('Read_request_properties')?['Modified']",
+            "OData__UIVersionString": "@body('Read_request_properties')?['OData__UIVersionString']",
+            "odata.etag": "@body('Read_request_properties')?['odata.etag']",
+            "PPGCoverTitle": "@body('Read_request_properties')?['PPGCoverTitle']",
+            "PPGCoverCaseUID": "@body('Read_request_properties')?['PPGCoverCaseUID']",
+            "PPGDocumentUID": "@body('Read_request_properties')?['PPGDocumentUID']",
+            "PPGPolicyEdition": "@body('Read_request_properties')?['PPGPolicyEdition']",
+            "PPGCoverRecordedOwner": "@body('Read_request_properties')?['PPGCoverRecordedOwner']",
+            "PPGCoverReviewDate": "@body('Read_request_properties')?['PPGCoverReviewDate']",
+            "PPGCoverOutputRevision": "@body('Read_request_properties')?['PPGCoverOutputRevision']"
+          }
+        },
+        "Read_request_config": {
+          "runAfter": {
+            "Request_property_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@substring(body('Read_request_pin')?['ServerRelativeUrl'],25)",
+              "inferContentType": true
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Require_request_kind": {
+          "actions": {},
+          "runAfter": {
+            "Read_request_config": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_REQUEST_KIND": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "REQUEST_KIND",
+                    "message": "Select a maintained PPG package request in its configured folder."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(or(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),equals(body('Read_request_config')?['kind'],'PPG-native-package-request-v1')),startsWith(body('Read_request_pin')?['ServerRelativeUrl'],'__PPG_INSTALL_00084__/PPG-unattended-qualification/'))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Accepted_values": {
+          "runAfter": {
+            "Require_request_kind": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "PPGCoverTitle": "@body('Read_request_properties')?['PPGCoverTitle']",
+            "PPGCoverCaseUID": "@body('Read_request_properties')?['PPGCoverCaseUID']",
+            "PPGDocumentUID": "@body('Read_request_properties')?['PPGDocumentUID']",
+            "PPGPolicyEdition": "@body('Read_request_properties')?['PPGPolicyEdition']",
+            "PPGCoverRecordedOwner": "@if(empty(trim(coalesce(body('Read_request_properties')?['PPGCoverRecordedOwner'],''))),'Unresolved',body('Read_request_properties')?['PPGCoverRecordedOwner'])",
+            "PPGCoverReviewDate": "@if(empty(trim(coalesce(body('Read_request_properties')?['PPGCoverReviewDate'],''))),'Unresolved',body('Read_request_properties')?['PPGCoverReviewDate'])",
+            "PPGCoverOutputRevision": "@body('Read_request_properties')?['PPGCoverOutputRevision']"
+          }
+        },
+        "Revision": {
+          "runAfter": {
+            "Accepted_values": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@coalesce(outputs('Accepted_values')?['PPGCoverOutputRevision'],'')"
+        },
+        "Revision_characters": {
+          "runAfter": {
+            "Revision": [
+              "Succeeded"
+            ]
+          },
+          "type": "Query",
+          "inputs": {
+            "from": "@range(0,length(outputs('Revision')))",
+            "where": "@contains('abcdefghijklmnopqrstuvwxyz0123456789-',substring(outputs('Revision'),item(),1))"
+          }
+        },
+        "Require_safe_revision": {
+          "actions": {},
+          "runAfter": {
+            "Revision_characters": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_REVISION": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "REVISION",
+                    "message": "Enter a new lower-case revision with letters, numbers and hyphens (40 characters maximum)."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(greater(length(outputs('Revision')),0),lessOrEquals(length(outputs('Revision')),40),equals(length(body('Revision_characters')),length(outputs('Revision'))),not(startsWith(outputs('Revision'),'-')))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Job_key": {
+          "runAfter": {
+            "Require_safe_revision": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@concat('job-item',string(outputs('Request_ID')),'-',outputs('Revision'))"
+        },
+        "Read_compiled_pin": {
+          "runAfter": {
+            "Job_key": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['compiledTemplateUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_template_pin": {
+          "runAfter": {
+            "Read_compiled_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['maintainedTemplateUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_pack_pin": {
+          "runAfter": {
+            "Read_template_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourcePackUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_job_pin": {
+          "runAfter": {
+            "Read_source_pack_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourceJobUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_receipt_pin": {
+          "runAfter": {
+            "Read_source_job_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourceReceiptUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_engine_pin": {
+          "runAfter": {
+            "Read_source_receipt_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),'_api/web/GetFileById(''__PPG_INSTALL_00196__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl',if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),'_api/web/GetFileById(''__PPG_INSTALL_00197__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl','_api/web/GetFileById(''__PPG_INSTALL_00198__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl'))",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Require_qualified_engine": {
+          "actions": {},
+          "runAfter": {
+            "Read_engine_pin": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_ENGINE_CHANGED": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "ENGINE_CHANGED",
+                    "message": "The maintained packaging script changed; qualify the new script revision before use."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),and(equals(body('Read_engine_pin')?['UniqueId'],'__PPG_INSTALL_00196__'),equals(body('Read_engine_pin')?['ETag'],'\"{__PPG_INSTALL_00199__},1\"'),equals(body('Read_engine_pin')?['Length'],'51179'),equals(body('Read_engine_pin')?['UIVersionLabel'],'1.0'),equals(body('Read_engine_pin')?['ServerRelativeUrl'],'__PPG_INSTALL_00084__/PPG-unattended-qualification/PPG-case-intake-kernel-v2-20261020.osts')),if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),and(equals(body('Read_engine_pin')?['UniqueId'],'__PPG_INSTALL_00197__'),equals(body('Read_engine_pin')?['ETag'],'\"{__PPG_INSTALL_00200__},1\"'),equals(body('Read_engine_pin')?['Length'],'39555'),equals(body('Read_engine_pin')?['UIVersionLabel'],'1.0'),equals(body('Read_engine_pin')?['ServerRelativeUrl'],'__PPG_INSTALL_00084__/PPG-unattended-qualification/PPG-full-review-kernel-v14.osts')),and(equals(body('Read_engine_pin')?['UniqueId'],'__PPG_INSTALL_00198__'),equals(body('Read_engine_pin')?['ETag'],'\"{__PPG_INSTALL_00201__},1\"'),equals(body('Read_engine_pin')?['Length'],'29924'),equals(body('Read_engine_pin')?['UIVersionLabel'],'1.0'),equals(body('Read_engine_pin')?['ServerRelativeUrl'],'__PPG_INSTALL_00084__/PPG-unattended-qualification/PPG-native-package-kernel-v9.osts'))))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Read_compiled": {
+          "runAfter": {
+            "Require_qualified_engine": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@substring(body('Read_compiled_pin')?['ServerRelativeUrl'],25)",
+              "inferContentType": true
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_job": {
+          "runAfter": {
+            "Read_compiled": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@substring(body('Read_source_job_pin')?['ServerRelativeUrl'],25)",
+              "inferContentType": true
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_receipt": {
+          "runAfter": {
+            "Read_source_job": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@substring(body('Read_source_receipt_pin')?['ServerRelativeUrl'],25)",
+              "inferContentType": true
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_pack": {
+          "runAfter": {
+            "Read_source_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@substring(body('Read_source_pack_pin')?['ServerRelativeUrl'],25)",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_template": {
+          "runAfter": {
+            "Read_source_pack": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@substring(body('Read_template_pin')?['ServerRelativeUrl'],25)",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Input_pins": {
+          "runAfter": {
+            "Intake_pin_sets": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),union(outputs('Intake_pin_sets')?['original'],outputs('Intake_pin_sets')?['extra']),outputs('Intake_pin_sets')?['original'])"
+        },
+        "Read_claim": {
+          "runAfter": {
+            "Input_pins": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.claim.json')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Require_claim_readable": {
+          "actions": {},
+          "runAfter": {
+            "Read_claim": [
+              "Succeeded",
+              "Failed"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_CLAIM_READ": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "CLAIM_READ",
+                    "message": "The existing job claim could not be read; no output will be replaced."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@or(equals(outputs('Read_claim')?['statusCode'],200),equals(outputs('Read_claim')?['statusCode'],404))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Native_request": {
+          "runAfter": {
+            "Require_claim_readable": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "kind": "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),'m365-case-intake-request-v1',if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),'m365-full-review-request-v1','m365-cover-request-v1'))",
+            "generationRunId": "@workflow()?['run']?['name']",
+            "requestItemId": "@outputs('Request_ID')",
+            "createdAtUtc": "@formatDateTime(utcNow(),'yyyy-MM-ddTHH:mm:ssZ')",
+            "existingClaimJson": "@if(equals(outputs('Read_claim')?['statusCode'],200),base64ToString(body('Read_claim')?['$content']),'')",
+            "templateVersion": "@body('Read_request_config')?['templateVersion']",
+            "template": "@body('Read_compiled')",
+            "values": "@outputs('Accepted_values')",
+            "sourceJobJson": "@body('Read_source_job')?['jobJson']",
+            "sourceReceiptJson": "@string(body('Read_source_receipt'))",
+            "sourcePin": "@body('Read_source_pack_pin')",
+            "pinsJson": "@string(outputs('Input_pins'))",
+            "fullDocumentInputJson": "@if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),string(if(equals(body('Read_full_input')?['outputRevision'],outputs('Accepted_values')?['PPGCoverOutputRevision']),body('Read_full_input'),setProperty(body('Read_full_input'),'outputRevision',outputs('Accepted_values')?['PPGCoverOutputRevision']))),'')",
+            "sourceSelectionJson": "@if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),coalesce(body('Read_source_job')?['selectionJson'],''),'')",
+            "intake": {
+              "site": "__PPG_INSTALL_00101__",
+              "mode": "@body('Read_request_config')?['selectionMode']",
+              "expectedCaseUID": "@body('Read_request_config')?['expectedCaseUID']",
+              "case": "@outputs('Intake_state')?['case']",
+              "catalogue": "@outputs('Intake_state')?['catalogue']",
+              "baselinePin": "@outputs('Intake_state')?['baselinePin']",
+              "draftPin": "@outputs('Intake_state')?['draftPin']",
+              "historicalSelection": "@body('Read_full_input')",
+              "eventSets": "@outputs('Intake_state')?['eventSets']"
+            }
+          }
+        },
+        "Run_script_from_SharePoint_library": {
+          "runAfter": {
+            "Select_document_script": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),outputs('Run_full_review_script'),outputs('Run_existing_cover_script'))"
+        },
+        "Read_request_pin_before_write": {
+          "runAfter": {
+            "Run_script_from_SharePoint_library": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00083__'')/items(',string(outputs('Request_ID')),')/File?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_compiled_pin_before_write": {
+          "runAfter": {
+            "Read_request_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['compiledTemplateUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_template_pin_before_write": {
+          "runAfter": {
+            "Read_compiled_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['maintainedTemplateUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_pack_pin_before_write": {
+          "runAfter": {
+            "Read_template_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourcePackUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_job_pin_before_write": {
+          "runAfter": {
+            "Read_source_pack_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourceJobUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_receipt_pin_before_write": {
+          "runAfter": {
+            "Read_source_job_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourceReceiptUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_engine_pin_before_write": {
+          "runAfter": {
+            "Read_source_receipt_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),'_api/web/GetFileById(''__PPG_INSTALL_00196__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl',if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),'_api/web/GetFileById(''__PPG_INSTALL_00197__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl','_api/web/GetFileById(''__PPG_INSTALL_00198__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl'))",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_request_properties_before_write": {
+          "runAfter": {
+            "Read_full_input_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00083__'')/items(',string(outputs('Request_ID')),')')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Request_property_pin_before_write": {
+          "runAfter": {
+            "Read_request_properties_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "Id": "@body('Read_request_properties_before_write')?['Id']",
+            "GUID": "@body('Read_request_properties_before_write')?['GUID']",
+            "Modified": "@body('Read_request_properties_before_write')?['Modified']",
+            "OData__UIVersionString": "@body('Read_request_properties_before_write')?['OData__UIVersionString']",
+            "odata.etag": "@body('Read_request_properties_before_write')?['odata.etag']",
+            "PPGCoverTitle": "@body('Read_request_properties_before_write')?['PPGCoverTitle']",
+            "PPGCoverCaseUID": "@body('Read_request_properties_before_write')?['PPGCoverCaseUID']",
+            "PPGDocumentUID": "@body('Read_request_properties_before_write')?['PPGDocumentUID']",
+            "PPGPolicyEdition": "@body('Read_request_properties_before_write')?['PPGPolicyEdition']",
+            "PPGCoverRecordedOwner": "@body('Read_request_properties_before_write')?['PPGCoverRecordedOwner']",
+            "PPGCoverReviewDate": "@body('Read_request_properties_before_write')?['PPGCoverReviewDate']",
+            "PPGCoverOutputRevision": "@body('Read_request_properties_before_write')?['PPGCoverOutputRevision']"
+          }
+        },
+        "Input_pins_before_write": {
+          "runAfter": {
+            "Intake_pin_sets_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),union(outputs('Intake_pin_sets_before_write')?['original'],outputs('Intake_pin_sets_before_write')?['extra']),outputs('Intake_pin_sets_before_write')?['original'])"
+        },
+        "Require_pins_before_write": {
+          "actions": {},
+          "runAfter": {
+            "Input_pins_before_write": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_INPUT_CHANGED_before_write": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "INPUT_CHANGED_before_write",
+                    "message": "Input changed during generation. Keep the retained files and use a new revision."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(equals(string(outputs('Input_pins')),string(outputs('Input_pins_before_write'))),equals(string(outputs('Request_property_pin')),string(outputs('Request_property_pin_before_write'))))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Read_existing_cover": {
+          "runAfter": {
+            "Require_pins_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.docx')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_existing_pack": {
+          "runAfter": {
+            "Read_existing_cover": [
+              "Succeeded",
+              "Failed"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.zip')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Require_unchanged_outputs": {
+          "actions": {},
+          "runAfter": {
+            "Read_existing_pack": [
+              "Succeeded",
+              "Failed"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_OUTPUT_EDITED": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "OUTPUT_EDITED",
+                    "message": "A saved cover/package differs or cannot be read. Preserve it and use a new revision."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(or(equals(outputs('Read_existing_cover')?['statusCode'],404),and(equals(outputs('Read_existing_cover')?['statusCode'],200),equals(body('Read_existing_cover')?['$content'],outputs('Run_script_from_SharePoint_library')?['body/result/coverBase64']))),or(equals(outputs('Read_existing_pack')?['statusCode'],404),and(equals(outputs('Read_existing_pack')?['statusCode'],200),equals(body('Read_existing_pack')?['$content'],outputs('Run_script_from_SharePoint_library')?['body/result/zipBase64']))))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Ensure_claim": {
+          "runAfter": {
+            "Require_unchanged_outputs": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "@if(equals(outputs('Read_claim')?['statusCode'],404),'POST','GET')",
+              "parameters/uri": "@if(equals(outputs('Read_claim')?['statusCode'],404),concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification'')/Files/AddUsingPath(decodedurl=''',outputs('Job_key'),'.claim.json'',overwrite=false)'),concat('_api/web/GetFileByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification/',outputs('Job_key'),'.claim.json'')/$value'))",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              },
+              "parameters/body": "@if(equals(outputs('Read_claim')?['statusCode'],404),outputs('Run_script_from_SharePoint_library')?['body/result/claimJson'],'')"
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_saved_claim": {
+          "runAfter": {
+            "Ensure_claim": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.claim.json')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Require_saved_claim": {
+          "actions": {},
+          "runAfter": {
+            "Read_saved_claim": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_CLAIM_CHANGED": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "CLAIM_CHANGED",
+                    "message": "The saved job claim differs. Preserve retained files and reconcile this revision."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@equals(body('Read_saved_claim')?['$content'],base64(outputs('Run_script_from_SharePoint_library')?['body/result/claimJson']))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Prepare_stage": {
+          "actions": {
+            "Create_stage": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "CreateNewFolder"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "table": "__PPG_INSTALL_00083__",
+                  "parameters/path": "PPG Review Evidence/PPG-unattended-qualification/PPG-native-stage-@{workflow()?['run']?['name']}"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Require_saved_claim": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "or": [
+              {
+                "equals": [
+                  "@outputs('Read_existing_cover')?['statusCode']",
+                  404
+                ]
+              },
+              {
+                "equals": [
+                  "@outputs('Read_existing_pack')?['statusCode']",
+                  404
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Ensure_cover": {
+          "actions": {
+            "Create_cover": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "CreateFile"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "folderPath": "/PPG Review Evidence/PPG-unattended-qualification/PPG-native-stage-@{workflow()?['run']?['name']}",
+                  "name": "@concat(outputs('Job_key'),'.docx')",
+                  "body": "@base64ToBinary(outputs('Run_script_from_SharePoint_library')?['body/result/coverBase64'])"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Move_cover": {
+              "runAfter": {
+                "Create_cover": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "MoveFileAsync"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/sourceFileId": "@body('Create_cover')?['Id']",
+                  "parameters/destinationDataset": "__PPG_INSTALL_00101__",
+                  "parameters/destinationFolderPath": "/PPG Review Evidence/PPG-unattended-qualification",
+                  "parameters/nameConflictBehavior": 0
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Prepare_stage": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@outputs('Read_existing_cover')?['statusCode']",
+                  404
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Ensure_pack": {
+          "actions": {
+            "Create_pack": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "CreateFile"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "folderPath": "/PPG Review Evidence/PPG-unattended-qualification/PPG-native-stage-@{workflow()?['run']?['name']}",
+                  "name": "@concat(outputs('Job_key'),'.zip')",
+                  "body": "@base64ToBinary(outputs('Run_script_from_SharePoint_library')?['body/result/zipBase64'])"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Move_pack": {
+              "runAfter": {
+                "Create_pack": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "MoveFileAsync"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/sourceFileId": "@body('Create_pack')?['Id']",
+                  "parameters/destinationDataset": "__PPG_INSTALL_00101__",
+                  "parameters/destinationFolderPath": "/PPG Review Evidence/PPG-unattended-qualification",
+                  "parameters/nameConflictBehavior": 0
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Ensure_cover": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@outputs('Read_existing_pack')?['statusCode']",
+                  404
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Read_saved_cover": {
+          "runAfter": {
+            "Ensure_pack": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.docx')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_saved_cover_pin": {
+          "runAfter": {
+            "Read_saved_cover": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification/',outputs('Job_key'),'.docx'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_saved_pack": {
+          "runAfter": {
+            "Read_saved_cover_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.zip')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_saved_pack_pin": {
+          "runAfter": {
+            "Read_saved_pack": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification/',outputs('Job_key'),'.zip'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Require_saved_bytes": {
+          "actions": {},
+          "runAfter": {
+            "Read_saved_pack_pin": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_SAVED_BYTES": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "SAVED_BYTES",
+                    "message": "Saved cover or package differs from the generated bytes."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(equals(body('Read_saved_cover')?['$content'],outputs('Run_script_from_SharePoint_library')?['body/result/coverBase64']),equals(body('Read_saved_pack')?['$content'],outputs('Run_script_from_SharePoint_library')?['body/result/zipBase64']))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Read_request_pin_before_receipt": {
+          "runAfter": {
+            "Require_saved_bytes": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00083__'')/items(',string(outputs('Request_ID')),')/File?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_compiled_pin_before_receipt": {
+          "runAfter": {
+            "Read_request_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['compiledTemplateUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_template_pin_before_receipt": {
+          "runAfter": {
+            "Read_compiled_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['maintainedTemplateUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_pack_pin_before_receipt": {
+          "runAfter": {
+            "Read_template_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourcePackUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_job_pin_before_receipt": {
+          "runAfter": {
+            "Read_source_pack_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourceJobUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_source_receipt_pin_before_receipt": {
+          "runAfter": {
+            "Read_source_job_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',body('Read_request_config')?['sourceReceiptUniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_engine_pin_before_receipt": {
+          "runAfter": {
+            "Read_source_receipt_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),'_api/web/GetFileById(''__PPG_INSTALL_00196__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl',if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),'_api/web/GetFileById(''__PPG_INSTALL_00197__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl','_api/web/GetFileById(''__PPG_INSTALL_00198__'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl'))",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_request_properties_before_receipt": {
+          "runAfter": {
+            "Read_full_input_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00083__'')/items(',string(outputs('Request_ID')),')')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Request_property_pin_before_receipt": {
+          "runAfter": {
+            "Read_request_properties_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "Id": "@body('Read_request_properties_before_receipt')?['Id']",
+            "GUID": "@body('Read_request_properties_before_receipt')?['GUID']",
+            "Modified": "@body('Read_request_properties_before_receipt')?['Modified']",
+            "OData__UIVersionString": "@body('Read_request_properties_before_receipt')?['OData__UIVersionString']",
+            "odata.etag": "@body('Read_request_properties_before_receipt')?['odata.etag']",
+            "PPGCoverTitle": "@body('Read_request_properties_before_receipt')?['PPGCoverTitle']",
+            "PPGCoverCaseUID": "@body('Read_request_properties_before_receipt')?['PPGCoverCaseUID']",
+            "PPGDocumentUID": "@body('Read_request_properties_before_receipt')?['PPGDocumentUID']",
+            "PPGPolicyEdition": "@body('Read_request_properties_before_receipt')?['PPGPolicyEdition']",
+            "PPGCoverRecordedOwner": "@body('Read_request_properties_before_receipt')?['PPGCoverRecordedOwner']",
+            "PPGCoverReviewDate": "@body('Read_request_properties_before_receipt')?['PPGCoverReviewDate']",
+            "PPGCoverOutputRevision": "@body('Read_request_properties_before_receipt')?['PPGCoverOutputRevision']"
+          }
+        },
+        "Input_pins_before_receipt": {
+          "runAfter": {
+            "Intake_pin_sets_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),union(outputs('Intake_pin_sets_before_receipt')?['original'],outputs('Intake_pin_sets_before_receipt')?['extra']),outputs('Intake_pin_sets_before_receipt')?['original'])"
+        },
+        "Require_pins_before_receipt": {
+          "actions": {},
+          "runAfter": {
+            "Input_pins_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_INPUT_CHANGED_before_receipt": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "INPUT_CHANGED_before_receipt",
+                    "message": "Input changed during generation. Keep the retained files and use a new revision."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(equals(string(outputs('Input_pins')),string(outputs('Input_pins_before_receipt'))),equals(string(outputs('Request_property_pin')),string(outputs('Request_property_pin_before_receipt'))))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Expected_receipt": {
+          "runAfter": {
+            "Receipt_shapes": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),outputs('Receipt_shapes')?['full'],outputs('Receipt_shapes')?['legacy'])"
+        },
+        "Read_existing_receipt": {
+          "runAfter": {
+            "Expected_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.receipt.json')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Commit_or_reuse_receipt": {
+          "runAfter": {
+            "Read_existing_receipt": [
+              "Succeeded",
+              "Failed"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "@if(equals(outputs('Read_existing_receipt')?['statusCode'],404),'POST','GET')",
+              "parameters/uri": "@if(equals(outputs('Read_existing_receipt')?['statusCode'],404),concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification'')/Files/AddUsingPath(decodedurl=''',outputs('Job_key'),'.receipt.json'',overwrite=false)'),if(and(equals(outputs('Read_existing_receipt')?['statusCode'],200),equals(body('Read_existing_receipt')?['$content'],base64(string(outputs('Expected_receipt'))))),concat('_api/web/GetFileByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification/',outputs('Job_key'),'.receipt.json'')/$value'),'_api/PPG_RECEIPT_CHANGED'))",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              },
+              "parameters/body": "@if(equals(outputs('Read_existing_receipt')?['statusCode'],404),string(outputs('Expected_receipt')),'')"
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_final_cover": {
+          "runAfter": {
+            "Commit_or_reuse_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.docx')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_final_pack": {
+          "runAfter": {
+            "Read_final_cover": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.zip')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_final_receipt": {
+          "runAfter": {
+            "Read_final_pack": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.receipt.json')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_final_claim": {
+          "runAfter": {
+            "Read_final_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.claim.json')",
+              "inferContentType": false
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Require_final_pair": {
+          "actions": {},
+          "runAfter": {
+            "Read_final_claim": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Refuse_FINAL_PAIR": {
+                "runAfter": {},
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "FINAL_PAIR",
+                    "message": "Post-commit output/receipt readback differs. Preserve the saved files."
+                  }
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@and(equals(body('Read_final_claim')?['$content'],base64(outputs('Run_script_from_SharePoint_library')?['body/result/claimJson'])),equals(body('Read_final_cover')?['$content'],outputs('Run_script_from_SharePoint_library')?['body/result/coverBase64']),equals(body('Read_final_pack')?['$content'],outputs('Run_script_from_SharePoint_library')?['body/result/zipBase64']),equals(body('Read_final_receipt')?['$content'],base64(string(outputs('Expected_receipt')))))",
+                  true
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        },
+        "Core_complete": {
+          "runAfter": {
+            "Require_final_pair": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "status": "COMPLETE / DRAFT",
+            "jobId": "@outputs('Job_key')",
+            "cover": "@body('Read_saved_cover_pin')?['ServerRelativeUrl']",
+            "package": "@body('Read_saved_pack_pin')?['ServerRelativeUrl']",
+            "receipt": "@concat('__PPG_INSTALL_00084__/PPG-unattended-qualification/',outputs('Job_key'),'.receipt.json')"
+          }
+        },
+        "Optional_PDF": {
+          "actions": {
+            "Read_PDF_receipt": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileContentByPath"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.pdf.receipt.json')",
+                  "inferContentType": false
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Require_PDF_receipt_readable": {
+              "runAfter": {
+                "Read_PDF_receipt": [
+                  "Succeeded",
+                  "Failed"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@if(or(equals(outputs('Read_PDF_receipt')?['statusCode'],200),equals(outputs('Read_PDF_receipt')?['statusCode'],404)),'_api/web/currentuser?$select=Id','_api/PPG_PDF_RECEIPT_UNREADABLE')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Create_or_reuse_PDF": {
+              "actions": {
+                "Create_conversion_copy": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                      "connectionName": "shared_onedriveforbusiness",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "folderPath": "/PPG-word-qualification",
+                      "name": "@concat(outputs('Job_key'),'-',workflow()?['run']?['name'],'.docx')",
+                      "body": "@base64ToBinary(outputs('Run_script_from_SharePoint_library')?['body/result/coverBase64'])"
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Allow_conversion_availability": {
+                  "runAfter": {
+                    "Create_conversion_copy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Wait",
+                  "inputs": {
+                    "interval": {
+                      "count": 5,
+                      "unit": "Second"
+                    }
+                  }
+                },
+                "Convert_cover": {
+                  "runAfter": {
+                    "Allow_conversion_availability": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+                      "connectionName": "shared_onedriveforbusiness",
+                      "operationId": "ConvertFile"
+                    },
+                    "parameters": {
+                      "id": "@body('Create_conversion_copy')?['Id']",
+                      "type": "PDF"
+                    },
+                    "retryPolicy": {
+                      "type": "exponential",
+                      "count": 2,
+                      "interval": "PT5S",
+                      "minimumInterval": "PT5S",
+                      "maximumInterval": "PT15S"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Prepare_PDF_folder": {
+                  "runAfter": {
+                    "Convert_cover": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "CreateNewFolder"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "table": "__PPG_INSTALL_00083__",
+                      "parameters/path": "PPG Review Evidence/PPG-unattended-qualification/PPG-PDF-@{workflow()?['run']?['name']}"
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Save_PDF": {
+                  "runAfter": {
+                    "Prepare_PDF_folder": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "folderPath": "/PPG Review Evidence/PPG-unattended-qualification/PPG-PDF-@{workflow()?['run']?['name']}",
+                      "name": "@concat(outputs('Job_key'),'.pdf')",
+                      "body": "@body('Convert_cover')"
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_saved_PDF": {
+                  "runAfter": {
+                    "Save_PDF": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetFileContentByPath"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "path": "/PPG Review Evidence/PPG-unattended-qualification/PPG-PDF-@{workflow()?['run']?['name']}/@{outputs('Job_key')}.pdf",
+                      "inferContentType": false
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_saved_PDF_pin": {
+                  "runAfter": {
+                    "Read_saved_PDF": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification/PPG-PDF-',workflow()?['run']?['name'],'/',outputs('Job_key'),'.pdf'')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_cover_for_PDF_commit": {
+                  "runAfter": {
+                    "Read_saved_PDF_pin": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetFileContentByPath"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.docx')",
+                      "inferContentType": false
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Require_PDF_saved_bytes": {
+                  "runAfter": {
+                    "Read_cover_for_PDF_commit": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@if(and(equals(body('Read_saved_PDF')?['$content'],body('Convert_cover')?['$content']),equals(body('Read_cover_for_PDF_commit')?['$content'],outputs('Run_script_from_SharePoint_library')?['body/result/coverBase64'])),'_api/web/currentuser?$select=Id','_api/PPG_PDF_BYTES_CHANGED')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "PDF_success_record": {
+                  "runAfter": {
+                    "Require_PDF_saved_bytes": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Compose",
+                  "inputs": {
+                    "kind": "PPG-native-package-PDF-v1",
+                    "jobId": "@outputs('Job_key')",
+                    "requestSHA256": "@outputs('Run_script_from_SharePoint_library')?['body/result/requestSHA256']",
+                    "coverSHA256": "@outputs('Run_script_from_SharePoint_library')?['body/result/coverSHA256']",
+                    "packageSHA256": "@outputs('Run_script_from_SharePoint_library')?['body/result/packageSHA256']",
+                    "pdfPin": {
+                      "UniqueId": "@body('Read_saved_PDF_pin')?['UniqueId']",
+                      "ETag": "@body('Read_saved_PDF_pin')?['ETag']",
+                      "Length": "@body('Read_saved_PDF_pin')?['Length']",
+                      "UIVersionLabel": "@body('Read_saved_PDF_pin')?['UIVersionLabel']",
+                      "ServerRelativeUrl": "@body('Read_saved_PDF_pin')?['ServerRelativeUrl']"
+                    },
+                    "generationRunId": "@workflow()?['run']?['name']",
+                    "status": "DRAFT"
+                  }
+                },
+                "Commit_PDF_receipt": {
+                  "runAfter": {
+                    "PDF_success_record": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "POST",
+                      "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification'')/Files/AddUsingPath(decodedurl=''',outputs('Job_key'),'.pdf.receipt.json'',overwrite=false)')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      },
+                      "parameters/body": "@string(outputs('PDF_success_record'))"
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_committed_PDF_receipt": {
+                  "runAfter": {
+                    "Commit_PDF_receipt": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "GetFileContentByPath"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "path": "@concat('/PPG Review Evidence/PPG-unattended-qualification/',outputs('Job_key'),'.pdf.receipt.json')",
+                      "inferContentType": false
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Require_PDF_receipt_bytes": {
+                  "runAfter": {
+                    "Read_committed_PDF_receipt": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@if(equals(body('Read_committed_PDF_receipt')?['$content'],base64(string(outputs('PDF_success_record')))),'_api/web/currentuser?$select=Id','_api/PPG_PDF_RECEIPT_BYTES_CHANGED')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Require_PDF_receipt_readable": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Existing_PDF_record": {
+                    "runAfter": {},
+                    "type": "Compose",
+                    "inputs": "@json(base64ToString(body('Read_PDF_receipt')?['$content']))"
+                  },
+                  "Read_existing_PDF_pin": {
+                    "runAfter": {
+                      "Existing_PDF_record": [
+                        "Succeeded"
+                      ]
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "HttpRequest"
+                      },
+                      "parameters": {
+                        "dataset": "__PPG_INSTALL_00101__",
+                        "parameters/method": "GET",
+                        "parameters/uri": "@concat('_api/web/GetFileById(''',outputs('Existing_PDF_record')?['pdfPin']?['UniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+                        "parameters/headers": {
+                          "Accept": "application/json;odata=minimalmetadata"
+                        }
+                      },
+                      "retryPolicy": {
+                        "type": "none"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  },
+                  "Require_existing_PDF_unchanged": {
+                    "runAfter": {
+                      "Read_existing_PDF_pin": [
+                        "Succeeded"
+                      ]
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "HttpRequest"
+                      },
+                      "parameters": {
+                        "dataset": "__PPG_INSTALL_00101__",
+                        "parameters/method": "GET",
+                        "parameters/uri": "@if(and(equals(outputs('Existing_PDF_record')?['requestSHA256'],outputs('Run_script_from_SharePoint_library')?['body/result/requestSHA256']),equals(outputs('Existing_PDF_record')?['coverSHA256'],outputs('Run_script_from_SharePoint_library')?['body/result/coverSHA256']),equals(outputs('Existing_PDF_record')?['packageSHA256'],outputs('Run_script_from_SharePoint_library')?['body/result/packageSHA256']),equals(body('Read_existing_PDF_pin')?['UniqueId'],outputs('Existing_PDF_record')?['pdfPin']?['UniqueId']),equals(body('Read_existing_PDF_pin')?['ETag'],outputs('Existing_PDF_record')?['pdfPin']?['ETag']),equals(body('Read_existing_PDF_pin')?['Length'],outputs('Existing_PDF_record')?['pdfPin']?['Length']),equals(body('Read_existing_PDF_pin')?['UIVersionLabel'],outputs('Existing_PDF_record')?['pdfPin']?['UIVersionLabel']),equals(body('Read_existing_PDF_pin')?['ServerRelativeUrl'],outputs('Existing_PDF_record')?['pdfPin']?['ServerRelativeUrl'])),'_api/web/currentuser?$select=Id','_api/PPG_PDF_EDITED_OR_INPUT_CHANGED')",
+                        "parameters/headers": {
+                          "Accept": "application/json;odata=minimalmetadata"
+                        }
+                      },
+                      "retryPolicy": {
+                        "type": "none"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@outputs('Read_PDF_receipt')?['statusCode']",
+                  404
+                ]
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Core_complete": [
+              "Succeeded"
+            ]
+          },
+          "type": "Scope"
+        },
+        "PDF_outcome": {
+          "runAfter": {
+            "Optional_PDF": [
+              "Succeeded",
+              "Failed",
+              "TimedOut"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "coreStatus": "COMPLETE / DRAFT",
+            "pdfStatus": "@if(equals(actions('Optional_PDF')?['status'],'Succeeded'),'COMPLETE / DRAFT','FAILED \u2014 DOCX and package remain usable; inspect Optional_PDF and retry the same revision')",
+            "runId": "@workflow()?['run']?['name']",
+            "core": "@outputs('Core_complete')"
+          }
+        },
+        "Record_PDF_failure": {
+          "actions": {
+            "Save_PDF_failure": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "POST",
+                  "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__/PPG-unattended-qualification'')/Files/AddUsingPath(decodedurl=''',outputs('Job_key'),'.pdf-failed-',workflow()?['run']?['name'],'.json'',overwrite=false)')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  },
+                  "parameters/body": "@string(outputs('PDF_outcome'))"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "PDF_outcome": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "not": {
+              "equals": [
+                "@actions('Optional_PDF')?['status']",
+                "Succeeded"
+              ]
+            }
+          },
+          "type": "If"
+        },
+        "Read_full_input_pin": {
+          "runAfter": {
+            "Read_template": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),body('Read_request_config')?['fullDocumentInputUniqueId'],body('Read_request_config')?['compiledTemplateUniqueId']),''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_full_input": {
+          "runAfter": {
+            "Read_full_input_pin": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetFileContentByPath"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "path": "@substring(body('Read_full_input_pin')?['ServerRelativeUrl'],25)",
+              "inferContentType": true
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Pin_sets": {
+          "runAfter": {
+            "Read_case_intake": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "legacy": [
+              {
+                "role": "request",
+                "UniqueId": "@body('Read_request_pin')?['UniqueId']",
+                "ETag": "@body('Read_request_pin')?['ETag']",
+                "Length": "@body('Read_request_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_request_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_request_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "compiled-template",
+                "UniqueId": "@body('Read_compiled_pin')?['UniqueId']",
+                "ETag": "@body('Read_compiled_pin')?['ETag']",
+                "Length": "@body('Read_compiled_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_compiled_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_compiled_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "maintained-template",
+                "UniqueId": "@body('Read_template_pin')?['UniqueId']",
+                "ETag": "@body('Read_template_pin')?['ETag']",
+                "Length": "@body('Read_template_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_template_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_template_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-pack",
+                "UniqueId": "@body('Read_source_pack_pin')?['UniqueId']",
+                "ETag": "@body('Read_source_pack_pin')?['ETag']",
+                "Length": "@body('Read_source_pack_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_source_pack_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_pack_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-job",
+                "UniqueId": "@body('Read_source_job_pin')?['UniqueId']",
+                "ETag": "@body('Read_source_job_pin')?['ETag']",
+                "Length": "@body('Read_source_job_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_source_job_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_job_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-receipt",
+                "UniqueId": "@body('Read_source_receipt_pin')?['UniqueId']",
+                "ETag": "@body('Read_source_receipt_pin')?['ETag']",
+                "Length": "@body('Read_source_receipt_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_source_receipt_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_receipt_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "engine",
+                "UniqueId": "@body('Read_engine_pin')?['UniqueId']",
+                "ETag": "@body('Read_engine_pin')?['ETag']",
+                "Length": "@body('Read_engine_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_engine_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_engine_pin')?['ServerRelativeUrl']"
+              }
+            ],
+            "full": [
+              {
+                "role": "request",
+                "UniqueId": "@body('Read_request_pin')?['UniqueId']",
+                "ETag": "@body('Read_request_pin')?['ETag']",
+                "Length": "@body('Read_request_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_request_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_request_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "compiled-template",
+                "UniqueId": "@body('Read_compiled_pin')?['UniqueId']",
+                "ETag": "@body('Read_compiled_pin')?['ETag']",
+                "Length": "@body('Read_compiled_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_compiled_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_compiled_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "maintained-template",
+                "UniqueId": "@body('Read_template_pin')?['UniqueId']",
+                "ETag": "@body('Read_template_pin')?['ETag']",
+                "Length": "@body('Read_template_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_template_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_template_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-pack",
+                "UniqueId": "@body('Read_source_pack_pin')?['UniqueId']",
+                "ETag": "@body('Read_source_pack_pin')?['ETag']",
+                "Length": "@body('Read_source_pack_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_source_pack_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_pack_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-job",
+                "UniqueId": "@body('Read_source_job_pin')?['UniqueId']",
+                "ETag": "@body('Read_source_job_pin')?['ETag']",
+                "Length": "@body('Read_source_job_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_source_job_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_job_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-receipt",
+                "UniqueId": "@body('Read_source_receipt_pin')?['UniqueId']",
+                "ETag": "@body('Read_source_receipt_pin')?['ETag']",
+                "Length": "@body('Read_source_receipt_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_source_receipt_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_receipt_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "engine",
+                "UniqueId": "@body('Read_engine_pin')?['UniqueId']",
+                "ETag": "@body('Read_engine_pin')?['ETag']",
+                "Length": "@body('Read_engine_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_engine_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_engine_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "full-document-input",
+                "UniqueId": "@body('Read_full_input_pin')?['UniqueId']",
+                "ETag": "@body('Read_full_input_pin')?['ETag']",
+                "Length": "@body('Read_full_input_pin')?['Length']",
+                "UIVersionLabel": "@body('Read_full_input_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_full_input_pin')?['ServerRelativeUrl']"
+              }
+            ]
+          }
+        },
+        "Pin_sets_before_write": {
+          "runAfter": {
+            "Recheck_case_intake_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "legacy": [
+              {
+                "role": "request",
+                "UniqueId": "@body('Read_request_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_request_pin_before_write')?['ETag']",
+                "Length": "@body('Read_request_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_request_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_request_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "compiled-template",
+                "UniqueId": "@body('Read_compiled_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_compiled_pin_before_write')?['ETag']",
+                "Length": "@body('Read_compiled_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_compiled_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_compiled_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "maintained-template",
+                "UniqueId": "@body('Read_template_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_template_pin_before_write')?['ETag']",
+                "Length": "@body('Read_template_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_template_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_template_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-pack",
+                "UniqueId": "@body('Read_source_pack_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_source_pack_pin_before_write')?['ETag']",
+                "Length": "@body('Read_source_pack_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_source_pack_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_pack_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-job",
+                "UniqueId": "@body('Read_source_job_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_source_job_pin_before_write')?['ETag']",
+                "Length": "@body('Read_source_job_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_source_job_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_job_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-receipt",
+                "UniqueId": "@body('Read_source_receipt_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_source_receipt_pin_before_write')?['ETag']",
+                "Length": "@body('Read_source_receipt_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_source_receipt_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_receipt_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "engine",
+                "UniqueId": "@body('Read_engine_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_engine_pin_before_write')?['ETag']",
+                "Length": "@body('Read_engine_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_engine_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_engine_pin_before_write')?['ServerRelativeUrl']"
+              }
+            ],
+            "full": [
+              {
+                "role": "request",
+                "UniqueId": "@body('Read_request_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_request_pin_before_write')?['ETag']",
+                "Length": "@body('Read_request_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_request_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_request_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "compiled-template",
+                "UniqueId": "@body('Read_compiled_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_compiled_pin_before_write')?['ETag']",
+                "Length": "@body('Read_compiled_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_compiled_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_compiled_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "maintained-template",
+                "UniqueId": "@body('Read_template_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_template_pin_before_write')?['ETag']",
+                "Length": "@body('Read_template_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_template_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_template_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-pack",
+                "UniqueId": "@body('Read_source_pack_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_source_pack_pin_before_write')?['ETag']",
+                "Length": "@body('Read_source_pack_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_source_pack_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_pack_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-job",
+                "UniqueId": "@body('Read_source_job_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_source_job_pin_before_write')?['ETag']",
+                "Length": "@body('Read_source_job_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_source_job_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_job_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-receipt",
+                "UniqueId": "@body('Read_source_receipt_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_source_receipt_pin_before_write')?['ETag']",
+                "Length": "@body('Read_source_receipt_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_source_receipt_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_receipt_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "engine",
+                "UniqueId": "@body('Read_engine_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_engine_pin_before_write')?['ETag']",
+                "Length": "@body('Read_engine_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_engine_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_engine_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "full-document-input",
+                "UniqueId": "@body('Read_full_input_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Read_full_input_pin_before_write')?['ETag']",
+                "Length": "@body('Read_full_input_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Read_full_input_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_full_input_pin_before_write')?['ServerRelativeUrl']"
+              }
+            ]
+          }
+        },
+        "Read_full_input_pin_before_write": {
+          "runAfter": {
+            "Read_engine_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),body('Read_request_config')?['fullDocumentInputUniqueId'],body('Read_request_config')?['compiledTemplateUniqueId']),''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Pin_sets_before_receipt": {
+          "runAfter": {
+            "Recheck_case_intake_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "legacy": [
+              {
+                "role": "request",
+                "UniqueId": "@body('Read_request_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_request_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_request_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_request_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_request_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "compiled-template",
+                "UniqueId": "@body('Read_compiled_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_compiled_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_compiled_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_compiled_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_compiled_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "maintained-template",
+                "UniqueId": "@body('Read_template_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_template_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_template_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_template_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_template_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-pack",
+                "UniqueId": "@body('Read_source_pack_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_source_pack_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_source_pack_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_source_pack_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_pack_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-job",
+                "UniqueId": "@body('Read_source_job_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_source_job_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_source_job_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_source_job_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_job_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-receipt",
+                "UniqueId": "@body('Read_source_receipt_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_source_receipt_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_source_receipt_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_source_receipt_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_receipt_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "engine",
+                "UniqueId": "@body('Read_engine_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_engine_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_engine_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_engine_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_engine_pin_before_receipt')?['ServerRelativeUrl']"
+              }
+            ],
+            "full": [
+              {
+                "role": "request",
+                "UniqueId": "@body('Read_request_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_request_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_request_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_request_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_request_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "compiled-template",
+                "UniqueId": "@body('Read_compiled_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_compiled_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_compiled_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_compiled_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_compiled_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "maintained-template",
+                "UniqueId": "@body('Read_template_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_template_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_template_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_template_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_template_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-pack",
+                "UniqueId": "@body('Read_source_pack_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_source_pack_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_source_pack_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_source_pack_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_pack_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-job",
+                "UniqueId": "@body('Read_source_job_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_source_job_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_source_job_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_source_job_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_job_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "source-receipt",
+                "UniqueId": "@body('Read_source_receipt_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_source_receipt_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_source_receipt_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_source_receipt_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_source_receipt_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "engine",
+                "UniqueId": "@body('Read_engine_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_engine_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_engine_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_engine_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_engine_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "full-document-input",
+                "UniqueId": "@body('Read_full_input_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Read_full_input_pin_before_receipt')?['ETag']",
+                "Length": "@body('Read_full_input_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Read_full_input_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Read_full_input_pin_before_receipt')?['ServerRelativeUrl']"
+              }
+            ]
+          }
+        },
+        "Read_full_input_pin_before_receipt": {
+          "runAfter": {
+            "Read_engine_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "@concat('_api/web/GetFileById(''',if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),body('Read_request_config')?['fullDocumentInputUniqueId'],body('Read_request_config')?['compiledTemplateUniqueId']),''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=minimalmetadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Select_document_script": {
+          "actions": {
+            "Select_intake_script": {
+              "actions": {
+                "Run_case_intake_script": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "source": "__PPG_INSTALL_00101__",
+                      "drive": "__PPG_INSTALL_00190__",
+                      "file": "__PPG_INSTALL_00191__",
+                      "scriptSource": "__PPG_INSTALL_00101__",
+                      "scriptDrive": "__PPG_INSTALL_00190__",
+                      "scriptId": "__PPG_INSTALL_00192__",
+                      "ScriptParameters/jobJson": "@string(outputs('Native_request'))",
+                      "ScriptParameters/membersJson": "@string(createArray(setProperty(setProperty(json('{}'),'path','existing-pack.zip'),'base64',body('Intake_read_baseline')?['$content']),setProperty(setProperty(json('{}'),'path','maintained-template.docx'),'base64',body('Read_template')?['$content']),setProperty(setProperty(json('{}'),'path','evidence/selected-draft.docx'),'base64',body('Intake_read_draft')?['$content'])))"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+                      "connectionName": "shared_excelonlinebusiness",
+                      "operationId": "RunScriptProdV2"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {},
+              "else": {
+                "actions": {
+                  "Run_full_review_existing": {
+                    "runAfter": {},
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "source": "__PPG_INSTALL_00101__",
+                        "drive": "__PPG_INSTALL_00190__",
+                        "file": "__PPG_INSTALL_00191__",
+                        "scriptSource": "__PPG_INSTALL_00101__",
+                        "scriptDrive": "__PPG_INSTALL_00190__",
+                        "scriptId": "__PPG_INSTALL_00193__",
+                        "ScriptParameters/jobJson": "@string(outputs('Native_request'))",
+                        "ScriptParameters/membersJson": "@string(createArray(setProperty(setProperty(json('{}'),'path','existing-pack.zip'),'base64',body('Read_source_pack')?['$content']),setProperty(setProperty(json('{}'),'path','maintained-template.docx'),'base64',body('Read_template')?['$content'])))"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+                        "connectionName": "shared_excelonlinebusiness",
+                        "operationId": "RunScriptProdV2"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')",
+                  true
+                ]
+              },
+              "type": "If"
+            },
+            "Run_full_review_script": {
+              "runAfter": {
+                "Select_intake_script": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": "@if(equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'),outputs('Run_case_intake_script'),outputs('Run_full_review_existing'))"
+            }
+          },
+          "runAfter": {
+            "Native_request": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Run_existing_cover_script": {
+                "runAfter": {},
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "parameters": {
+                    "source": "__PPG_INSTALL_00101__",
+                    "drive": "__PPG_INSTALL_00190__",
+                    "file": "__PPG_INSTALL_00191__",
+                    "scriptSource": "__PPG_INSTALL_00101__",
+                    "scriptDrive": "__PPG_INSTALL_00190__",
+                    "scriptId": "__PPG_INSTALL_00194__",
+                    "ScriptParameters/jobJson": "@string(outputs('Native_request'))",
+                    "ScriptParameters/membersJson": "@string(createArray(setProperty(setProperty(json('{}'),'path','existing-pack.zip'),'base64',body('Read_source_pack')?['$content']),setProperty(setProperty(json('{}'),'path','maintained-template.docx'),'base64',body('Read_template')?['$content'])))"
+                  },
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+                    "connectionName": "shared_excelonlinebusiness",
+                    "operationId": "RunScriptProdV2"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                }
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1'))",
+              true
+            ]
+          },
+          "type": "If"
+        },
+        "Receipt_shapes": {
+          "runAfter": {
+            "Require_pins_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "legacy": {
+              "kind": "PPG-native-package-completion-v1",
+              "jobId": "@outputs('Run_script_from_SharePoint_library')?['body/result/jobId']",
+              "outputRevision": "@outputs('Run_script_from_SharePoint_library')?['body/result/outputRevision']",
+              "jobSHA256": "@outputs('Run_script_from_SharePoint_library')?['body/result/jobSHA256']",
+              "requestSHA256": "@outputs('Run_script_from_SharePoint_library')?['body/result/requestSHA256']",
+              "job": "@json(outputs('Run_script_from_SharePoint_library')?['body/result/jobJson'])",
+              "claim": "@json(outputs('Run_script_from_SharePoint_library')?['body/result/claimJson'])",
+              "cover": {
+                "sha256": "@outputs('Run_script_from_SharePoint_library')?['body/result/coverSHA256']",
+                "pin": "@body('Read_saved_cover_pin')"
+              },
+              "package": {
+                "sha256": "@outputs('Run_script_from_SharePoint_library')?['body/result/packageSHA256']",
+                "pin": "@body('Read_saved_pack_pin')"
+              },
+              "status": "DRAFT / HUMAN CHECK REQUIRED",
+              "selectionKind": "existing-frozen-package",
+              "caseCurrencyEstablished": false,
+              "sourceWrites": false,
+              "caseWrites": false,
+              "sent": false,
+              "policyApproved": false,
+              "pdfStatus": "separate"
+            },
+            "full": {
+              "kind": "PPG-native-package-completion-v1",
+              "jobId": "@outputs('Run_script_from_SharePoint_library')?['body/result/jobId']",
+              "outputRevision": "@outputs('Run_script_from_SharePoint_library')?['body/result/outputRevision']",
+              "jobSHA256": "@outputs('Run_script_from_SharePoint_library')?['body/result/jobSHA256']",
+              "requestSHA256": "@outputs('Run_script_from_SharePoint_library')?['body/result/requestSHA256']",
+              "job": "@json(outputs('Run_script_from_SharePoint_library')?['body/result/jobJson'])",
+              "claim": "@json(outputs('Run_script_from_SharePoint_library')?['body/result/claimJson'])",
+              "cover": {
+                "sha256": "@outputs('Run_script_from_SharePoint_library')?['body/result/coverSHA256']",
+                "pin": "@body('Read_saved_cover_pin')"
+              },
+              "package": {
+                "sha256": "@outputs('Run_script_from_SharePoint_library')?['body/result/packageSHA256']",
+                "pin": "@body('Read_saved_pack_pin')"
+              },
+              "status": "DRAFT / HUMAN CHECK REQUIRED",
+              "selectionKind": "existing-frozen-package",
+              "caseCurrencyEstablished": false,
+              "sourceWrites": false,
+              "caseWrites": false,
+              "sent": false,
+              "policyApproved": false,
+              "pdfStatus": "separate",
+              "generationRoute": "@outputs('Run_script_from_SharePoint_library')?['body/result/generationRoute']",
+              "documentShape": "@if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),'maintained-full-review-v1','fixed-cover-v1')"
+            }
+          }
+        },
+        "Read_case_intake": {
+          "actions": {
+            "Intake_case": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00081__'')/items(',string(int(body('Read_request_config')?['caseItemId'])),')')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_catalogue": {
+              "runAfter": {
+                "Intake_case": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items?$select=Id,DocumentUID,sourceDocumentId,sourceSnapshotRef,rawSourceRecordRef&$orderby=Id&$top=5000",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_rows": {
+              "runAfter": {
+                "Intake_catalogue": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Intake_catalogue')?['value']",
+                "where": "@contains(json(body('Intake_case')?['linkedDocumentUIDs']),item()?['DocumentUID'])"
+              }
+            },
+            "Intake_normal_rows": {
+              "runAfter": {
+                "Intake_rows": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Intake_rows')",
+                "select": {
+                  "Id": "@item()?['Id']",
+                  "DocumentUID": "@item()?['DocumentUID']",
+                  "sourceDocumentId": "@item()?['sourceDocumentId']",
+                  "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+                  "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+                  "odata.etag": "@item()?['odata.etag']"
+                }
+              }
+            },
+            "Intake_bound": {
+              "actions": {},
+              "runAfter": {
+                "Intake_normal_rows": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Refuse_INTAKE_SCOPE": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "INTAKE_SCOPE",
+                        "message": "Select an exact supported case/source scope; catalogue continuation is not accepted."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@and(equals(body('Intake_case')?['CaseUID'],body('Read_request_config')?['expectedCaseUID']),empty(coalesce(body('Intake_catalogue')?['odata.nextLink'],body('Intake_catalogue')?['@odata.nextLink'],body('Intake_catalogue')?['nextLink'])),startsWith(body('Intake_case')?['sourceBaselineRef'],'__PPG_INSTALL_00195__'),startsWith(body('Intake_case')?['evidenceDraftLink'],'__PPG_INSTALL_00195__'))",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_own_events": {
+              "actions": {
+                "Intake_events_assurance": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00023__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Intake_events_consultation": {
+                  "runAfter": {
+                    "Intake_events_assurance": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00029__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Intake_events_readiness": {
+                  "runAfter": {
+                    "Intake_events_consultation": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00055__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Intake_bound": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {}
+              },
+              "expression": {
+                "equals": [
+                  "@body('Read_request_config')?['selectionMode']",
+                  "fictional-initiated-source"
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_baseline_pin": {
+              "runAfter": {
+                "Intake_own_events": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''',replace(decodeUriComponent(uriPath(body('Intake_case')?['sourceBaselineRef'])),'''',''''''),''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_draft_pin": {
+              "runAfter": {
+                "Intake_baseline_pin": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''',replace(decodeUriComponent(uriPath(body('Intake_case')?['evidenceDraftLink'])),'''',''''''),''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_sizes": {
+              "actions": {},
+              "runAfter": {
+                "Intake_draft_pin": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Refuse_INTAKE_SIZE": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "INTAKE_SIZE",
+                        "message": "Selected sources exceed the bounded route."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@and(lessOrEquals(int(body('Intake_baseline_pin')?['Length']),3000000),lessOrEquals(int(body('Intake_draft_pin')?['Length']),3000000))",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_state": {
+              "runAfter": {
+                "Intake_sizes": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": {
+                "case": {
+                  "Id": "@body('Intake_case')?['Id']",
+                  "CaseUID": "@body('Intake_case')?['CaseUID']",
+                  "Title": "@body('Intake_case')?['Title']",
+                  "linkedDocumentUIDs": "@body('Intake_case')?['linkedDocumentUIDs']",
+                  "sourceBaselineRef": "@body('Intake_case')?['sourceBaselineRef']",
+                  "evidenceDraftLink": "@body('Intake_case')?['evidenceDraftLink']",
+                  "odata.etag": "@body('Intake_case')?['odata.etag']",
+                  "OData__UIVersionString": "@body('Intake_case')?['OData__UIVersionString']",
+                  "caseStatus": "@body('Intake_case')?['caseStatus']",
+                  "proposedOutcome": "@body('Intake_case')?['proposedOutcome']",
+                  "accountableRole": "@body('Intake_case')?['accountableRole']",
+                  "nextAction": "@body('Intake_case')?['nextAction']"
+                },
+                "catalogue": "@body('Intake_normal_rows')",
+                "baselinePin": {
+                  "UniqueId": "@body('Intake_baseline_pin')?['UniqueId']",
+                  "ETag": "@body('Intake_baseline_pin')?['ETag']",
+                  "Length": "@body('Intake_baseline_pin')?['Length']",
+                  "UIVersionLabel": "@body('Intake_baseline_pin')?['UIVersionLabel']",
+                  "ServerRelativeUrl": "@body('Intake_baseline_pin')?['ServerRelativeUrl']"
+                },
+                "draftPin": {
+                  "UniqueId": "@body('Intake_draft_pin')?['UniqueId']",
+                  "ETag": "@body('Intake_draft_pin')?['ETag']",
+                  "Length": "@body('Intake_draft_pin')?['Length']",
+                  "UIVersionLabel": "@body('Intake_draft_pin')?['UIVersionLabel']",
+                  "ServerRelativeUrl": "@body('Intake_draft_pin')?['ServerRelativeUrl']"
+                },
+                "eventSets": {
+                  "assurance": "@body('Intake_events_assurance')",
+                  "consultation": "@body('Intake_events_consultation')",
+                  "readiness": "@body('Intake_events_readiness')"
+                }
+              }
+            },
+            "Intake_read_baseline": {
+              "runAfter": {
+                "Intake_state": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileContentByPath"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "path": "@substring(body('Intake_baseline_pin')?['ServerRelativeUrl'],25)",
+                  "inferContentType": false
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_read_draft": {
+              "runAfter": {
+                "Intake_read_baseline": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "GetFileContentByPath"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "path": "@substring(body('Intake_draft_pin')?['ServerRelativeUrl'],25)",
+                  "inferContentType": false
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Read_full_input": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "equals": [
+              "@equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')",
+              true
+            ]
+          },
+          "type": "If"
+        },
+        "Intake_pin_sets": {
+          "runAfter": {
+            "Pin_sets": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "original": "@if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),outputs('Pin_sets')?['full'],outputs('Pin_sets')?['legacy'])",
+            "extra": [
+              {
+                "role": "selected-baseline",
+                "UniqueId": "@body('Intake_baseline_pin')?['UniqueId']",
+                "ETag": "@body('Intake_baseline_pin')?['ETag']",
+                "Length": "@body('Intake_baseline_pin')?['Length']",
+                "UIVersionLabel": "@body('Intake_baseline_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Intake_baseline_pin')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "selected-draft",
+                "UniqueId": "@body('Intake_draft_pin')?['UniqueId']",
+                "ETag": "@body('Intake_draft_pin')?['ETag']",
+                "Length": "@body('Intake_draft_pin')?['Length']",
+                "UIVersionLabel": "@body('Intake_draft_pin')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Intake_draft_pin')?['ServerRelativeUrl']"
+              }
+            ]
+          }
+        },
+        "Recheck_case_intake_before_write": {
+          "actions": {
+            "Intake_case_before_write": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00081__'')/items(',string(int(body('Read_request_config')?['caseItemId'])),')')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_catalogue_before_write": {
+              "runAfter": {
+                "Intake_case_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items?$select=Id,DocumentUID,sourceDocumentId,sourceSnapshotRef,rawSourceRecordRef&$orderby=Id&$top=5000",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_rows_before_write": {
+              "runAfter": {
+                "Intake_catalogue_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Intake_catalogue_before_write')?['value']",
+                "where": "@contains(json(body('Intake_case_before_write')?['linkedDocumentUIDs']),item()?['DocumentUID'])"
+              }
+            },
+            "Intake_normal_rows_before_write": {
+              "runAfter": {
+                "Intake_rows_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Intake_rows_before_write')",
+                "select": {
+                  "Id": "@item()?['Id']",
+                  "DocumentUID": "@item()?['DocumentUID']",
+                  "sourceDocumentId": "@item()?['sourceDocumentId']",
+                  "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+                  "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+                  "odata.etag": "@item()?['odata.etag']"
+                }
+              }
+            },
+            "Intake_bound_before_write": {
+              "actions": {},
+              "runAfter": {
+                "Intake_normal_rows_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Refuse_INTAKE_SCOPE_before_write": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "INTAKE_SCOPE_before_write",
+                        "message": "Select an exact supported case/source scope; catalogue continuation is not accepted."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@and(equals(body('Intake_case_before_write')?['CaseUID'],body('Read_request_config')?['expectedCaseUID']),empty(coalesce(body('Intake_catalogue_before_write')?['odata.nextLink'],body('Intake_catalogue_before_write')?['@odata.nextLink'],body('Intake_catalogue_before_write')?['nextLink'])),startsWith(body('Intake_case_before_write')?['sourceBaselineRef'],'__PPG_INSTALL_00195__'),startsWith(body('Intake_case_before_write')?['evidenceDraftLink'],'__PPG_INSTALL_00195__'))",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_own_events_before_write": {
+              "actions": {
+                "Intake_events_assurance_before_write": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00023__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case_before_write')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Intake_events_consultation_before_write": {
+                  "runAfter": {
+                    "Intake_events_assurance_before_write": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00029__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case_before_write')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Intake_events_readiness_before_write": {
+                  "runAfter": {
+                    "Intake_events_consultation_before_write": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00055__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case_before_write')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Intake_bound_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {}
+              },
+              "expression": {
+                "equals": [
+                  "@body('Read_request_config')?['selectionMode']",
+                  "fictional-initiated-source"
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_baseline_pin_before_write": {
+              "runAfter": {
+                "Intake_own_events_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/GetFileById(''',body('Intake_baseline_pin')?['UniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_draft_pin_before_write": {
+              "runAfter": {
+                "Intake_baseline_pin_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/GetFileById(''',body('Intake_draft_pin')?['UniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_sizes_before_write": {
+              "actions": {},
+              "runAfter": {
+                "Intake_draft_pin_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Refuse_INTAKE_SIZE_before_write": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "INTAKE_SIZE_before_write",
+                        "message": "Selected sources exceed the bounded route."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@and(lessOrEquals(int(body('Intake_baseline_pin_before_write')?['Length']),3000000),lessOrEquals(int(body('Intake_draft_pin_before_write')?['Length']),3000000))",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_state_before_write": {
+              "runAfter": {
+                "Intake_sizes_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": {
+                "case": {
+                  "Id": "@body('Intake_case_before_write')?['Id']",
+                  "CaseUID": "@body('Intake_case_before_write')?['CaseUID']",
+                  "Title": "@body('Intake_case_before_write')?['Title']",
+                  "linkedDocumentUIDs": "@body('Intake_case_before_write')?['linkedDocumentUIDs']",
+                  "sourceBaselineRef": "@body('Intake_case_before_write')?['sourceBaselineRef']",
+                  "evidenceDraftLink": "@body('Intake_case_before_write')?['evidenceDraftLink']",
+                  "odata.etag": "@body('Intake_case_before_write')?['odata.etag']",
+                  "OData__UIVersionString": "@body('Intake_case_before_write')?['OData__UIVersionString']",
+                  "caseStatus": "@body('Intake_case_before_write')?['caseStatus']",
+                  "proposedOutcome": "@body('Intake_case_before_write')?['proposedOutcome']",
+                  "accountableRole": "@body('Intake_case_before_write')?['accountableRole']",
+                  "nextAction": "@body('Intake_case_before_write')?['nextAction']"
+                },
+                "catalogue": "@body('Intake_normal_rows_before_write')",
+                "baselinePin": {
+                  "UniqueId": "@body('Intake_baseline_pin_before_write')?['UniqueId']",
+                  "ETag": "@body('Intake_baseline_pin_before_write')?['ETag']",
+                  "Length": "@body('Intake_baseline_pin_before_write')?['Length']",
+                  "UIVersionLabel": "@body('Intake_baseline_pin_before_write')?['UIVersionLabel']",
+                  "ServerRelativeUrl": "@body('Intake_baseline_pin_before_write')?['ServerRelativeUrl']"
+                },
+                "draftPin": {
+                  "UniqueId": "@body('Intake_draft_pin_before_write')?['UniqueId']",
+                  "ETag": "@body('Intake_draft_pin_before_write')?['ETag']",
+                  "Length": "@body('Intake_draft_pin_before_write')?['Length']",
+                  "UIVersionLabel": "@body('Intake_draft_pin_before_write')?['UIVersionLabel']",
+                  "ServerRelativeUrl": "@body('Intake_draft_pin_before_write')?['ServerRelativeUrl']"
+                },
+                "eventSets": {
+                  "assurance": "@body('Intake_events_assurance_before_write')",
+                  "consultation": "@body('Intake_events_consultation_before_write')",
+                  "readiness": "@body('Intake_events_readiness_before_write')"
+                }
+              }
+            },
+            "Intake_unchanged_before_write": {
+              "actions": {},
+              "runAfter": {
+                "Intake_state_before_write": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Refuse_INTAKE_CHANGED_before_write": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "INTAKE_CHANGED_before_write",
+                        "message": "Case, catalogue or selected file changed; use a new revision."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@equals(string(outputs('Intake_state')),string(outputs('Intake_state_before_write')))",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Request_property_pin_before_write": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "equals": [
+              "@equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')",
+              true
+            ]
+          },
+          "type": "If"
+        },
+        "Intake_pin_sets_before_write": {
+          "runAfter": {
+            "Pin_sets_before_write": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "original": "@if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),outputs('Pin_sets_before_write')?['full'],outputs('Pin_sets_before_write')?['legacy'])",
+            "extra": [
+              {
+                "role": "selected-baseline",
+                "UniqueId": "@body('Intake_baseline_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Intake_baseline_pin_before_write')?['ETag']",
+                "Length": "@body('Intake_baseline_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Intake_baseline_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Intake_baseline_pin_before_write')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "selected-draft",
+                "UniqueId": "@body('Intake_draft_pin_before_write')?['UniqueId']",
+                "ETag": "@body('Intake_draft_pin_before_write')?['ETag']",
+                "Length": "@body('Intake_draft_pin_before_write')?['Length']",
+                "UIVersionLabel": "@body('Intake_draft_pin_before_write')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Intake_draft_pin_before_write')?['ServerRelativeUrl']"
+              }
+            ]
+          }
+        },
+        "Recheck_case_intake_before_receipt": {
+          "actions": {
+            "Intake_case_before_receipt": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00081__'')/items(',string(int(body('Read_request_config')?['caseItemId'])),')')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_catalogue_before_receipt": {
+              "runAfter": {
+                "Intake_case_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items?$select=Id,DocumentUID,sourceDocumentId,sourceSnapshotRef,rawSourceRecordRef&$orderby=Id&$top=5000",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_rows_before_receipt": {
+              "runAfter": {
+                "Intake_catalogue_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@body('Intake_catalogue_before_receipt')?['value']",
+                "where": "@contains(json(body('Intake_case_before_receipt')?['linkedDocumentUIDs']),item()?['DocumentUID'])"
+              }
+            },
+            "Intake_normal_rows_before_receipt": {
+              "runAfter": {
+                "Intake_rows_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Select",
+              "inputs": {
+                "from": "@body('Intake_rows_before_receipt')",
+                "select": {
+                  "Id": "@item()?['Id']",
+                  "DocumentUID": "@item()?['DocumentUID']",
+                  "sourceDocumentId": "@item()?['sourceDocumentId']",
+                  "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+                  "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+                  "odata.etag": "@item()?['odata.etag']"
+                }
+              }
+            },
+            "Intake_bound_before_receipt": {
+              "actions": {},
+              "runAfter": {
+                "Intake_normal_rows_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Refuse_INTAKE_SCOPE_before_receipt": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "INTAKE_SCOPE_before_receipt",
+                        "message": "Select an exact supported case/source scope; catalogue continuation is not accepted."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@and(equals(body('Intake_case_before_receipt')?['CaseUID'],body('Read_request_config')?['expectedCaseUID']),empty(coalesce(body('Intake_catalogue_before_receipt')?['odata.nextLink'],body('Intake_catalogue_before_receipt')?['@odata.nextLink'],body('Intake_catalogue_before_receipt')?['nextLink'])),startsWith(body('Intake_case_before_receipt')?['sourceBaselineRef'],'__PPG_INSTALL_00195__'),startsWith(body('Intake_case_before_receipt')?['evidenceDraftLink'],'__PPG_INSTALL_00195__'))",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_own_events_before_receipt": {
+              "actions": {
+                "Intake_events_assurance_before_receipt": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00023__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case_before_receipt')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Intake_events_consultation_before_receipt": {
+                  "runAfter": {
+                    "Intake_events_assurance_before_receipt": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00029__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case_before_receipt')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Intake_events_readiness_before_receipt": {
+                  "runAfter": {
+                    "Intake_events_consultation_before_receipt": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00055__'')/items?$filter=CaseUID eq ''',replace(body('Intake_case_before_receipt')?['CaseUID'],'''',''''''),'''&$top=5000')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=minimalmetadata"
+                      }
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Intake_bound_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {}
+              },
+              "expression": {
+                "equals": [
+                  "@body('Read_request_config')?['selectionMode']",
+                  "fictional-initiated-source"
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_baseline_pin_before_receipt": {
+              "runAfter": {
+                "Intake_own_events_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/GetFileById(''',body('Intake_baseline_pin')?['UniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_draft_pin_before_receipt": {
+              "runAfter": {
+                "Intake_baseline_pin_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "GET",
+                  "parameters/uri": "@concat('_api/web/GetFileById(''',body('Intake_draft_pin')?['UniqueId'],''')?$select=UniqueId,ETag,Length,UIVersionLabel,ServerRelativeUrl')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=minimalmetadata"
+                  }
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Intake_sizes_before_receipt": {
+              "actions": {},
+              "runAfter": {
+                "Intake_draft_pin_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Refuse_INTAKE_SIZE_before_receipt": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "INTAKE_SIZE_before_receipt",
+                        "message": "Selected sources exceed the bounded route."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@and(lessOrEquals(int(body('Intake_baseline_pin_before_receipt')?['Length']),3000000),lessOrEquals(int(body('Intake_draft_pin_before_receipt')?['Length']),3000000))",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            },
+            "Intake_state_before_receipt": {
+              "runAfter": {
+                "Intake_sizes_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": {
+                "case": {
+                  "Id": "@body('Intake_case_before_receipt')?['Id']",
+                  "CaseUID": "@body('Intake_case_before_receipt')?['CaseUID']",
+                  "Title": "@body('Intake_case_before_receipt')?['Title']",
+                  "linkedDocumentUIDs": "@body('Intake_case_before_receipt')?['linkedDocumentUIDs']",
+                  "sourceBaselineRef": "@body('Intake_case_before_receipt')?['sourceBaselineRef']",
+                  "evidenceDraftLink": "@body('Intake_case_before_receipt')?['evidenceDraftLink']",
+                  "odata.etag": "@body('Intake_case_before_receipt')?['odata.etag']",
+                  "OData__UIVersionString": "@body('Intake_case_before_receipt')?['OData__UIVersionString']",
+                  "caseStatus": "@body('Intake_case_before_receipt')?['caseStatus']",
+                  "proposedOutcome": "@body('Intake_case_before_receipt')?['proposedOutcome']",
+                  "accountableRole": "@body('Intake_case_before_receipt')?['accountableRole']",
+                  "nextAction": "@body('Intake_case_before_receipt')?['nextAction']"
+                },
+                "catalogue": "@body('Intake_normal_rows_before_receipt')",
+                "baselinePin": {
+                  "UniqueId": "@body('Intake_baseline_pin_before_receipt')?['UniqueId']",
+                  "ETag": "@body('Intake_baseline_pin_before_receipt')?['ETag']",
+                  "Length": "@body('Intake_baseline_pin_before_receipt')?['Length']",
+                  "UIVersionLabel": "@body('Intake_baseline_pin_before_receipt')?['UIVersionLabel']",
+                  "ServerRelativeUrl": "@body('Intake_baseline_pin_before_receipt')?['ServerRelativeUrl']"
+                },
+                "draftPin": {
+                  "UniqueId": "@body('Intake_draft_pin_before_receipt')?['UniqueId']",
+                  "ETag": "@body('Intake_draft_pin_before_receipt')?['ETag']",
+                  "Length": "@body('Intake_draft_pin_before_receipt')?['Length']",
+                  "UIVersionLabel": "@body('Intake_draft_pin_before_receipt')?['UIVersionLabel']",
+                  "ServerRelativeUrl": "@body('Intake_draft_pin_before_receipt')?['ServerRelativeUrl']"
+                },
+                "eventSets": {
+                  "assurance": "@body('Intake_events_assurance_before_receipt')",
+                  "consultation": "@body('Intake_events_consultation_before_receipt')",
+                  "readiness": "@body('Intake_events_readiness_before_receipt')"
+                }
+              }
+            },
+            "Intake_unchanged_before_receipt": {
+              "actions": {},
+              "runAfter": {
+                "Intake_state_before_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Refuse_INTAKE_CHANGED_before_receipt": {
+                    "runAfter": {},
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "code": "INTAKE_CHANGED_before_receipt",
+                        "message": "Case, catalogue or selected file changed; use a new revision."
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@equals(string(outputs('Intake_state')),string(outputs('Intake_state_before_receipt')))",
+                      true
+                    ]
+                  }
+                ]
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Request_property_pin_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": {
+            "equals": [
+              "@equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')",
+              true
+            ]
+          },
+          "type": "If"
+        },
+        "Intake_pin_sets_before_receipt": {
+          "runAfter": {
+            "Pin_sets_before_receipt": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "original": "@if(or(equals(body('Read_request_config')?['kind'],'PPG-native-full-review-request-v1'),equals(body('Read_request_config')?['kind'],'PPG-native-case-intake-request-v1')),outputs('Pin_sets_before_receipt')?['full'],outputs('Pin_sets_before_receipt')?['legacy'])",
+            "extra": [
+              {
+                "role": "selected-baseline",
+                "UniqueId": "@body('Intake_baseline_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Intake_baseline_pin_before_receipt')?['ETag']",
+                "Length": "@body('Intake_baseline_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Intake_baseline_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Intake_baseline_pin_before_receipt')?['ServerRelativeUrl']"
+              },
+              {
+                "role": "selected-draft",
+                "UniqueId": "@body('Intake_draft_pin_before_receipt')?['UniqueId']",
+                "ETag": "@body('Intake_draft_pin_before_receipt')?['ETag']",
+                "Length": "@body('Intake_draft_pin_before_receipt')?['Length']",
+                "UIVersionLabel": "@body('Intake_draft_pin_before_receipt')?['UIVersionLabel']",
+                "ServerRelativeUrl": "@body('Intake_draft_pin_before_receipt')?['ServerRelativeUrl']"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

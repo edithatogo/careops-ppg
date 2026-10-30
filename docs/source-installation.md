@@ -2,7 +2,7 @@
 
 The installer builds one versioned solution containing the selected RSS, newsletter,
 internal-list and hospital collectors, plus a companion contract for all five
-SharePoint destinations. It reuses the existing collector builders. It does not
+SharePoint destinations. It reuses the existing collector builders. For the rest of the workbench use the [whole-product installer](whole-product-installation.md). This source-only command does not
 install the rest of the PPG workbench, migrate existing flows, restore records,
 create tenants, authenticate new clients or activate collectors.
 

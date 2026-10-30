@@ -1,0 +1,1574 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {},
+      "shared_excelonlinebusiness": {}
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "hourly": {
+          "recurrence": {
+            "frequency": "Hour",
+            "interval": 1,
+            "timeZone": "E. Australia Standard Time"
+          },
+          "evaluatedRecurrence": {
+            "frequency": "Hour",
+            "interval": 1,
+            "timeZone": "E. Australia Standard Time"
+          },
+          "type": "Recurrence",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Cadence_settings": {
+          "runAfter": {},
+          "type": "Compose",
+          "inputs": {
+            "forceDailyForQualification": false,
+            "forceSourceChangedForQualification": false
+          }
+        },
+        "Poll_source": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00262__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='/teams/PSQUTeam/Shared Documents/Clinical Governance/Registers/MASTER Procedure Register SEP 2026.xlsb')?$select=UniqueId,ETag,Length,TimeLastModified",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_success_checkpoint": {
+          "runAfter": {
+            "Poll_source": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='__PPG_INSTALL_00084__/qw3-last-successful.json')/$value",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata",
+                "Content-Type": "application/json"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Parse_success_checkpoint": {
+          "runAfter": {
+            "Read_success_checkpoint": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(contains(body('Read_success_checkpoint'),'$content'),json(base64ToString(body('Read_success_checkpoint')?['$content'])),json(string(body('Read_success_checkpoint'))))"
+        },
+        "Source_state": {
+          "runAfter": {
+            "Parse_success_checkpoint": [
+              "Succeeded"
+            ],
+            "Cadence_settings": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "checkedUtc": "@utcNow()",
+            "sourceETag": "@body('Poll_source')?['ETag']",
+            "lastSuccessfulUtc": "@outputs('Parse_success_checkpoint')?['asOfUtc']",
+            "sourceChanged": "@or(equals(outputs('Cadence_settings')?['forceSourceChangedForQualification'],true),not(equals(body('Poll_source')?['ETag'],outputs('Parse_success_checkpoint')?['centralSourceETag'])))",
+            "dailyDue": "@or(equals(outputs('Cadence_settings')?['forceDailyForQualification'],true),greaterOrEquals(ticks(utcNow()),ticks(addDays(outputs('Parse_success_checkpoint')?['asOfUtc'],1))))"
+          }
+        },
+        "Persist_source_state": {
+          "runAfter": {
+            "Source_state": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "POST",
+              "parameters/uri": "_api/web/GetFolderByServerRelativePath(decodedurl='__PPG_INSTALL_00084__')/Files/add(overwrite=true,url='qw3-source-state.json')",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata",
+                "Content-Type": "application/json"
+              },
+              "parameters/body": "@string(outputs('Source_state'))"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Qualification_settings": {
+          "runAfter": {
+            "Cadence_settings": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "probeSameValueFirst": false,
+            "failAfterReadbacks": 0
+          }
+        },
+        "Init_counts": {
+          "runAfter": {
+            "Qualification_settings": [
+              "Succeeded"
+            ]
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "readbackCount",
+                "type": "integer",
+                "value": 0
+              },
+              {
+                "name": "writeCount",
+                "type": "integer",
+                "value": 0
+              },
+              {
+                "name": "attemptedWrites",
+                "type": "integer",
+                "value": 0
+              },
+              {
+                "name": "abortRun",
+                "type": "boolean",
+                "value": false
+              }
+            ]
+          }
+        },
+        "Daily_due": {
+          "actions": {
+            "Run_receipt": {
+              "runAfter": {},
+              "type": "Compose",
+              "inputs": {
+                "runId": "@workflow()?['run']?['name']",
+                "status": "running",
+                "sourceSha256": "@outputs('Parse_success_checkpoint')?['sourceSha256']",
+                "readbackCount": "@variables('readbackCount')",
+                "writeCount": "@variables('writeCount')",
+                "attemptedWrites": "@variables('attemptedWrites')",
+                "asOfUtc": "@utcNow()",
+                "qualification": "@outputs('Qualification_settings')",
+                "freshAcquisitionPending": true
+              }
+            },
+            "Persist_start": {
+              "runAfter": {
+                "Run_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "POST",
+                  "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__'')/Files/add(overwrite=true,url=''', 'qw3-run-',workflow()?['run']?['name'],'.json',''')')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose",
+                    "Content-Type": "application/json"
+                  },
+                  "parameters/body": "@string(outputs('Run_receipt'))"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Reconcile": {
+              "actions": {
+                "Read_candidate_metadata": {
+                  "runAfter": {
+                    "Read_source_metadata": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''', '__PPG_INSTALL_00084__/',outputs('Selected_candidate')?['candidateFile'],''')?$select=UniqueId,ETag,Length,TimeLastModified')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_candidate": {
+                  "runAfter": {
+                    "Read_candidate_metadata": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''', '__PPG_INSTALL_00084__/',outputs('Selected_candidate')?['candidateFile'],''')/$value')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Parse_candidate": {
+                  "runAfter": {
+                    "Read_candidate": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Compose",
+                  "inputs": "@if(contains(body('Read_candidate'), '$content'), json(base64ToString(body('Read_candidate')?['$content'])), json(string(body('Read_candidate'))))"
+                },
+                "Read_current": {
+                  "runAfter": {
+                    "Parse_candidate": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items?$top=2000&$select=Id,DocumentUID,sourceDocumentId,sourceTitle,sourceCustodian,sourceNextReviewDateRaw,sourceNextReviewMonth,sourceStatus,sourceRisk,sourceSnapshotRef,sourceAsOfUtc,sourceRowNumber,rawSourceRecordRef,sourceIdentityDecisionRef",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=verbose"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Candidate_UIDs": {
+                  "runAfter": {
+                    "Read_current": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@outputs('Parse_candidate')?['operations']",
+                    "select": {
+                      "uid": "@item()?['DocumentUID']"
+                    }
+                  }
+                },
+                "Current_UIDs": {
+                  "runAfter": {
+                    "Candidate_UIDs": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Read_current')?['d']?['results']",
+                    "select": {
+                      "uid": "@item()?['DocumentUID']"
+                    }
+                  }
+                },
+                "Guard_input": {
+                  "actions": {
+                    "Canonical_expected": {
+                      "runAfter": {},
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@outputs('Parse_candidate')?['operations']",
+                        "select": {
+                          "DocumentUID": "@item()?['DocumentUID']",
+                          "rawSourceRecordRef": "@item()?['fields']?['rawSourceRecordRef']",
+                          "sourceAsOfUtc": "@item()?['fields']?['sourceAsOfUtc']",
+                          "sourceCustodian": "@coalesce(item()?['fields']?['sourceCustodian'],'')",
+                          "sourceDocumentId": "@coalesce(item()?['fields']?['sourceDocumentId'],'')",
+                          "sourceNextReviewDateRaw": "@float(json(item()?['fields']?['sourceNextReviewDateRaw']))",
+                          "sourceNextReviewMonth": "@item()?['fields']?['sourceNextReviewMonth']",
+                          "sourceRisk": "@coalesce(item()?['fields']?['sourceRisk'],'')",
+                          "sourceRowNumber": "@item()?['fields']?['sourceRowNumber']",
+                          "sourceSnapshotRef": "@item()?['fields']?['sourceSnapshotRef']",
+                          "sourceStatus": "@coalesce(item()?['fields']?['sourceStatus'],'')",
+                          "sourceTitle": "@coalesce(item()?['fields']?['sourceTitle'],'')"
+                        }
+                      }
+                    },
+                    "Canonical_current": {
+                      "runAfter": {
+                        "Canonical_expected": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('Read_current')?['d']?['results']",
+                        "select": {
+                          "DocumentUID": "@item()?['DocumentUID']",
+                          "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+                          "sourceAsOfUtc": "@item()?['sourceAsOfUtc']",
+                          "sourceCustodian": "@coalesce(item()?['sourceCustodian'],'')",
+                          "sourceDocumentId": "@coalesce(item()?['sourceDocumentId'],'')",
+                          "sourceNextReviewDateRaw": "@float(json(item()?['sourceNextReviewDateRaw']))",
+                          "sourceNextReviewMonth": "@item()?['sourceNextReviewMonth']",
+                          "sourceRisk": "@coalesce(item()?['sourceRisk'],'')",
+                          "sourceRowNumber": "@item()?['sourceRowNumber']",
+                          "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+                          "sourceStatus": "@coalesce(item()?['sourceStatus'],'')",
+                          "sourceTitle": "@coalesce(item()?['sourceTitle'],'')"
+                        }
+                      }
+                    },
+                    "Changed_rows": {
+                      "runAfter": {
+                        "Canonical_current": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@body('Canonical_expected')",
+                        "where": "@not(contains(body('Canonical_current'),item()))"
+                      }
+                    },
+                    "Changed_UIDs": {
+                      "runAfter": {
+                        "Changed_rows": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@body('Changed_rows')",
+                        "select": "@item()?['DocumentUID']"
+                      }
+                    },
+                    "Changed_operations": {
+                      "runAfter": {
+                        "Changed_UIDs": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Query",
+                      "inputs": {
+                        "from": "@outputs('Parse_candidate')?['operations']",
+                        "where": "@contains(body('Changed_UIDs'),item()?['DocumentUID'])"
+                      }
+                    },
+                    "Work_operations": {
+                      "runAfter": {
+                        "Changed_operations": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Compose",
+                      "inputs": "@if(equals(outputs('Qualification_settings')?['probeSameValueFirst'],true),union(body('Changed_operations'),take(outputs('Parse_candidate')?['operations'],1)),body('Changed_operations'))"
+                    },
+                    "Write_changes": {
+                      "actions": {
+                        "Serial_check": {
+                          "actions": {
+                            "Current_operation": {
+                              "runAfter": {},
+                              "type": "Compose",
+                              "inputs": "@outputs('Work_operations')[variables('readbackCount')]"
+                            },
+                            "Row_work": {
+                              "actions": {
+                                "Find_native": {
+                                  "runAfter": {},
+                                  "type": "Query",
+                                  "inputs": {
+                                    "from": "@body('Read_current')?['d']?['results']",
+                                    "where": "@equals(item()?['DocumentUID'],outputs('Current_operation')?['DocumentUID'])"
+                                  }
+                                },
+                                "Count_readback": {
+                                  "runAfter": {
+                                    "Compare_source": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "type": "IncrementVariable",
+                                  "inputs": {
+                                    "name": "readbackCount",
+                                    "value": 1
+                                  }
+                                },
+                                "Failure_probe": {
+                                  "actions": {
+                                    "Mark_probe_abort": {
+                                      "runAfter": {},
+                                      "type": "SetVariable",
+                                      "inputs": {
+                                        "name": "abortRun",
+                                        "value": true
+                                      }
+                                    },
+                                    "Simulated_partial_failure": {
+                                      "runAfter": {
+                                        "Mark_probe_abort": [
+                                          "Succeeded"
+                                        ]
+                                      },
+                                      "type": "Compose",
+                                      "inputs": "@div(1,0)"
+                                    }
+                                  },
+                                  "runAfter": {
+                                    "Count_readback": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "else": {
+                                    "actions": {}
+                                  },
+                                  "expression": "@and(greater(outputs('Qualification_settings')?['failAfterReadbacks'],0),greaterOrEquals(variables('readbackCount'),outputs('Qualification_settings')?['failAfterReadbacks']))",
+                                  "type": "If"
+                                },
+                                "Compare_source": {
+                                  "actions": {},
+                                  "runAfter": {
+                                    "Find_native": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "else": {
+                                    "actions": {
+                                      "Attempt_write": {
+                                        "runAfter": {},
+                                        "type": "IncrementVariable",
+                                        "inputs": {
+                                          "name": "attemptedWrites",
+                                          "value": 1
+                                        }
+                                      },
+                                      "Pending_write_receipt": {
+                                        "runAfter": {
+                                          "Attempt_write": [
+                                            "Succeeded"
+                                          ]
+                                        },
+                                        "type": "Compose",
+                                        "inputs": {
+                                          "runId": "@workflow()?['run']?['name']",
+                                          "status": "running_write_attempt",
+                                          "sourceSha256": "@coalesce(body('Extract_copy')?['result']?['candidate']?['sourceSha256'],outputs('Parse_success_checkpoint')?['sourceSha256'])",
+                                          "readbackCount": "@variables('readbackCount')",
+                                          "writeCount": "@variables('writeCount')",
+                                          "attemptedWrites": "@variables('attemptedWrites')",
+                                          "asOfUtc": "@utcNow()",
+                                          "qualification": "@outputs('Qualification_settings')"
+                                        }
+                                      },
+                                      "Persist_pending_write": {
+                                        "runAfter": {
+                                          "Pending_write_receipt": [
+                                            "Succeeded"
+                                          ]
+                                        },
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                          "host": {
+                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                            "connectionName": "shared_sharepointonline",
+                                            "operationId": "HttpRequest"
+                                          },
+                                          "parameters": {
+                                            "dataset": "__PPG_INSTALL_00101__",
+                                            "parameters/method": "POST",
+                                            "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__'')/Files/add(overwrite=true,url=''', 'qw3-run-',workflow()?['run']?['name'],'.json',''')')",
+                                            "parameters/headers": {
+                                              "Accept": "application/json;odata=verbose",
+                                              "Content-Type": "application/json"
+                                            },
+                                            "parameters/body": "@string(outputs('Pending_write_receipt'))"
+                                          },
+                                          "authentication": "@parameters('$authentication')"
+                                        }
+                                      },
+                                      "Whitelisted_fields": {
+                                        "runAfter": {
+                                          "Persist_pending_write": [
+                                            "Succeeded"
+                                          ]
+                                        },
+                                        "type": "Compose",
+                                        "inputs": {
+                                          "rawSourceRecordRef": "@outputs('Current_operation')?['fields']?['rawSourceRecordRef']",
+                                          "sourceAsOfUtc": "@outputs('Current_operation')?['fields']?['sourceAsOfUtc']",
+                                          "sourceCustodian": "@outputs('Current_operation')?['fields']?['sourceCustodian']",
+                                          "sourceDocumentId": "@outputs('Current_operation')?['fields']?['sourceDocumentId']",
+                                          "sourceNextReviewDateRaw": "@outputs('Current_operation')?['fields']?['sourceNextReviewDateRaw']",
+                                          "sourceNextReviewMonth": "@outputs('Current_operation')?['fields']?['sourceNextReviewMonth']",
+                                          "sourceRisk": "@outputs('Current_operation')?['fields']?['sourceRisk']",
+                                          "sourceRowNumber": "@outputs('Current_operation')?['fields']?['sourceRowNumber']",
+                                          "sourceSnapshotRef": "@outputs('Current_operation')?['fields']?['sourceSnapshotRef']",
+                                          "sourceStatus": "@outputs('Current_operation')?['fields']?['sourceStatus']",
+                                          "sourceTitle": "@outputs('Current_operation')?['fields']?['sourceTitle']"
+                                        }
+                                      },
+                                      "Count_write": {
+                                        "runAfter": {
+                                          "Write_source": [
+                                            "Succeeded"
+                                          ]
+                                        },
+                                        "type": "IncrementVariable",
+                                        "inputs": {
+                                          "name": "writeCount",
+                                          "value": 1
+                                        }
+                                      },
+                                      "Read_written": {
+                                        "runAfter": {
+                                          "Count_write": [
+                                            "Succeeded"
+                                          ]
+                                        },
+                                        "type": "OpenApiConnection",
+                                        "inputs": {
+                                          "host": {
+                                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                            "connectionName": "shared_sharepointonline",
+                                            "operationId": "HttpRequest"
+                                          },
+                                          "parameters": {
+                                            "dataset": "__PPG_INSTALL_00101__",
+                                            "parameters/method": "GET",
+                                            "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00019__'')/items?$filter=DocumentUID eq ''',outputs('Current_operation')?['DocumentUID'],'''&$select=Id,DocumentUID,rawSourceRecordRef,sourceAsOfUtc,sourceCustodian,sourceDocumentId,sourceNextReviewDateRaw,sourceNextReviewMonth,sourceRisk,sourceRowNumber,sourceSnapshotRef,sourceStatus,sourceTitle,sourceIdentityDecisionRef')",
+                                            "parameters/headers": {
+                                              "Accept": "application/json;odata=verbose"
+                                            }
+                                          },
+                                          "authentication": "@parameters('$authentication')"
+                                        }
+                                      },
+                                      "Verify_written": {
+                                        "actions": {},
+                                        "runAfter": {
+                                          "Read_written": [
+                                            "Succeeded"
+                                          ]
+                                        },
+                                        "else": {
+                                          "actions": {
+                                            "Readback_failed": {
+                                              "runAfter": {},
+                                              "type": "Compose",
+                                              "inputs": "@div(1,0)"
+                                            }
+                                          }
+                                        },
+                                        "expression": "@and(and(equals(length(body('Read_written')?['d']?['results']),1),and(equals(first(body('Read_written')?['d']?['results'])?['DocumentUID'],outputs('Current_operation')?['DocumentUID']),equals(first(body('Read_written')?['d']?['results'])?['rawSourceRecordRef'],outputs('Current_operation')?['fields']?['rawSourceRecordRef']),equals(first(body('Read_written')?['d']?['results'])?['sourceAsOfUtc'],outputs('Current_operation')?['fields']?['sourceAsOfUtc']),equals(coalesce(first(body('Read_written')?['d']?['results'])?['sourceCustodian'],''),coalesce(outputs('Current_operation')?['fields']?['sourceCustodian'],'')),equals(coalesce(first(body('Read_written')?['d']?['results'])?['sourceDocumentId'],''),coalesce(outputs('Current_operation')?['fields']?['sourceDocumentId'],'')),equals(float(json(first(body('Read_written')?['d']?['results'])?['sourceNextReviewDateRaw'])),float(json(outputs('Current_operation')?['fields']?['sourceNextReviewDateRaw']))),equals(first(body('Read_written')?['d']?['results'])?['sourceNextReviewMonth'],outputs('Current_operation')?['fields']?['sourceNextReviewMonth']),equals(coalesce(first(body('Read_written')?['d']?['results'])?['sourceRisk'],''),coalesce(outputs('Current_operation')?['fields']?['sourceRisk'],'')),equals(first(body('Read_written')?['d']?['results'])?['sourceRowNumber'],outputs('Current_operation')?['fields']?['sourceRowNumber']),equals(first(body('Read_written')?['d']?['results'])?['sourceSnapshotRef'],outputs('Current_operation')?['fields']?['sourceSnapshotRef']),equals(coalesce(first(body('Read_written')?['d']?['results'])?['sourceStatus'],''),coalesce(outputs('Current_operation')?['fields']?['sourceStatus'],'')),equals(coalesce(first(body('Read_written')?['d']?['results'])?['sourceTitle'],''),coalesce(outputs('Current_operation')?['fields']?['sourceTitle'],'')))),if(empty(body('Find_native')),equals(first(body('Read_written')?['d']?['results'])?['sourceIdentityDecisionRef'],body('Extract_copy')?['result']?['identityApplication']?['packageHash']),true))",
+                                        "type": "If"
+                                      },
+                                      "Write_source": {
+                                        "actions": {
+                                          "Create_identity": {
+                                            "runAfter": {},
+                                            "type": "OpenApiConnection",
+                                            "inputs": {
+                                              "host": {
+                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                                "connectionName": "shared_sharepointonline",
+                                                "operationId": "HttpRequest"
+                                              },
+                                              "parameters": {
+                                                "dataset": "__PPG_INSTALL_00101__",
+                                                "parameters/method": "POST",
+                                                "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items",
+                                                "parameters/headers": {
+                                                  "Accept": "application/json;odata=verbose",
+                                                  "Content-Type": "application/json;odata=nometadata"
+                                                },
+                                                "parameters/body": "@string(addProperty(addProperty(outputs('Whitelisted_fields'),'DocumentUID',if(contains(coalesce(body('Extract_copy')?['result']?['identityApplication']?['newUIDs'],json('[]')),outputs('Current_operation')?['DocumentUID']),outputs('Current_operation')?['DocumentUID'],div(1,0))),'sourceIdentityDecisionRef',body('Extract_copy')?['result']?['identityApplication']?['packageHash']))"
+                                              },
+                                              "authentication": "@parameters('$authentication')"
+                                            }
+                                          }
+                                        },
+                                        "runAfter": {
+                                          "Whitelisted_fields": [
+                                            "Succeeded"
+                                          ]
+                                        },
+                                        "else": {
+                                          "actions": {
+                                            "Patch_source": {
+                                              "runAfter": {},
+                                              "type": "OpenApiConnection",
+                                              "inputs": {
+                                                "host": {
+                                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                                  "connectionName": "shared_sharepointonline",
+                                                  "operationId": "HttpRequest"
+                                                },
+                                                "parameters": {
+                                                  "dataset": "__PPG_INSTALL_00101__",
+                                                  "parameters/method": "POST",
+                                                  "parameters/uri": "@concat('_api/web/lists(guid''__PPG_INSTALL_00019__'')/items(',string(first(body('Find_native'))?['Id']),')')",
+                                                  "parameters/headers": {
+                                                    "Accept": "application/json;odata=verbose",
+                                                    "Content-Type": "application/json;odata=nometadata",
+                                                    "X-HTTP-Method": "MERGE",
+                                                    "If-Match": "@first(body('Find_native'))?['__metadata']?['etag']"
+                                                  },
+                                                  "parameters/body": "@string(outputs('Whitelisted_fields'))"
+                                                },
+                                                "authentication": "@parameters('$authentication')"
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "expression": "@empty(body('Find_native'))",
+                                        "type": "If"
+                                      }
+                                    }
+                                  },
+                                  "expression": "@if(empty(body('Find_native')),false,and(and(equals(coalesce(first(body('Find_native'))?['sourceDocumentId'],''), coalesce(outputs('Current_operation')?['fields']?['sourceDocumentId'],'')),equals(coalesce(first(body('Find_native'))?['sourceTitle'],''), coalesce(outputs('Current_operation')?['fields']?['sourceTitle'],'')),equals(coalesce(first(body('Find_native'))?['sourceCustodian'],''), coalesce(outputs('Current_operation')?['fields']?['sourceCustodian'],'')),equals(float(json(first(body('Find_native'))?['sourceNextReviewDateRaw'])), float(json(outputs('Current_operation')?['fields']?['sourceNextReviewDateRaw']))),equals(first(body('Find_native'))?['sourceNextReviewMonth'],outputs('Current_operation')?['fields']?['sourceNextReviewMonth']),equals(coalesce(first(body('Find_native'))?['sourceStatus'],''), coalesce(outputs('Current_operation')?['fields']?['sourceStatus'],'')),equals(coalesce(first(body('Find_native'))?['sourceRisk'],''), coalesce(outputs('Current_operation')?['fields']?['sourceRisk'],'')),equals(first(body('Find_native'))?['sourceSnapshotRef'],outputs('Current_operation')?['fields']?['sourceSnapshotRef']),equals(first(body('Find_native'))?['sourceAsOfUtc'],outputs('Current_operation')?['fields']?['sourceAsOfUtc']),equals(first(body('Find_native'))?['sourceRowNumber'],outputs('Current_operation')?['fields']?['sourceRowNumber']),equals(first(body('Find_native'))?['rawSourceRecordRef'],outputs('Current_operation')?['fields']?['rawSourceRecordRef'])),not(and(equals(outputs('Qualification_settings')?['probeSameValueFirst'],true),equals(outputs('Current_operation')?['DocumentUID'],'__PPG_INSTALL_00264__')))))",
+                                  "type": "If"
+                                }
+                              },
+                              "runAfter": {
+                                "Current_operation": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "type": "Scope"
+                            },
+                            "Abort_after_row_failure": {
+                              "runAfter": {
+                                "Row_work": [
+                                  "Failed",
+                                  "TimedOut"
+                                ]
+                              },
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "abortRun",
+                                "value": true
+                              }
+                            }
+                          },
+                          "runAfter": {},
+                          "expression": "@or(equals(variables('abortRun'),true),greaterOrEquals(variables('readbackCount'),length(outputs('Work_operations'))))",
+                          "limit": {
+                            "count": 5000,
+                            "timeout": "PT1H"
+                          },
+                          "type": "Until"
+                        }
+                      },
+                      "runAfter": {
+                        "Work_operations": [
+                          "Succeeded"
+                        ]
+                      },
+                      "else": {
+                        "actions": {}
+                      },
+                      "expression": "@greater(length(outputs('Work_operations')),0)",
+                      "type": "If"
+                    }
+                  },
+                  "runAfter": {
+                    "Canonical_retained_before": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Input_failed": {
+                        "runAfter": {},
+                        "type": "Compose",
+                        "inputs": "@div(1,0)"
+                      }
+                    }
+                  },
+                  "expression": "@and(and(and(and(equals(outputs('Parse_candidate')?['contractHash'],body('Extract_copy')?['result']?['candidate']?['contractHash']),and(equals(outputs('Parse_candidate')?['sourceSha256'],outputs('Selected_candidate')?['sourceSha256']),equals(length(outputs('Parse_candidate')?['operations']),outputs('Parse_candidate')?['inputCount']),equals(length(body('Read_current')?['d']?['results']),length(union(body('Current_UIDs'),body('Current_UIDs')))),empty(body('Read_current')?['d']?['__next']),empty(outputs('Parse_candidate')?['exceptions']),and(equals(length(outputs('Parse_candidate')?['missingUIDs']),length(coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]')))),equals(length(union(outputs('Parse_candidate')?['missingUIDs'],coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]')))),length(coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]')))),equals(length(body('Retained_absent_before')),length(coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]'))))),equals(length(union(body('Candidate_UIDs'),body('Current_UIDs'))),add(length(outputs('Parse_candidate')?['operations']),length(coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]'))))),equals(length(union(body('Candidate_UIDs'),body('Candidate_UIDs'))),length(outputs('Parse_candidate')?['operations'])),equals(length(union(body('Current_UIDs'),body('Current_UIDs'))),length(body('Current_UIDs')))),equals(body('Read_source_metadata')?['UniqueId'],'__PPG_INSTALL_00265__'),equals(body('Read_source_metadata')?['ETag'],body('Read_source_before')?['ETag'])),if(equals(outputs('Selected_candidate')?['reusedCandidate'],true),and(equals(body('Read_candidate_metadata')?['ETag'],outputs('Parse_success_checkpoint')?['candidateETag']),equals(body('Read_candidate_metadata')?['UniqueId'],coalesce(outputs('Parse_success_checkpoint')?['candidateUniqueId'],'__PPG_INSTALL_00266__'))),equals(outputs('Parse_candidate'),body('Extract_copy')?['result']?['candidate']))),equals(body('Extract_copy')?['result']?['candidate']?['provenance']?['rawByteLength'],int(body('Read_source_before')?['Length']))),equals(body('Extract_copy')?['result']?['identityContract']?['baseContractHash'],outputs('Parse_success_checkpoint')?['identityContractHash']),empty(body('Missing_base_identities')),empty(body('Unqualified_new_identities')))",
+                  "type": "If"
+                },
+                "Read_candidate_metadata_after": {
+                  "runAfter": {
+                    "Canonical_after": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "@concat('_api/web/GetFileByServerRelativePath(decodedurl=''', '__PPG_INSTALL_00084__/',outputs('Selected_candidate')?['candidateFile'],''')?$select=UniqueId,ETag,Length,TimeLastModified')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Guard_readback": {
+                  "actions": {
+                    "Completed_summary": {
+                      "runAfter": {
+                        "Set_full_readback_count": [
+                          "Succeeded"
+                        ]
+                      },
+                      "type": "Compose",
+                      "inputs": {
+                        "runId": "@workflow()?['run']?['name']",
+                        "status": "completed",
+                        "sourceSha256": "@coalesce(body('Extract_copy')?['result']?['candidate']?['sourceSha256'],outputs('Parse_success_checkpoint')?['sourceSha256'])",
+                        "readbackCount": "@variables('readbackCount')",
+                        "writeCount": "@variables('writeCount')",
+                        "attemptedWrites": "@variables('attemptedWrites')",
+                        "asOfUtc": "@utcNow()",
+                        "qualification": "@outputs('Qualification_settings')",
+                        "centralSourceETag": "@body('Read_source_metadata_after')?['ETag']",
+                        "candidateETag": "@body('Read_candidate_metadata_after')?['ETag']",
+                        "identityContractHash": "@outputs('Parse_candidate')?['contractHash']",
+                        "candidateFile": "@outputs('Selected_candidate')?['candidateFile']",
+                        "rawAcquisitionFile": "@concat('qw3-raw-',workflow()?['run']?['name'],'.json')",
+                        "candidateUniqueId": "@body('Read_candidate_metadata_after')?['UniqueId']",
+                        "identityLedger": "@body('Extract_copy')?['result']?['identityContract']?['ledger']",
+                        "lastIdentityApplicationHash": "@coalesce(body('Extract_copy')?['result']?['identityApplication']?['packageHash'],outputs('Parse_success_checkpoint')?['lastIdentityApplicationHash'],'')",
+                        "identityApplicationFile": "@concat('qw3-identity-application-',workflow()?['run']?['name'],'.json')",
+                        "identityApplicationStatus": "@if(empty(body('Extract_copy')?['result']?['identityApplication']),'unchanged','verified')",
+                        "retainedAbsentUIDs": "@coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]'))",
+                        "retainedAbsentReadbackCount": "@length(body('Retained_absent_after'))",
+                        "retainedAbsentUnchanged": "@and(equals(length(union(body('Canonical_retained_before'),body('Canonical_retained_before'))),length(body('Canonical_retained_before'))),equals(length(union(body('Canonical_retained_after'),body('Canonical_retained_after'))),length(body('Canonical_retained_after'))),equals(length(body('Canonical_retained_before')),length(body('Canonical_retained_after'))),equals(length(union(body('Canonical_retained_before'),body('Canonical_retained_after'))),length(body('Canonical_retained_before'))))",
+                        "catalogueReadbackCount": "@length(body('Read_current_after')?['d']?['results'])"
+                      }
+                    },
+                    "Set_full_readback_count": {
+                      "runAfter": {},
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "readbackCount",
+                        "value": "@length(outputs('Parse_candidate')?['operations'])"
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Read_source_metadata_after": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Final_guard_failed": {
+                        "runAfter": {},
+                        "type": "Compose",
+                        "inputs": "@div(1,0)"
+                      }
+                    }
+                  },
+                  "expression": "@and(and(equals(variables('abortRun'),false),equals(variables('readbackCount'),length(outputs('Work_operations'))),equals(length(body('Read_current_after')?['d']?['results']),add(length(outputs('Parse_candidate')?['operations']),length(coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]'))))),empty(body('Read_current_after')?['d']?['__next']),equals(length(union(body('Canonical_after'),body('Canonical_after'))),length(outputs('Parse_candidate')?['operations'])),equals(length(union(body('Canonical_expected'),body('Canonical_after'))),length(outputs('Parse_candidate')?['operations'])),equals(body('Read_candidate_metadata')?['ETag'],body('Read_candidate_metadata_after')?['ETag']),equals(body('Read_candidate_metadata')?['UniqueId'],body('Read_candidate_metadata_after')?['UniqueId']),equals(body('Read_source_metadata')?['ETag'],body('Read_source_metadata_after')?['ETag']),equals(body('Read_source_metadata')?['UniqueId'],body('Read_source_metadata_after')?['UniqueId'])),and(equals(length(union(body('Canonical_retained_before'),body('Canonical_retained_before'))),length(body('Canonical_retained_before'))),equals(length(union(body('Canonical_retained_after'),body('Canonical_retained_after'))),length(body('Canonical_retained_after'))),equals(length(body('Canonical_retained_before')),length(body('Canonical_retained_after'))),equals(length(union(body('Canonical_retained_before'),body('Canonical_retained_after'))),length(body('Canonical_retained_before')))))",
+                  "type": "If"
+                },
+                "Read_source_metadata": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00262__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='/teams/PSQUTeam/Shared Documents/Clinical Governance/Registers/MASTER Procedure Register SEP 2026.xlsb')?$select=UniqueId,ETag,Length,TimeLastModified",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_source_metadata_after": {
+                  "runAfter": {
+                    "Read_candidate_metadata_after": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00262__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='/teams/PSQUTeam/Shared Documents/Clinical Governance/Registers/MASTER Procedure Register SEP 2026.xlsb')?$select=UniqueId,ETag,Length,TimeLastModified",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_current_after": {
+                  "runAfter": {
+                    "Guard_input": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00019__')/items?$top=2000&$select=Id,DocumentUID,sourceDocumentId,sourceTitle,sourceCustodian,sourceNextReviewDateRaw,sourceNextReviewMonth,sourceStatus,sourceRisk,sourceSnapshotRef,sourceAsOfUtc,sourceRowNumber,rawSourceRecordRef,sourceIdentityDecisionRef",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=verbose"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Canonical_after": {
+                  "runAfter": {
+                    "Canonical_retained_after": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Active_current_after')",
+                    "select": {
+                      "DocumentUID": "@item()?['DocumentUID']",
+                      "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+                      "sourceAsOfUtc": "@item()?['sourceAsOfUtc']",
+                      "sourceCustodian": "@coalesce(item()?['sourceCustodian'],'')",
+                      "sourceDocumentId": "@coalesce(item()?['sourceDocumentId'],'')",
+                      "sourceNextReviewDateRaw": "@float(json(item()?['sourceNextReviewDateRaw']))",
+                      "sourceNextReviewMonth": "@item()?['sourceNextReviewMonth']",
+                      "sourceRisk": "@coalesce(item()?['sourceRisk'],'')",
+                      "sourceRowNumber": "@item()?['sourceRowNumber']",
+                      "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+                      "sourceStatus": "@coalesce(item()?['sourceStatus'],'')",
+                      "sourceTitle": "@coalesce(item()?['sourceTitle'],'')"
+                    }
+                  }
+                },
+                "Current_identity_values": {
+                  "runAfter": {
+                    "Current_UIDs": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Read_current')?['d']?['results']",
+                    "select": "@item()?['DocumentUID']"
+                  }
+                },
+                "Missing_base_identities": {
+                  "runAfter": {
+                    "Current_identity_values": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Extract_copy')?['result']?['identityContract']?['baseUIDs']",
+                    "where": "@not(contains(body('Current_identity_values'),item()))"
+                  }
+                },
+                "Unqualified_new_identities": {
+                  "runAfter": {
+                    "Missing_base_identities": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Read_current')?['d']?['results']",
+                    "where": "@and(not(contains(body('Extract_copy')?['result']?['identityContract']?['baseUIDs'],item()?['DocumentUID'])),not(and(contains(coalesce(body('Extract_copy')?['result']?['identityApplication']?['newUIDs'],json('[]')),item()?['DocumentUID']),equals(item()?['sourceIdentityDecisionRef'],body('Extract_copy')?['result']?['identityApplication']?['packageHash']))))"
+                  }
+                },
+                "Retained_absent_before": {
+                  "runAfter": {
+                    "Unqualified_new_identities": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Read_current')?['d']?['results']",
+                    "where": "@contains(coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]')),item()?['DocumentUID'])"
+                  }
+                },
+                "Canonical_retained_before": {
+                  "runAfter": {
+                    "Retained_absent_before": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Retained_absent_before')",
+                    "select": {
+                      "Id": "@item()?['Id']",
+                      "DocumentUID": "@item()?['DocumentUID']",
+                      "sourceDocumentId": "@item()?['sourceDocumentId']",
+                      "sourceTitle": "@item()?['sourceTitle']",
+                      "sourceCustodian": "@item()?['sourceCustodian']",
+                      "sourceNextReviewDateRaw": "@item()?['sourceNextReviewDateRaw']",
+                      "sourceNextReviewMonth": "@item()?['sourceNextReviewMonth']",
+                      "sourceStatus": "@item()?['sourceStatus']",
+                      "sourceRisk": "@item()?['sourceRisk']",
+                      "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+                      "sourceAsOfUtc": "@item()?['sourceAsOfUtc']",
+                      "sourceRowNumber": "@item()?['sourceRowNumber']",
+                      "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+                      "sourceIdentityDecisionRef": "@item()?['sourceIdentityDecisionRef']",
+                      "retainedETag": "@if(empty(item()?['__metadata']?['etag']),div(1,0),item()?['__metadata']?['etag'])"
+                    }
+                  }
+                },
+                "Active_current_after": {
+                  "runAfter": {
+                    "Read_current_after": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Read_current_after')?['d']?['results']",
+                    "where": "@not(contains(coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]')),item()?['DocumentUID']))"
+                  }
+                },
+                "Retained_absent_after": {
+                  "runAfter": {
+                    "Active_current_after": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Query",
+                  "inputs": {
+                    "from": "@body('Read_current_after')?['d']?['results']",
+                    "where": "@contains(coalesce(outputs('Parse_candidate')?['acknowledgedMissingUIDs'],json('[]')),item()?['DocumentUID'])"
+                  }
+                },
+                "Canonical_retained_after": {
+                  "runAfter": {
+                    "Retained_absent_after": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "Select",
+                  "inputs": {
+                    "from": "@body('Retained_absent_after')",
+                    "select": {
+                      "Id": "@item()?['Id']",
+                      "DocumentUID": "@item()?['DocumentUID']",
+                      "sourceDocumentId": "@item()?['sourceDocumentId']",
+                      "sourceTitle": "@item()?['sourceTitle']",
+                      "sourceCustodian": "@item()?['sourceCustodian']",
+                      "sourceNextReviewDateRaw": "@item()?['sourceNextReviewDateRaw']",
+                      "sourceNextReviewMonth": "@item()?['sourceNextReviewMonth']",
+                      "sourceStatus": "@item()?['sourceStatus']",
+                      "sourceRisk": "@item()?['sourceRisk']",
+                      "sourceSnapshotRef": "@item()?['sourceSnapshotRef']",
+                      "sourceAsOfUtc": "@item()?['sourceAsOfUtc']",
+                      "sourceRowNumber": "@item()?['sourceRowNumber']",
+                      "rawSourceRecordRef": "@item()?['rawSourceRecordRef']",
+                      "sourceIdentityDecisionRef": "@item()?['sourceIdentityDecisionRef']",
+                      "retainedETag": "@if(empty(item()?['__metadata']?['etag']),div(1,0),item()?['__metadata']?['etag'])"
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Selected_candidate": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Scope"
+            },
+            "Success_receipt": {
+              "runAfter": {
+                "Reconcile": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "POST",
+                  "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__'')/Files/add(overwrite=true,url=''', 'qw3-run-',workflow()?['run']?['name'],'.json',''')')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose",
+                    "Content-Type": "application/json"
+                  },
+                  "parameters/body": "@string(outputs('Completed_summary'))"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Commit_checkpoint": {
+              "runAfter": {
+                "Success_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "POST",
+                  "parameters/uri": "_api/web/GetFolderByServerRelativePath(decodedurl='__PPG_INSTALL_00084__')/Files/add(overwrite=true,url='qw3-last-successful.json')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose",
+                    "Content-Type": "application/json"
+                  },
+                  "parameters/body": "@string(outputs('Completed_summary'))"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Failure_summary": {
+              "runAfter": {
+                "Reconcile": [
+                  "Failed",
+                  "TimedOut",
+                  "Skipped"
+                ]
+              },
+              "type": "Compose",
+              "inputs": {
+                "runId": "@workflow()?['run']?['name']",
+                "status": "failed_partial_or_unverified",
+                "sourceSha256": "@coalesce(body('Extract_copy')?['result']?['candidate']?['sourceSha256'],outputs('Parse_success_checkpoint')?['sourceSha256'])",
+                "readbackCount": "@variables('readbackCount')",
+                "writeCount": "@variables('writeCount')",
+                "attemptedWrites": "@variables('attemptedWrites')",
+                "asOfUtc": "@utcNow()",
+                "qualification": "@outputs('Qualification_settings')"
+              }
+            },
+            "Failure_receipt": {
+              "runAfter": {
+                "Failure_summary": [
+                  "Succeeded"
+                ]
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "POST",
+                  "parameters/uri": "@concat('_api/web/GetFolderByServerRelativePath(decodedurl=''__PPG_INSTALL_00084__'')/Files/add(overwrite=true,url=''', 'qw3-run-',workflow()?['run']?['name'],'.json',''')')",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=verbose",
+                    "Content-Type": "application/json"
+                  },
+                  "parameters/body": "@string(outputs('Failure_summary'))"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Fail_visible": {
+              "runAfter": {
+                "Failure_receipt": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Failed",
+                "runError": {
+                  "code": "SourceSyncFailed",
+                  "message": "See durable QW3 run receipt. Last-successful checkpoint was not advanced."
+                }
+              }
+            },
+            "Acquire_fresh": {
+              "actions": {
+                "Read_source_before": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00262__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='/teams/PSQUTeam/Shared Documents/Clinical Governance/Registers/MASTER Procedure Register SEP 2026.xlsb')?$select=UniqueId,ETag,Length,TimeLastModified",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_identity_ledger": {
+                  "runAfter": {
+                    "Read_source_before": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='__PPG_INSTALL_00084__/identity-ledger.json')/$value"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Acquire_source": {
+                  "runAfter": {
+                    "Read_identity_ledger": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00262__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='/teams/PSQUTeam/Shared Documents/Clinical Governance/Registers/MASTER Procedure Register SEP 2026.xlsb')/$value"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Read_source_after": {
+                  "runAfter": {
+                    "Acquire_source": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00262__",
+                      "parameters/method": "GET",
+                      "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='/teams/PSQUTeam/Shared Documents/Clinical Governance/Registers/MASTER Procedure Register SEP 2026.xlsb')?$select=UniqueId,ETag,Length,TimeLastModified",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata"
+                      }
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Guard_stable_source": {
+                  "actions": {
+                    "Stable_marker": {
+                      "runAfter": {},
+                      "type": "Compose",
+                      "inputs": true
+                    }
+                  },
+                  "runAfter": {
+                    "Read_source_after": [
+                      "Succeeded"
+                    ]
+                  },
+                  "else": {
+                    "actions": {
+                      "Acquisition_drift": {
+                        "runAfter": {},
+                        "type": "Compose",
+                        "inputs": "@div(1,0)"
+                      }
+                    }
+                  },
+                  "expression": {
+                    "and": [
+                      {
+                        "equals": [
+                          "@body('Read_source_before')?['ETag']",
+                          "@body('Read_source_after')?['ETag']"
+                        ]
+                      },
+                      {
+                        "equals": [
+                          "@body('Read_source_before')?['UniqueId']",
+                          "@body('Read_source_after')?['UniqueId']"
+                        ]
+                      }
+                    ]
+                  },
+                  "type": "If"
+                },
+                "Save_raw_envelope": {
+                  "runAfter": {
+                    "Guard_stable_source": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "folderPath": "/PPG Review Evidence",
+                      "name": "@concat('qw3-raw-',workflow()?['run']?['name'],'.json')",
+                      "body": "@string(setProperty(setProperty(setProperty(json('{}'),'metadata',body('Read_source_before')),'acquiredAtUtc',utcNow()),'binary',body('Acquire_source')))"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Create_working_copy": {
+                  "runAfter": {
+                    "Save_raw_envelope": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "folderPath": "/PPG Review Evidence",
+                      "name": "@concat('qw3-working-',workflow()?['run']?['name'],'.xlsb')",
+                      "body": "@base64ToBinary(body('Acquire_source')?['$content'])"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Extract_copy": {
+                  "runAfter": {
+                    "Create_working_copy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+                      "connectionName": "shared_excelonlinebusiness",
+                      "operationId": "RunScriptProdV2"
+                    },
+                    "parameters": {
+                      "source": "__PPG_INSTALL_00101__",
+                      "drive": "__PPG_INSTALL_00190__",
+                      "file": "@concat('qw3-working-',workflow()?['run']?['name'],'.xlsb')",
+                      "scriptSource": "__PPG_INSTALL_00101__",
+                      "scriptDrive": "__PPG_INSTALL_00190__",
+                      "scriptId": "__PPG_INSTALL_00263__",
+                      "ScriptParameters/rawBase64": "@body('Acquire_source')?['$content']",
+                      "ScriptParameters/identityLedgerJson": "@if(empty(outputs('Parse_success_checkpoint')?['identityLedger']),base64ToString(body('Read_identity_ledger')?['$content']),string(outputs('Parse_success_checkpoint')?['identityLedger']))",
+                      "ScriptParameters/asOfUtc": "@body('Read_source_before')?['TimeLastModified']",
+                      "ScriptParameters/snapshotRef": "@concat('__PPG_INSTALL_00133__ Review Evidence/qw3-raw-',workflow()?['run']?['name'],'.json')",
+                      "ScriptParameters/recordsRef": "@concat('__PPG_INSTALL_00133__ Review Evidence/qw3-records-',workflow()?['run']?['name'],'.json')",
+                      "ScriptParameters/identityApplicationJson": "@if(and(not(empty(outputs('Parse_identity_application')?['packageHash'])),not(equals(outputs('Parse_identity_application')?['packageHash'],outputs('Parse_success_checkpoint')?['lastIdentityApplicationHash']))),string(outputs('Parse_identity_application')),'')"
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Save_extraction": {
+                  "runAfter": {
+                    "Extract_copy": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "folderPath": "/PPG Review Evidence",
+                      "name": "@concat('qw3-candidate-',workflow()?['run']?['name'],'.json')",
+                      "body": "@string(body('Extract_copy')?['result']?['candidate'])"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Save_records": {
+                  "runAfter": {
+                    "Save_extraction": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "folderPath": "/PPG Review Evidence",
+                      "name": "@concat('qw3-records-',workflow()?['run']?['name'],'.json')",
+                      "body": "@body('Extract_copy')?['result']?['recordsJson']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Save_identity_application": {
+                  "runAfter": {
+                    "Save_records": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "folderPath": "/PPG Review Evidence",
+                      "name": "@concat('qw3-identity-application-',workflow()?['run']?['name'],'.json')",
+                      "body": "@string(outputs('Parse_identity_application'))"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Save_identity_snapshot": {
+                  "runAfter": {
+                    "Save_identity_application": [
+                      "Succeeded"
+                    ]
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "CreateFile"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "folderPath": "/PPG Review Evidence",
+                      "name": "@concat('qw3-identity-snapshot-',workflow()?['run']?['name'],'.json')",
+                      "body": "@string(addProperty(addProperty(body('Extract_copy')?['result']?['candidate']?['provenance'],'sourceSha256',body('Extract_copy')?['result']?['candidate']?['sourceSha256']),'records',body('Extract_copy')?['result']?['candidate']?['rawRecords']))"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Persist_start": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Scope"
+            },
+            "Selected_candidate": {
+              "runAfter": {
+                "Acquire_fresh": [
+                  "Succeeded"
+                ]
+              },
+              "type": "Compose",
+              "inputs": {
+                "sourceSha256": "@body('Extract_copy')?['result']?['candidate']?['sourceSha256']",
+                "candidateFile": "@if(and(equals(body('Extract_copy')?['result']?['candidate']?['sourceSha256'],outputs('Parse_success_checkpoint')?['sourceSha256']),equals(body('Extract_copy')?['result']?['candidate']?['contractHash'],outputs('Parse_success_checkpoint')?['identityContractHash'])),coalesce(outputs('Parse_success_checkpoint')?['candidateFile'],'native-candidate.json'),concat('qw3-candidate-',workflow()?['run']?['name'],'.json'))",
+                "reusedCandidate": "@and(equals(body('Extract_copy')?['result']?['candidate']?['sourceSha256'],outputs('Parse_success_checkpoint')?['sourceSha256']),equals(body('Extract_copy')?['result']?['candidate']?['contractHash'],outputs('Parse_success_checkpoint')?['identityContractHash']))"
+              }
+            }
+          },
+          "runAfter": {
+            "Init_counts": [
+              "Succeeded"
+            ],
+            "Persist_source_state": [
+              "Succeeded"
+            ],
+            "Parse_identity_application": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Poll_summary": {
+                "runAfter": {},
+                "type": "Compose",
+                "inputs": {
+                  "status": "unchanged_metadata_only",
+                  "sourceETag": "@body('Poll_source')?['ETag']",
+                  "contentFetches": 0,
+                  "catalogueWrites": 0,
+                  "checkpointAdvanced": false,
+                  "lastSuccessfulUtc": "@outputs('Parse_success_checkpoint')?['asOfUtc']"
+                }
+              }
+            }
+          },
+          "expression": "@or(or(equals(outputs('Source_state')?['dailyDue'],true),equals(outputs('Source_state')?['sourceChanged'],true)),and(not(empty(outputs('Parse_identity_application')?['packageHash'])),not(equals(outputs('Parse_identity_application')?['packageHash'],outputs('Parse_success_checkpoint')?['lastIdentityApplicationHash']))))",
+          "type": "If"
+        },
+        "Read_identity_application": {
+          "runAfter": {
+            "Parse_success_checkpoint": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/GetFileByServerRelativePath(decodedurl='__PPG_INSTALL_00084__/identity-application.json')/$value",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata",
+                "Content-Type": "application/json"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Parse_identity_application": {
+          "runAfter": {
+            "Read_identity_application": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@if(contains(body('Read_identity_application'),'$content'),json(base64ToString(body('Read_identity_application')?['$content'])),json(string(body('Read_identity_application'))))"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

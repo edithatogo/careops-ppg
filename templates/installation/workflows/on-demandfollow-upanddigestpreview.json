@@ -1,0 +1,907 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {},
+      "shared_excelonlinebusiness": {}
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.4.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Button",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "requestId": {
+                  "type": "string",
+                  "title": "Follow-up request item ID",
+                  "description": "Create the request in the web List first. Enter its numeric item ID.",
+                  "x-ms-dynamically-added": true,
+                  "x-ms-content-hint": "TEXT"
+                }
+              },
+              "required": [
+                "requestId"
+              ]
+            }
+          },
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Read_requests": {
+          "runAfter": {},
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00037__')/items?$top=5000&$orderby=Id asc&$select=*,Author/Title,Editor/Title&$expand=Author,Editor",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_contexts": {
+          "runAfter": {
+            "Read_requests": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00033__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_events": {
+          "runAfter": {
+            "Read_contexts": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00039__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_digests": {
+          "runAfter": {
+            "Read_events": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00035__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_ownership": {
+          "runAfter": {
+            "Read_digests": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00029__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Read_cases": {
+          "runAfter": {
+            "Read_ownership": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00081__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Plan_request": {
+          "runAfter": {
+            "Read_cases": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "requestId": "@triggerBody()?['requestId']",
+            "maps": {
+              "contexts": {
+                "CaseUID": "CaseUID",
+                "DocumentReference": "DocumentReference",
+                "ReviewedVersionRef": "ReviewedVersionRef",
+                "DocumentSHA256": "DocumentSHA256",
+                "SourceAsOf": "SourceAsOf",
+                "SourceCheckedAt": "SourceCheckedAt",
+                "SourceDueDate": "SourceDueDate",
+                "RecipientRole": "RecipientRole",
+                "RecipientAddress": "RecipientAddress",
+                "RecipientEvidence": "RecipientEvidence",
+                "SourceFreshness": "SourceFreshness",
+                "RecipientEligibility": "RecipientEligibility",
+                "SourceEvidence": "SourceEvidence"
+              },
+              "requests": {
+                "RequestKey": "RequestKey",
+                "CaseUID": "CaseUID",
+                "ContextVersion": "ContextVersion",
+                "EventUID": "EventUID",
+                "PreviousEventUID": "PreviousEventUID",
+                "Stage": "Stage",
+                "OccurredOn": "OccurredOn",
+                "AsOf": "AsOf",
+                "Priority": "Priority",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "TargetAgreementEvidence": "TargetAgreementEvidence",
+                "PreviousPreviewKey": "PreviousPreviewKey",
+                "Operation": "Operation",
+                "FollowupState": "FollowupState",
+                "Rationale": "Rationale",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason"
+              },
+              "events": {
+                "EventUID": "EventUID",
+                "PredecessorKey": "PredecessorKey",
+                "CaseUID": "CaseUID",
+                "Stage": "Stage",
+                "FollowupState": "FollowupState",
+                "OccurredOn": "OccurredOn",
+                "RequestKey": "RequestKey",
+                "EventJSON": "EventJSON",
+                "DocumentReference": "DocumentReference",
+                "ReviewedVersionRef": "ReviewedVersionRef",
+                "DocumentSHA256": "DocumentSHA256",
+                "Priority": "Priority",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason",
+                "SourceDueDate": "SourceDueDate",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "TargetAgreementEvidence": "TargetAgreementEvidence",
+                "Rationale": "Rationale",
+                "Actor": "Actor"
+              },
+              "digests": {
+                "SnapshotKey": "SnapshotKey",
+                "RunKey": "RunKey",
+                "CaseUID": "CaseUID",
+                "Stage": "Stage",
+                "AcceptedRole": "AcceptedRole",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "SourceDueDate": "SourceDueDate",
+                "SourceAsOf": "SourceAsOf",
+                "SourceCheckedAt": "SourceCheckedAt",
+                "CandidateCount": "CandidateCount",
+                "ExceptionCount": "ExceptionCount",
+                "SuppressedCount": "SuppressedCount",
+                "RowKind": "RowKind",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason",
+                "Reason": "Reason",
+                "PayloadJSON": "PayloadJSON",
+                "StageEnteredOn": "Stage_x0020_Entered_x0020_On",
+                "Priority": "Human_x0020_Priority"
+              }
+            },
+            "native": {
+              "requests": "@body('Read_requests')",
+              "contexts": "@body('Read_contexts')",
+              "events": "@body('Read_events')",
+              "digests": "@body('Read_digests')",
+              "ownership": "@body('Read_ownership')",
+              "cases": "@body('Read_cases')"
+            }
+          }
+        },
+        "Plan_followup": {
+          "runAfter": {
+            "Plan_request": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+              "connectionName": "shared_excelonlinebusiness",
+              "operationId": "RunScriptProdV2"
+            },
+            "parameters": {
+              "source": "__PPG_INSTALL_00101__",
+              "drive": "__PPG_INSTALL_00190__",
+              "file": "__PPG_INSTALL_00247__",
+              "scriptSource": "__PPG_INSTALL_00101__",
+              "scriptDrive": "__PPG_INSTALL_00190__",
+              "scriptId": "__PPG_INSTALL_00248__",
+              "ScriptParameters/requestJson": "@string(outputs('Plan_request'))"
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Parsed_plan": {
+          "runAfter": {
+            "Plan_followup": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@json(body('Plan_followup')?['result'])"
+        },
+        "Persist_rows": {
+          "foreach": "@outputs('Parsed_plan')?['writes']",
+          "actions": {
+            "Only_missing": {
+              "actions": {
+                "Create_row": {
+                  "runAfter": {},
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "connectionName": "shared_sharepointonline",
+                      "operationId": "HttpRequest"
+                    },
+                    "parameters": {
+                      "dataset": "__PPG_INSTALL_00101__",
+                      "parameters/method": "POST",
+                      "parameters/uri": "@concat('_api/web/lists(guid''',if(equals(items('Persist_rows')?['target'],'events'),'__PPG_INSTALL_00039__','__PPG_INSTALL_00035__'),''')/items')",
+                      "parameters/headers": {
+                        "Accept": "application/json;odata=nometadata",
+                        "Content-Type": "application/json;odata=nometadata"
+                      },
+                      "parameters/body": "@string(items('Persist_rows')?['payload'])"
+                    },
+                    "retryPolicy": {
+                      "type": "none"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {},
+              "else": {
+                "actions": {}
+              },
+              "expression": "@equals(items('Persist_rows')?['create'],true)",
+              "type": "If"
+            }
+          },
+          "runAfter": {
+            "Parsed_plan": [
+              "Succeeded"
+            ]
+          },
+          "type": "Foreach",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "repetitions": 1
+            }
+          }
+        },
+        "Verify_requests": {
+          "runAfter": {
+            "Persist_rows": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00037__')/items?$top=5000&$orderby=Id asc&$select=*,Author/Title,Editor/Title&$expand=Author,Editor",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Verify_contexts": {
+          "runAfter": {
+            "Verify_requests": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00033__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Verify_events": {
+          "runAfter": {
+            "Verify_contexts": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00039__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Verify_digests": {
+          "runAfter": {
+            "Verify_events": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00035__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Verify_ownership": {
+          "runAfter": {
+            "Verify_digests": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00029__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Verify_cases": {
+          "runAfter": {
+            "Verify_ownership": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00081__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Verification_request": {
+          "runAfter": {
+            "Verify_cases": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "requestId": "@triggerBody()?['requestId']",
+            "maps": {
+              "contexts": {
+                "CaseUID": "CaseUID",
+                "DocumentReference": "DocumentReference",
+                "ReviewedVersionRef": "ReviewedVersionRef",
+                "DocumentSHA256": "DocumentSHA256",
+                "SourceAsOf": "SourceAsOf",
+                "SourceCheckedAt": "SourceCheckedAt",
+                "SourceDueDate": "SourceDueDate",
+                "RecipientRole": "RecipientRole",
+                "RecipientAddress": "RecipientAddress",
+                "RecipientEvidence": "RecipientEvidence",
+                "SourceFreshness": "SourceFreshness",
+                "RecipientEligibility": "RecipientEligibility",
+                "SourceEvidence": "SourceEvidence"
+              },
+              "requests": {
+                "RequestKey": "RequestKey",
+                "CaseUID": "CaseUID",
+                "ContextVersion": "ContextVersion",
+                "EventUID": "EventUID",
+                "PreviousEventUID": "PreviousEventUID",
+                "Stage": "Stage",
+                "OccurredOn": "OccurredOn",
+                "AsOf": "AsOf",
+                "Priority": "Priority",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "TargetAgreementEvidence": "TargetAgreementEvidence",
+                "PreviousPreviewKey": "PreviousPreviewKey",
+                "Operation": "Operation",
+                "FollowupState": "FollowupState",
+                "Rationale": "Rationale",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason"
+              },
+              "events": {
+                "EventUID": "EventUID",
+                "PredecessorKey": "PredecessorKey",
+                "CaseUID": "CaseUID",
+                "Stage": "Stage",
+                "FollowupState": "FollowupState",
+                "OccurredOn": "OccurredOn",
+                "RequestKey": "RequestKey",
+                "EventJSON": "EventJSON",
+                "DocumentReference": "DocumentReference",
+                "ReviewedVersionRef": "ReviewedVersionRef",
+                "DocumentSHA256": "DocumentSHA256",
+                "Priority": "Priority",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason",
+                "SourceDueDate": "SourceDueDate",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "TargetAgreementEvidence": "TargetAgreementEvidence",
+                "Rationale": "Rationale",
+                "Actor": "Actor"
+              },
+              "digests": {
+                "SnapshotKey": "SnapshotKey",
+                "RunKey": "RunKey",
+                "CaseUID": "CaseUID",
+                "Stage": "Stage",
+                "AcceptedRole": "AcceptedRole",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "SourceDueDate": "SourceDueDate",
+                "SourceAsOf": "SourceAsOf",
+                "SourceCheckedAt": "SourceCheckedAt",
+                "CandidateCount": "CandidateCount",
+                "ExceptionCount": "ExceptionCount",
+                "SuppressedCount": "SuppressedCount",
+                "RowKind": "RowKind",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason",
+                "Reason": "Reason",
+                "PayloadJSON": "PayloadJSON",
+                "StageEnteredOn": "Stage_x0020_Entered_x0020_On",
+                "Priority": "Human_x0020_Priority"
+              }
+            },
+            "phase": "verify",
+            "originalPlan": "@outputs('Parsed_plan')",
+            "native": {
+              "requests": "@body('Verify_requests')",
+              "contexts": "@body('Verify_contexts')",
+              "events": "@body('Verify_events')",
+              "digests": "@body('Verify_digests')",
+              "ownership": "@body('Verify_ownership')",
+              "cases": "@body('Verify_cases')"
+            }
+          }
+        },
+        "Verify_saved_rows": {
+          "runAfter": {
+            "Verification_request": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+              "connectionName": "shared_excelonlinebusiness",
+              "operationId": "RunScriptProdV2"
+            },
+            "parameters": {
+              "source": "__PPG_INSTALL_00101__",
+              "drive": "__PPG_INSTALL_00190__",
+              "file": "__PPG_INSTALL_00247__",
+              "scriptSource": "__PPG_INSTALL_00101__",
+              "scriptDrive": "__PPG_INSTALL_00190__",
+              "scriptId": "__PPG_INSTALL_00248__",
+              "ScriptParameters/requestJson": "@string(outputs('Verification_request'))"
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Verified_plan": {
+          "runAfter": {
+            "Verify_saved_rows": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": "@json(body('Verify_saved_rows')?['result'])"
+        },
+        "Commit_completion": {
+          "actions": {
+            "Create_completion_marker": {
+              "runAfter": {},
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "__PPG_INSTALL_00101__",
+                  "parameters/method": "POST",
+                  "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00035__')/items",
+                  "parameters/headers": {
+                    "Accept": "application/json;odata=nometadata",
+                    "Content-Type": "application/json;odata=nometadata"
+                  },
+                  "parameters/body": "@string(outputs('Parsed_plan')?['completion']?['payload'])"
+                },
+                "retryPolicy": {
+                  "type": "none"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Verified_plan": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {}
+          },
+          "expression": "@equals(outputs('Parsed_plan')?['completion']?['create'],true)",
+          "type": "If"
+        },
+        "Read_completed_digest": {
+          "runAfter": {
+            "Commit_completion": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "__PPG_INSTALL_00101__",
+              "parameters/method": "GET",
+              "parameters/uri": "_api/web/lists(guid'__PPG_INSTALL_00035__')/items?$top=5000&$orderby=Id asc",
+              "parameters/headers": {
+                "Accept": "application/json;odata=nometadata"
+              }
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Completion_request": {
+          "runAfter": {
+            "Read_completed_digest": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "requestId": "@triggerBody()?['requestId']",
+            "maps": {
+              "contexts": {
+                "CaseUID": "CaseUID",
+                "DocumentReference": "DocumentReference",
+                "ReviewedVersionRef": "ReviewedVersionRef",
+                "DocumentSHA256": "DocumentSHA256",
+                "SourceAsOf": "SourceAsOf",
+                "SourceCheckedAt": "SourceCheckedAt",
+                "SourceDueDate": "SourceDueDate",
+                "RecipientRole": "RecipientRole",
+                "RecipientAddress": "RecipientAddress",
+                "RecipientEvidence": "RecipientEvidence",
+                "SourceFreshness": "SourceFreshness",
+                "RecipientEligibility": "RecipientEligibility",
+                "SourceEvidence": "SourceEvidence"
+              },
+              "requests": {
+                "RequestKey": "RequestKey",
+                "CaseUID": "CaseUID",
+                "ContextVersion": "ContextVersion",
+                "EventUID": "EventUID",
+                "PreviousEventUID": "PreviousEventUID",
+                "Stage": "Stage",
+                "OccurredOn": "OccurredOn",
+                "AsOf": "AsOf",
+                "Priority": "Priority",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "TargetAgreementEvidence": "TargetAgreementEvidence",
+                "PreviousPreviewKey": "PreviousPreviewKey",
+                "Operation": "Operation",
+                "FollowupState": "FollowupState",
+                "Rationale": "Rationale",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason"
+              },
+              "events": {
+                "EventUID": "EventUID",
+                "PredecessorKey": "PredecessorKey",
+                "CaseUID": "CaseUID",
+                "Stage": "Stage",
+                "FollowupState": "FollowupState",
+                "OccurredOn": "OccurredOn",
+                "RequestKey": "RequestKey",
+                "EventJSON": "EventJSON",
+                "DocumentReference": "DocumentReference",
+                "ReviewedVersionRef": "ReviewedVersionRef",
+                "DocumentSHA256": "DocumentSHA256",
+                "Priority": "Priority",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason",
+                "SourceDueDate": "SourceDueDate",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "TargetAgreementEvidence": "TargetAgreementEvidence",
+                "Rationale": "Rationale",
+                "Actor": "Actor"
+              },
+              "digests": {
+                "SnapshotKey": "SnapshotKey",
+                "RunKey": "RunKey",
+                "CaseUID": "CaseUID",
+                "Stage": "Stage",
+                "AcceptedRole": "AcceptedRole",
+                "AgreedTargetDate": "AgreedTargetDate",
+                "SourceDueDate": "SourceDueDate",
+                "SourceAsOf": "SourceAsOf",
+                "SourceCheckedAt": "SourceCheckedAt",
+                "CandidateCount": "CandidateCount",
+                "ExceptionCount": "ExceptionCount",
+                "SuppressedCount": "SuppressedCount",
+                "RowKind": "RowKind",
+                "NextAction": "NextAction",
+                "WaitingReason": "WaitingReason",
+                "Reason": "Reason",
+                "PayloadJSON": "PayloadJSON",
+                "StageEnteredOn": "Stage_x0020_Entered_x0020_On",
+                "Priority": "Human_x0020_Priority"
+              }
+            },
+            "phase": "verify",
+            "originalPlan": "@outputs('Parsed_plan')",
+            "native": {
+              "requests": "@body('Verify_requests')",
+              "contexts": "@body('Verify_contexts')",
+              "events": "@body('Verify_events')",
+              "digests": "@body('Read_completed_digest')",
+              "ownership": "@body('Verify_ownership')",
+              "cases": "@body('Verify_cases')"
+            },
+            "verifyCompletion": true
+          }
+        },
+        "Verify_completion": {
+          "runAfter": {
+            "Completion_request": [
+              "Succeeded"
+            ]
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness",
+              "connectionName": "shared_excelonlinebusiness",
+              "operationId": "RunScriptProdV2"
+            },
+            "parameters": {
+              "source": "__PPG_INSTALL_00101__",
+              "drive": "__PPG_INSTALL_00190__",
+              "file": "__PPG_INSTALL_00247__",
+              "scriptSource": "__PPG_INSTALL_00101__",
+              "scriptDrive": "__PPG_INSTALL_00190__",
+              "scriptId": "__PPG_INSTALL_00248__",
+              "ScriptParameters/requestJson": "@string(outputs('Completion_request'))"
+            },
+            "retryPolicy": {
+              "type": "none"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Report_followup": {
+          "runAfter": {
+            "Verify_completion": [
+              "Succeeded"
+            ]
+          },
+          "type": "Compose",
+          "inputs": {
+            "result": "@json(body('Verify_completion')?['result'])?['report']",
+            "runKey": "@outputs('Parsed_plan')?['runKey']",
+            "historyUrl": "__PPG_INSTALL_00246__",
+            "digestUrl": "@concat('__PPG_INSTALL_00249__',uriComponent(outputs('Parsed_plan')?['runKey']))",
+            "notificationsEnabled": false,
+            "deliveryEligible": false,
+            "scriptSHA256": "__PPG_INSTALL_00250__"
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

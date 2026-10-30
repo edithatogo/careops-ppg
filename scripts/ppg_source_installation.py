@@ -137,12 +137,15 @@ def build(settings, output):
         f={'schemaVersion':'1.0.0.0','properties':{k:f['properties'][k] for k in ('connectionReferences','definition')}}
         f['properties']['templateName']=None
         definitions.append((key,display_name,f))
+    return write_package(name,prefix,definitions,allvars,refs,output,schemas(settings.get('listSuffix','')))
+
+def write_package(name,prefix,definitions,allvars,refs,output,datasets=None,version=VERSION):
     output.mkdir(parents=True, mode=0o700)
     solution=ET.Element('ImportExportXml',{'version':'9.2','SolutionPackageVersion':'9.2','languagecode':'1033','generatedBy':'CrmLive'})
     manifest=ET.SubElement(solution,'SolutionManifest')
     text(manifest,'UniqueName',name)
     ET.SubElement(ET.SubElement(manifest,'LocalizedNames'),'LocalizedName',{'description':name,'languagecode':'1033'})
-    text(manifest,'Version',VERSION); text(manifest,'Managed',0)
+    text(manifest,'Version',version); text(manifest,'Managed',0)
     publisher=ET.SubElement(manifest,'Publisher'); text(publisher,'UniqueName',prefix+'Publisher')
     ET.SubElement(ET.SubElement(publisher,'LocalizedNames'),'LocalizedName',{'description':'PPG source collection','languagecode':'1033'})
     text(publisher,'CustomizationPrefix',prefix); text(publisher,'CustomizationOptionValuePrefix',10000)
@@ -171,7 +174,7 @@ def build(settings, output):
         for k,v in {'JsonFileName':'/Workflows/'+filename,'Type':1,'Subprocess':0,'Category':5,
                     'Mode':0,'Scope':4,'OnDemand':0,'TriggerOnCreate':0,'TriggerOnDelete':0,
                     'AsyncAutodelete':0,'SyncWorkflowLogOnFailure':0,'StateCode':0,'StatusCode':1,
-                    'RunAs':1,'IsTransacted':1,'IntroducedVersion':VERSION,'IsCustomizable':1,
+                    'RunAs':1,'IsTransacted':1,'IntroducedVersion':version,'IsCustomizable':1,
                     'BusinessProcessType':0,'IsCustomProcessingStepAllowedForOtherPublishers':1,
                     'ModernFlowType':0,'PrimaryEntity':'none'}.items():text(meta,k,v)
         ET.SubElement(ET.SubElement(meta,'LocalizedNames'),'LocalizedName',{'description':display_name,'languagecode':'1033'})
@@ -182,7 +185,7 @@ def build(settings, output):
     settings_out={'EnvironmentVariables':[{'SchemaName':k,'Value':v} for k,v in sorted(allvars.items())],
                   'ConnectionReferences':[{'LogicalName':k,'ConnectionId':v['connectionId'],'ConnectorId':v['connectorId']} for k,v in sorted(refs.items())]}
     private_json(output.parent/(output.name+'-deployment-settings.json'), settings_out)
-    receipt={'version':VERSION,'solutionName':name,'flows':flows,'datasets':schemas(settings.get('listSuffix','')),
+    receipt={'version':version,'solutionName':name,'flows':flows,'datasets':datasets or {},
              'nativeWrites':0,'crossTenantRecovery':'deferred','activation':'separate qualification required',
              'files':{p.relative_to(output).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(output.rglob('*')) if p.is_file()}}
     private_json(output.parent/(output.name+'-manifest.json'), receipt)
