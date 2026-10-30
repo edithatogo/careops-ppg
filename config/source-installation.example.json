@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 1,
+  "solutionName": "PPGSourceCollection",
+  "publisherPrefix": "ppg",
+  "bindings": {
+    "site": "https://example.sharepoint.com/sites/ppg",
+    "lists": {
+      "leads": "00000000-0000-4000-8000-000000000001",
+      "captures": "00000000-0000-4000-8000-000000000002",
+      "qh-hospital-facilities": "00000000-0000-4000-8000-000000000003",
+      "qh-hospital-metrics": "00000000-0000-4000-8000-000000000004",
+      "qh-hospital-busyness": "00000000-0000-4000-8000-000000000005"
+    },
+    "connections": {
+      "sharepoint": {
+        "id": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+        "connectionName": "fictional-sharepointonline",
+        "source": "Embedded"
+      },
+      "rss": {
+        "id": "/providers/Microsoft.PowerApps/apis/shared_rss",
+        "connectionName": "fictional-rss",
+        "source": "Embedded"
+      },
+      "outlook": {
+        "id": "/providers/Microsoft.PowerApps/apis/shared_office365",
+        "connectionName": "fictional-office365",
+        "source": "Embedded"
+      },
+      "onedrive": {
+        "id": "/providers/Microsoft.PowerApps/apis/shared_onedriveforbusiness",
+        "connectionName": "fictional-onedriveforbusiness",
+        "source": "Embedded"
+      }
+    }
+  },
+  "collectors": [
+    {
+      "key": "acsqhc-rss",
+      "type": "rss",
+      "source": {
+        "key": "acsqhc-rss",
+        "publisher": "ACSQHC",
+        "name": "Updates",
+        "feedUrl": "https://www.safetyandquality.gov.au/rss.xml",
+        "fallbackUrl": "https://www.safetyandquality.gov.au/news-and-media/latest-news",
+        "linkDomains": [
+          "www.safetyandquality.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "tga-safety-alerts",
+      "type": "rss",
+      "source": {
+        "key": "tga-safety-alerts",
+        "publisher": "TGA",
+        "name": "Safety Alerts",
+        "feedUrl": "https://tga.gov.au/feeds/alert/safety-alerts.xml",
+        "fallbackUrl": "https://www.tga.gov.au/news",
+        "linkDomains": [
+          "www.tga.gov.au",
+          "tga.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "tga-market-actions",
+      "type": "rss",
+      "source": {
+        "key": "tga-market-actions",
+        "publisher": "TGA",
+        "name": "Market Actions",
+        "feedUrl": "https://tga.gov.au/feeds/alert/market-actions.xml",
+        "fallbackUrl": "https://www.tga.gov.au/news",
+        "linkDomains": [
+          "www.tga.gov.au",
+          "tga.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "tga-shortages",
+      "type": "rss",
+      "source": {
+        "key": "tga-shortages",
+        "publisher": "TGA",
+        "name": "Shortages",
+        "feedUrl": "https://tga.gov.au/feeds/alert/medicine-shortage-alerts.xml",
+        "fallbackUrl": "https://www.tga.gov.au/news",
+        "linkDomains": [
+          "www.tga.gov.au",
+          "tga.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "tga-guidance",
+      "type": "rss",
+      "source": {
+        "key": "tga-guidance",
+        "publisher": "TGA",
+        "name": "Guidance",
+        "feedUrl": "https://tga.gov.au/feeds/guidance.xml",
+        "fallbackUrl": "https://www.tga.gov.au/news",
+        "linkDomains": [
+          "www.tga.gov.au",
+          "tga.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "tga-safety-updates",
+      "type": "rss",
+      "source": {
+        "key": "tga-safety-updates",
+        "publisher": "TGA",
+        "name": "Safety Updates",
+        "feedUrl": "https://tga.gov.au/feeds/article/safety-updates.xml",
+        "fallbackUrl": "https://www.tga.gov.au/news",
+        "linkDomains": [
+          "www.tga.gov.au",
+          "tga.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "tga-scheduling-final",
+      "type": "rss",
+      "source": {
+        "key": "tga-scheduling-final",
+        "publisher": "TGA",
+        "name": "Scheduling Final",
+        "feedUrl": "https://tga.gov.au/feeds/publication/scheduling-decisions-final.xml",
+        "fallbackUrl": "https://www.tga.gov.au/news",
+        "linkDomains": [
+          "www.tga.gov.au",
+          "tga.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "tga-scheduling-interim",
+      "type": "rss",
+      "source": {
+        "key": "tga-scheduling-interim",
+        "publisher": "TGA",
+        "name": "Scheduling Interim",
+        "feedUrl": "https://tga.gov.au/feeds/publication/scheduling-decisions-interim.xml",
+        "fallbackUrl": "https://www.tga.gov.au/news",
+        "linkDomains": [
+          "www.tga.gov.au",
+          "tga.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "tga-consultations",
+      "type": "rss",
+      "source": {
+        "key": "tga-consultations",
+        "publisher": "TGA",
+        "name": "Consultations",
+        "feedUrl": "https://tga.gov.au/feeds/consultation.xml",
+        "fallbackUrl": "https://www.tga.gov.au/news",
+        "linkDomains": [
+          "www.tga.gov.au",
+          "tga.gov.au"
+        ]
+      }
+    },
+    {
+      "key": "example-news",
+      "type": "newsletter",
+      "source": {
+        "key": "fictional-news",
+        "publisher": "Example",
+        "name": "Updates",
+        "feedUrl": "https://example.org/feed",
+        "fallbackUrl": "https://example.org",
+        "linkDomains": [
+          "example.org"
+        ]
+      },
+      "binding": {
+        "folderId": "fictional-folder",
+        "senders": [
+          "publisher@example.org"
+        ],
+        "subjectContains": "Example newsletter"
+      }
+    },
+    {
+      "key": "example-internal",
+      "type": "sharepoint",
+      "source": {
+        "key": "fictional-internal",
+        "publisher": "Example",
+        "name": "Updates",
+        "feedUrl": "https://example.org/feed",
+        "fallbackUrl": "https://example.org",
+        "linkDomains": [
+          "example.org"
+        ]
+      },
+      "binding": {
+        "sourceSite": "https://example.sharepoint.com/sites/source",
+        "sourceListId": "00000000-0000-4000-8000-000000000099",
+        "sourceTitle": "Fictional safety register"
+      }
+    },
+    {
+      "key": "hospital",
+      "type": "hospital",
+      "attribution": "Fictional fixture only",
+      "sources": [
+        {
+          "key": "qh-hospital-facilities",
+          "name": "PPG Hospital Facilities",
+          "url": "https://example.org/qh-hospital-facilities"
+        },
+        {
+          "key": "qh-hospital-metrics",
+          "name": "PPG Hospital Current Metrics",
+          "url": "https://example.org/qh-hospital-metrics"
+        },
+        {
+          "key": "qh-hospital-busyness",
+          "name": "PPG Hospital Busyness Trends",
+          "url": "https://example.org/qh-hospital-busyness"
+        }
+      ]
+    },
+    {
+      "key": "example-news-2",
+      "type": "newsletter",
+      "source": {
+        "key": "example-second",
+        "publisher": "Example",
+        "name": "Newsletter 2",
+        "feedUrl": "https://example.org/feed",
+        "fallbackUrl": "https://example.org",
+        "linkDomains": [
+          "example.org"
+        ]
+      },
+      "binding": {
+        "folderId": "fictional-folder",
+        "senders": [
+          "publisher@example.org"
+        ],
+        "subjectContains": "Example newsletter 2"
+      }
+    },
+    {
+      "key": "example-news-3",
+      "type": "newsletter",
+      "source": {
+        "key": "example-third",
+        "publisher": "Example",
+        "name": "Newsletter 3",
+        "feedUrl": "https://example.org/feed",
+        "fallbackUrl": "https://example.org",
+        "linkDomains": [
+          "example.org"
+        ]
+      },
+      "binding": {
+        "folderId": "fictional-folder",
+        "senders": [
+          "publisher@example.org"
+        ],
+        "subjectContains": "Example newsletter 3"
+      }
+    }
+  ]
+}

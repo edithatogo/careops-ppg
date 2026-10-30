@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {provision} from '../scripts/ppg_source_provision.mjs';
+const schema={leads:{title:'PPG Test Leads',baseTemplate:100,enableVersioning:true,enableAttachments:false,fields:[{name:'SourceKey',type:'Text',indexed:true,unique:true}]}};
+function fake(){let lists=[],fields=[],writes=0,authorised=0;return{get writes(){return writes;},get authorised(){return authorised;},fields,
+ async all(route){return route.endsWith('/fields')?fields:lists;},
+ async authorizeSchema(){authorised++;},async send({route,payload}){writes++;if(route==='lists')lists=[{...payload,Id:'00000000-0000-4000-8000-000000000001'}];else fields.push({InternalName:'SourceKey',TypeAsString:'Text',Indexed:true,EnforceUniqueValues:true});}};}
+test('fresh create and unchanged replay preserve identities without writes',async()=>{const c=fake();const first=await provision(c,schema,{apply:true});assert.equal(first.created,1);assert.equal(first.fieldsCreated,1);assert.equal(c.authorised,2);const n=c.writes;assert.deepEqual((await provision(c,schema,{apply:true})).lists,first.lists);assert.equal(c.writes,n);assert.equal((await provision(c,schema)).verified,true);});
+test('read only never creates; incompatible fields stop',async()=>{const c=fake();await assert.rejects(provision(c,schema),/MISSING_LIST/);assert.equal(c.writes,0);await provision(c,schema,{apply:true});c.fields[0].TypeAsString='Number';const n=c.writes;await assert.rejects(provision(c,schema,{apply:true}),/INCOMPATIBLE_FIELD/);assert.equal(c.writes,n);});
+test('uncertain write is not retried and reconciled on next invocation',async()=>{const c=fake();const send=c.send;c.send=async p=>{await send(p);throw Error('uncertain');};await assert.rejects(provision(c,schema,{apply:true}),/uncertain/);assert.equal(c.writes,1);c.send=send;await provision(c,schema,{apply:true});assert.equal(c.writes,2);});
