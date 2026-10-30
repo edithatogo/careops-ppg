@@ -32,8 +32,6 @@ does not require another report, workspace or licence change.
 
 Clean installation creates isolated empty destinations and stopped automation.
 Clean recovery restores selected sealed records/files into isolated objects.
-Cross-tenant recovery adds explicit destination identity and location mappings;
-it does not replace clean recovery. An account in another organisation is not a
-selected destination or permission to transfer internal material. Portable mapping
-is implemented, but actual cross-tenant execution remains blocked until the
-specific destination and access are established.
+Cross-tenant recovery was removed from commissioned scope on 31 October 2026.
+Clean recovery remains supported in isolated objects in the existing tenant.
+Historical portable mapping work is retained; it does not commission a transfer.

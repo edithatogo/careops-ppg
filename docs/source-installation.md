@@ -91,10 +91,9 @@ permissions or refresh cadence actually diverge. Three collectors now would add
 administrative overhead without improving the current behavior.
 
 Clean installation creates empty destinations. Clean recovery restores a selected
-sealed package into isolated objects. Cross-tenant recovery adds destination
-mapping and permissions qualification; it can coexist with both modes and remains
-**deferred**. Another available account is not a designated restore destination.
-Never transfer credentials or automatically copy source permissions.
+sealed package into isolated objects in the existing tenant. Cross-tenant recovery
+was removed from commissioned scope on 31 October 2026. Retained portable recovery
+code/evidence is preserved; no destination tenant or transfer is requested.
 
 METEOR, unqualified newsletters, unavailable internal inputs and API agreement or
 release-interface dependencies remain blocked. These are not installed working
