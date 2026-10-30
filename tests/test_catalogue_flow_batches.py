@@ -11,7 +11,7 @@ class CatalogueBatchTests(unittest.TestCase):
         # Only the destination token needs a concrete UUID for binding discovery.
         import re
         source = re.sub(r"lists\(guid''__PPG_INSTALL_\d+__''\)",
-                        "lists(guid''10000000-0000-4000-8000-000000000001'')", source)
+                        "lists(guid''00000000-0000-4000-8000-000000000001'')", source)
         return json.loads(source)
 
     def test_preserves_guards_and_commit_last(self):
