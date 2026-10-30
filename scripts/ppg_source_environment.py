@@ -19,6 +19,23 @@ def parameterise(flow, variables):
                 return {k: visit(v) for k, v in node.items()}
             if isinstance(node, list):
                 return [visit(v) for v in node]
+            if isinstance(node, str) and node.startswith('@'):
+                # Replace only quoted WDL literals, preserving escaped quotes and
+                # expressions. A URL and list binding may share one literal.
+                def literal(match):
+                    nonlocal count
+                    text = match.group()[1:-1].replace("''", "'")
+                    if value not in text:
+                        return match.group()
+                    count += 1
+                    chunks = []
+                    for index, part in enumerate(text.split(value)):
+                        if index:
+                            chunks.append("parameters('" + name + "')")
+                        if part:
+                            chunks.append("'" + part.replace("'", "''") + "'")
+                    return chunks[0] if len(chunks) == 1 else 'concat(' + ','.join(chunks) + ')'
+                return re.sub(r"'(?:[^']|'')*'", literal, node)
             if isinstance(node, str) and not node.startswith('@') and value in node:
                 count += 1
                 return node.replace(value, "@{parameters('" + name + "')}")
