@@ -54,6 +54,8 @@ def build(settings,output):
    flow['properties']['definition']=bind_checkpoint(flow['properties']['definition'],settings['baselineCheckpointFile'])
   if entry['key']=='qw3source-onlyreconciliation':
    flow['properties']['definition']=bind_catalogue_inputs(flow['properties']['definition'],settings.get('identityApplicationFile'),settings.get('catalogueFixtureDocumentUIDs',[]))
+   from ppg_catalogue_flow_batches import build as bind_catalogue_batches
+   flow=bind_catalogue_batches(flow)
   if settings.get('officeScripts'):
    flow['properties']['definition'],_=bind_office(flow['properties']['definition'],settings['officeScripts'])
   if settings.get('documentGeneration') and entry['key']=='generatecoverandexistingpack':
@@ -63,9 +65,9 @@ def build(settings,output):
    refs[logical]={'connectorId':'/providers/Microsoft.PowerApps/apis/'+alias,'connectionId':connection}
    flow['properties']['connectionReferences'][alias]={'runtimeSource':'embedded','connection':{'connectionReferenceLogicalName':logical},'api':{'name':alias}}
   if email_actions(flow):raise ValueError('Communication-capable workflow refused')
-  flow['properties']['definition']['contentVersion']='1.0.3.0';flow['schemaVersion']='1.0.0.0'
+  flow['properties']['definition']['contentVersion']='1.0.4.0';flow['schemaVersion']='1.0.0.0'
   defs.append((entry['key'],entry['name'],flow))
- receipt=write_package(settings['solutionName'],settings['publisherPrefix'],defs,allvars,refs,output,schema,version='1.0.3.0')
+ receipt=write_package(settings['solutionName'],settings['publisherPrefix'],defs,allvars,refs,output,schema,version='1.0.4.0')
  receipt['activation']='Stopped; configure source baselines, script hosts and operator requests before activation'
  receipt['externalDependencies']=schema['externalDependencies'];receipt['deferred']=schema['deferred']
  private_json(output.parent/(output.name+'-product.json'),receipt)

@@ -106,3 +106,33 @@ verified fixture UUIDs from the reconciliation's before/after reads. Inspect eac
 row before configuring it; never use this setting to hide an unresolved source
 identity. All other unexpected identities still fail the existing guards. The
 fixture remains intact and visible for its reporting purpose.
+
+## Production commissioning and bounded catalogue updates (1.0.4)
+
+An isolated installation proves the installation route; it does not promote its
+bindings, checkpoint or activation state into the existing operational solution.
+For production, export the existing solution, preserve workflow identities and
+connection references, and update only the selected definitions. Retain previous
+requests and outputs; create a new version-bound request using the actual saved
+template bytes. Prove the document and packaged Word member match before closeout.
+
+The catalogue builder batches existing-identity source updates in groups of 20,
+with conditional ETags, concurrency one and a ten-second inter-batch delay. It
+persists the pending operation record before sending, disables mutation retries,
+and checks every embedded response. A partial/uncertain batch stops later batches
+and leaves the successful checkpoint unchanged. Reconcile actual records before
+resuming; batches are not atomic. The full source-field, retained-absence and
+source-pin readback still precedes the completion receipt and checkpoint. New
+identities retain the existing explicitly authorised serial creation path.
+
+An absence acknowledgement applies only to its reviewed source snapshot and base
+identity ledger. Verify both against production before selecting the application;
+never promote an isolated checkpoint as if production rows had been refreshed.
+A successful CLI recovery is separate from a successful flow-owned refresh.
+
+Run document commissioning after the catalogue refresh completes. An existing
+case may intentionally retain an earlier source baseline: `catalogue-current`
+then correctly refuses the mismatch. Use the existing `recorded-baseline` request
+mode with an evidenced frozen selection matching that case and its exact original
+baseline pin/hash. Create a new selection and request revision, retaining request
+history; do not repin the case or relabel the historical baseline as current.
