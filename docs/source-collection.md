@@ -81,3 +81,21 @@ titles, modification times and native version labels, and refuses partial result
 Source access is read-only; local response, action and closure fields are not copied.
 Internal and public source namespaces remain distinct. A search result is not
 proof that a source list is accessible through the selected connection.
+
+## Solution bindings and incoming newsletter routing
+
+`ppg_source_environment.parameterise` converts explicit literal destination and
+folder bindings into solution parameters with environment-variable schema metadata.
+It preserves existing WDL expressions and source identities. Inspect its replacement
+counts, create the corresponding Text environment-variable definitions in the
+existing solution, then import only the owned collector components through PAC.
+Keep effective tenant values, deployment settings and solution exports private.
+A generated parameter is preparation, not proof of native environment resolution.
+
+`ppg_newsletter_routing.routing_rule` builds a sender-and-subject Inbox rule for a
+verified newsletter. It excludes replies/forwards and moves new matching mail to
+the bound collection folder. Read existing rules first: narrow routing must precede
+broader sender filing rules without replacing them. Read back the saved rule and
+folder-bound trigger before enabling collection. Never run a rule over historical
+messages or send a test message as part of this operation. Natural arrival remains
+separate runtime evidence; rule creation is not subscription enrolment.
