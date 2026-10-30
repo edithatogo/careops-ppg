@@ -69,3 +69,14 @@ Focused source checks:
 ```sh
 .venv/bin/python -m unittest tests.test_source_update_flows -v
 ```
+
+## Bounded internal SharePoint sources
+
+`--channel sharepoint --source private-source.json` reuses the same lead writer
+and standard SharePoint HTTP operation. Bind an exact same-tenant `sourceSite`,
+`sourceListId` and `sourceTitle`; the source profile's `fallbackUrl` is the verified
+list display-form URL without a query. It reads only matching item IDs, GUIDs,
+titles, modification times and native version labels, and refuses partial results.
+Source access is read-only; local response, action and closure fields are not copied.
+Internal and public source namespaces remain distinct. A search result is not
+proof that a source list is accessible through the selected connection.

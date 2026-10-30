@@ -156,3 +156,19 @@ class SourceUpdatesTests(unittest.TestCase):
         changed=copy.deepcopy(f);changed['properties']['definition']['contentVersion']='2.0.0.0'
         self.assertNotEqual(m['definitionSHA256'],deployment_manifest(changed,source_commit='a'*40)['definitionSHA256'])
         with self.assertRaises(ValueError):deployment_manifest(f,source_commit='main')
+
+    def test_internal_source_is_bounded_read_only_and_retains_version(self):
+        b=self.binding();b.update(sourceSite='https://example.sharepoint.com/sites/internal',sourceListId=str(UUID(int=2,version=4)),sourceTitle='Patient safety notice')
+        source=dict(key='fictional-internal-notices',publisher='Example',name='Internal notices',fallbackUrl='https://example.sharepoint.com/sites/internal/Lists/Notices/DispForm.aspx')
+        f=build('sharepoint',b,source=source)
+        actions=f['properties']['definition']['actions']['Collect_source']['actions']
+        read=actions['Read_source']['inputs']['parameters']
+        self.assertEqual(read['parameters/method'],'GET')
+        self.assertEqual(read['dataset'],b['sourceSite'])
+        self.assertIn('Title%20eq%20',read['parameters/uri'])
+        self.assertIn('Require_complete_source',actions)
+        observation=actions['Collect']['actions']['Observation']['inputs']
+        self.assertEqual(observation['sourceVersion'],"@item()?['OData__UIVersionString']")
+        self.assertEqual(email_actions(f),[])
+        b['sourceSite']='https://contoso.sharepoint.com/sites/internal'
+        with self.assertRaises(ValueError):build('sharepoint',b,source=source)

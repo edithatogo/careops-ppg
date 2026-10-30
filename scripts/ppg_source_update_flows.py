@@ -18,6 +18,7 @@ def quoted(value):
 
 
 def source_config(channel, source=None):
+    if source is None and channel=='sharepoint':raise ValueError('Explicit internal source configuration required')
     if source is None:
         source={'key':'acsqhc-rss' if channel=='rss' else 'acsqhc-newsletter',
                 'publisher':'ACSQHC','name':'Updates' if channel=='rss' else 'Newsletters',
@@ -53,7 +54,7 @@ def recurrence():
 
 
 def build(channel, binding, *, manual=False, pending_sender=False, source=None):
-    if channel not in ('rss','newsletter','meteor'):raise ValueError('Unknown source channel')
+    if channel not in ('rss','newsletter','sharepoint','meteor'):raise ValueError('Unknown source channel')
     if pending_sender and channel!='newsletter':raise ValueError('Pending sender mode is newsletter-only')
     config=source_config(channel,source) if channel!='meteor' else None
     # Preserve the existing Commission RSS namespace and fingerprint for zero-create upgrades.
@@ -78,7 +79,7 @@ def build(channel, binding, *, manual=False, pending_sender=False, source=None):
             actions['Read_feed']={'type':'OpenApiConnection','runAfter':{},'inputs':{'host':{'apiId':RSS,'connectionName':'shared_rss','operationId':'ListFeedItems'},'parameters':{'feedUrl':config['feedUrl']},'retryPolicy':{'type':'none'}}}
             collection="@body('Read_feed')";after={'Read_feed':['Succeeded']}
             source_id="@if(empty(item()?['id']),coalesce(item()?['primaryLink'],''),item()?['id'])";title="@coalesce(item()?['title'],'Untitled source update')";link="@if(empty(item()?['primaryLink']),"+quoted("https://www.safetyandquality.gov.au/news-and-media/latest-news" if config["key"]=="acsqhc-rss" else config["fallbackUrl"])+",item()?['primaryLink'])";date="@item()?['publishDate']"
-        else:
+        elif channel=='newsletter':
             refs['shared_office365']=reference(binding['outlook'],MAIL)
             if not isinstance(binding.get('folderId'),str) or not binding['folderId']:raise ValueError('Exact newsletter folder required')
             senders=binding.get('senders')
@@ -91,9 +92,28 @@ def build(channel, binding, *, manual=False, pending_sender=False, source=None):
                 actions['Read_existing_message']={'type':'OpenApiConnection','runAfter':{},'inputs':{'host':{'apiId':MAIL,'connectionName':'shared_office365','operationId':'HttpRequest'},'parameters':{'Uri':'https://graph.microsoft.com/v1.0/me/messages/'+quote(message_id,safe='')+'?$select=id,internetMessageId,subject,receivedDateTime,webLink,body,from','Method':'GET'},'retryPolicy':{'type':'none'}}}
                 collection="@createArray(body('Read_existing_message'))";after={'Read_existing_message':['Succeeded']}
             source_id="@if(empty(item()?['internetMessageId']),coalesce(item()?['id'],''),item()?['internetMessageId'])";title="@coalesce(item()?['subject'],'Untitled newsletter')";link="@if(empty(item()?['webLink']),"+quoted(config["fallbackUrl"])+",item()?['webLink'])";date=None
+        else:
+            source_site=binding.get('sourceSite','');su=urlsplit(source_site)
+            if su.scheme!='https' or su.hostname!=u.hostname or su.query or su.fragment or su.username:
+                raise ValueError('Exact same-tenant source site required')
+            source_list=binding.get('sourceListId','')
+            if not re.fullmatch(r'[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}',source_list):
+                raise ValueError('Exact source list required')
+            selector=binding.get('sourceTitle')
+            if not isinstance(selector,str) or not selector.strip():raise ValueError('Bounded source title selector required')
+            from urllib.parse import quote
+            source_uri="_api/web/lists(guid'"+source_list+"')/items?$select=Id,GUID,Title,Modified,OData__UIVersionString&$filter="+quote("Title eq '"+selector.replace("'","''")+"'",safe='')+"&$top=5000"
+            actions['Read_source']=http('GET',source_uri)
+            actions['Read_source']['inputs']['parameters']['dataset']=source_site
+            actions['Require_complete_source']={'type':'ParseJson','runAfter':{'Read_source':['Succeeded']},'inputs':{'content':{'complete':"@and(empty(body('Read_source')?['odata.nextLink']),empty(body('Read_source')?['@odata.nextLink']))"},'schema':{'type':'object','required':['complete'],'properties':{'complete':{'type':'boolean','enum':[True]}}}}}
+            collection="@body('Read_source')?['value']";after={'Require_complete_source':['Succeeded']}
+            source_id="@coalesce(item()?['GUID'],'')";title="@item()?['Title']";date=None
+            link="@concat("+quoted(config['fallbackUrl'])+",'?ID=',string(item()?['Id']))"
         base="_api/web/lists(guid'"+list_id+"')/items"
         observation={'sourceId':source_id,'title':title,'link':link,'publishedAt':date}
         if channel=='rss':observation['sourceObservation']="@item()"
+        if channel=='sharepoint':
+            observation.update(sourceKey=config['key'],sourceModifiedAt="@item()?['Modified']",sourceVersion="@item()?['OData__UIVersionString']")
         if channel=='newsletter':
             observation['publisherLinks']="@body('Publisher_links')"
             observation['receivedAt']="@item()?['receivedDateTime']"
@@ -142,7 +162,7 @@ def build(channel, binding, *, manual=False, pending_sender=False, source=None):
     if pending_sender:refs.pop('shared_sharepointonline',None)
     if pending_sender:actions={'Verified_sender_required':{'type':'Terminate','runAfter':{},'inputs':{'runStatus':'Failed','runError':{'code':'NewsletterSenderUnverified','message':'No subscribed newsletter message was found. Verify its exact sender before replacing this guard and enabling collection.'}}}}
     if channel=='newsletter' and not binding.get('senders'):trigger['inputs']['parameters'].pop('from',None)
-    return {'properties':{'displayName':('PPG | Source updates | '+config['publisher']+' | '+config['name']+' | '+('RSS' if channel=='rss' else 'Newsletter')) if config else 'PPG | Source updates | METEOR | Indicators | API','state':'Stopped','flowFailureAlertSubscribed':False,'connectionReferences':refs,'definition':{'$schema':'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#','contentVersion':'1.1.0.0','parameters':{'$authentication':{'type':'SecureObject','defaultValue':{}},'$connections':{'type':'Object','defaultValue':{}}},'triggers':{'manual' if manual else 'Newsletter_arrival' if channel=='newsletter' else 'Scheduled_collection':trigger},'actions':actions,'outputs':{}}}}
+    return {'properties':{'displayName':('PPG | Source updates | '+config['publisher']+' | '+config['name']+' | '+{'rss':'RSS','newsletter':'Newsletter','sharepoint':'SharePoint'}[channel]) if config else 'PPG | Source updates | METEOR | Indicators | API','state':'Stopped','flowFailureAlertSubscribed':False,'connectionReferences':refs,'definition':{'$schema':'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#','contentVersion':'1.1.0.0','parameters':{'$authentication':{'type':'SecureObject','defaultValue':{}},'$connections':{'type':'Object','defaultValue':{}}},'triggers':{'manual' if manual else 'Newsletter_arrival' if channel=='newsletter' else 'Scheduled_collection':trigger},'actions':actions,'outputs':{}}}}
 
 
 def deployment_manifest(flow, *, source_commit, source=None):
@@ -162,7 +182,7 @@ def main():
     import argparse,os
     from pathlib import Path
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--channel',choices=['rss','newsletter','meteor'],required=True)
+    p.add_argument('--channel',choices=['rss','newsletter','sharepoint','meteor'],required=True)
     p.add_argument('--binding',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
     group=p.add_mutually_exclusive_group()
