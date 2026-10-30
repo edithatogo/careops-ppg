@@ -337,13 +337,13 @@
         "__PPG_INSTALL_00257__",
         "__PPG_INSTALL_00276__",
         "__PPG_INSTALL_00277__",
-        "__PPG_INSTALL_00273__"
+        "__PPG_INSTALL_00278__"
       ],
       "connectors": [
         "shared_sharepointonline",
         "shared_excelonlinebusiness"
       ],
-      "sha256": "86f9270c98924f9894d3d13340e96f2f83b03fb81b96a75f81dd4cd0f0775bdf"
+      "sha256": "1f7d529866d51e86565a90c9472aabd5756a2ab76d0fdb563a8a9255356e4de3"
     },
     {
       "key": "on-demandroleresponsibilityprojection",
@@ -9883,11 +9883,12 @@
       ]
     },
     "__PPG_INSTALL_00273__": {
-      "kind": "office-script:standards",
+      "kind": "url",
+      "private": true,
       "locations": [
         {
-          "flow": "on-demandstandardsandrelationshipcheck",
-          "path": "/properties/definition/actions/Run_standards_check/inputs/parameters/scriptId"
+          "flow": "lifecyclefictionaloperatorverificationoutcomes",
+          "path": "/properties/definition/actions/SelectedVerification_input/expression"
         }
       ]
     },
@@ -9928,6 +9929,15 @@
         {
           "flow": "on-demandstandardsandrelationshipcheck",
           "path": "/properties/definition/actions/Source_snapshot_stable/actions/Report_context/inputs/contractSHA256"
+        }
+      ]
+    },
+    "__PPG_INSTALL_00278__": {
+      "kind": "office-script:standards",
+      "locations": [
+        {
+          "flow": "on-demandstandardsandrelationshipcheck",
+          "path": "/properties/definition/actions/Run_standards_check/inputs/parameters/scriptId"
         }
       ]
     }

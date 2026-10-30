@@ -28,3 +28,12 @@ class OfficeInstallation(unittest.TestCase):
      if name=='xl/worksheets/sheet1.xml':data=data.replace(b'<sheetData/>',b'<sheetData><row r="1"><c r="A1"><v>1</v></c></row></sheetData>')
      new.writestr(name,data)
    with self.assertRaises(ValueError):verify(original,changed.getvalue())
+
+ def test_script_binding_does_not_repurpose_verification_guard(self):
+  root=Path(__file__).resolve().parents[1];m=json.loads((root/'config/product-workflows.json').read_text());bindings=m['bindings'];self.assertEqual(bindings['__PPG_INSTALL_00278__']['kind'],'office-script:standards');self.assertNotEqual(bindings['__PPG_INSTALL_00273__']['kind'],'office-script:standards')
+  for token in ('__PPG_INSTALL_00273__','__PPG_INSTALL_00278__'):
+   entry=bindings[token]
+   for loc in entry['locations']:
+    flow=json.loads((root/'templates/installation/workflows'/ (loc['flow']+'.json')).read_text());node=flow
+    for part in loc['path'].strip('/').split('/'):node=node[part]
+    self.assertIn(token,node)
