@@ -1,5 +1,3 @@
-# Copyright 2026 PPG Workbench contributors
-# SPDX-License-Identifier: Apache-2.0
 import copy
 import unittest
 from uuid import UUID
@@ -77,3 +75,84 @@ class SourceUpdatesTests(unittest.TestCase):
                     for value in node:visit(value)
             visit(definition)
             self.assertEqual(len(names),len(set(names)),channel)
+
+    def test_source_profiles_have_disjoint_namespaces_and_no_notifications(self):
+        import json
+        from pathlib import Path
+        profiles=json.loads(Path('config/source-update-channels.json').read_text())['rss']
+        namespaces=[]
+        for source in profiles:
+            flow=build('rss',self.binding(),source=source)
+            actions=flow['properties']['definition']['actions']
+            namespaces.append(actions['Failure_payload']['inputs']['ChannelKey'])
+            self.assertEqual(actions['Collect_source']['actions']['Read_feed']['inputs']['parameters']['feedUrl'],source['feedUrl'])
+            self.assertFalse(flow['properties']['flowFailureAlertSubscribed'])
+            self.assertEqual(email_actions(flow),[])
+        self.assertEqual(len(namespaces),len(set(namespaces)))
+        self.assertEqual(namespaces[0],'rss') # existing Commission rows remain addressable
+
+    def test_empty_identity_falls_back_and_deduplication_preserves_changed_items(self):
+        import sys
+        from pathlib import Path
+        for folder in ('scripts','tests','tools/lifecycle'):
+            sys.path.insert(0,str(Path(folder).resolve()))
+        from test_native_completed_review import Expressions
+        work=build('rss',self.binding())['properties']['definition']['actions']['Collect_source']['actions']['Collect']['actions']
+        expression=work['Source_id']['inputs']
+        for item,expected in [({'id':'','primaryLink':'https://example.invalid/a'},'https://example.invalid/a'),({'id':'guid-1','primaryLink':'https://example.invalid/a'},'guid-1'),({},'')]:
+            self.assertEqual(Expressions({},dict(Current_item=item)).evaluate(expression),expected)
+        observation={'title':'FICTIONAL original','link':'https://example.invalid/a'}
+        match=work['Match_existing']['inputs']['where']
+        stored={'Fingerprint':str(observation),'ProcessingState':'Human reviewed'}
+        before=copy.deepcopy(stored)
+        self.assertTrue(Expressions({},dict(Current_item=stored,Observation=observation)).evaluate(match))
+        self.assertFalse(Expressions({},dict(Current_item=stored,Observation={**observation,'title':'FICTIONAL changed'})).evaluate(match))
+        self.assertEqual(stored,before)
+        complete=work['Require_complete_query']['inputs']['content']['complete']
+        self.assertFalse(Expressions({'Read_existing':{'value':[],'odata.nextLink':'https://example.invalid/next'}},{}).evaluate(complete))
+
+    def test_newsletter_dates_and_publisher_links_are_source_specific(self):
+        source=dict(key='fictional-news',publisher='Example',name='News',fallbackUrl='https://example.invalid/news',linkDomains=['example.invalid'])
+        binding=self.binding();binding['subjectContains']='Example News'
+        flow=build('newsletter',binding,source=source)
+        actions=flow['properties']['definition']['actions']['Collect_source']['actions']
+        work=actions['Collect']['actions']
+        self.assertIsNone(work['Observation']['inputs']['publishedAt'])
+        self.assertEqual(work['Observation']['inputs']['receivedAt'],"@item()?['receivedDateTime']")
+        self.assertIn('https://example.invalid/',work['Email_link_fragments']['inputs']['where'])
+        self.assertNotIn('safetyandquality',str(flow))
+        self.assertIn("'re:'",actions['Original_issues']['inputs']['where'])
+        self.assertIn("'example news'",actions['Original_issues']['inputs']['where'])
+        del binding['subjectContains']
+        with self.assertRaises(ValueError):build('newsletter',binding,source=source)
+
+    def test_configuration_cannot_inject_odata_or_bind_another_commission_feed(self):
+        source=dict(key="bad'key",publisher='Example',name='News',fallbackUrl='https://example.invalid/news',feedUrl='https://example.invalid/feed')
+        with self.assertRaises(ValueError):build('rss',self.binding(),source=source)
+        source['key']='acsqhc-rss'
+        with self.assertRaises(ValueError):build('rss',self.binding(),source=source)
+
+    def test_manual_newsletter_reads_one_original_without_mutating_mail(self):
+        b=self.binding()
+        with self.assertRaises(ValueError):build('newsletter',b,manual=True)
+        b.update(messageId='FICTIONAL/message+id',subjectContains='Example news')
+        f=build('newsletter',b,manual=True)
+        actions=f['properties']['definition']['actions']['Collect_source']['actions']
+        read=actions['Read_existing_message']['inputs']['parameters']
+        self.assertEqual(read['Method'],'GET')
+        self.assertIn('FICTIONAL%2Fmessage%2Bid?',read['Uri'])
+        self.assertIn("['emailAddress']",actions['Original_issues']['inputs']['where'])
+        self.assertIn("['content']",actions['Collect']['actions']['Email_link_fragments']['inputs']['from'])
+        arrival=build('newsletter',b)['properties']['definition']['actions']['Collect_source']['actions']
+        self.assertNotIn("['content']",arrival['Collect']['actions']['Email_link_fragments']['inputs']['from'])
+        self.assertEqual(email_actions(f),[])
+
+    def test_manifest_binds_source_without_claiming_native_completion(self):
+        from scripts.ppg_source_update_flows import deployment_manifest
+        f=build('rss',self.binding())
+        m=deployment_manifest(f,source_commit='a'*40)
+        self.assertFalse(m['nativeReadbackVerified'])
+        self.assertFalse(m['runtimeVerified'])
+        changed=copy.deepcopy(f);changed['properties']['definition']['contentVersion']='2.0.0.0'
+        self.assertNotEqual(m['definitionSHA256'],deployment_manifest(changed,source_commit='a'*40)['definitionSHA256'])
+        with self.assertRaises(ValueError):deployment_manifest(f,source_commit='main')
