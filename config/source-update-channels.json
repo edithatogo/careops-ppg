@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "configVersion": "1.1.0",
+  "product": "PPG",
+  "rss": [
+    {
+      "key": "acsqhc-rss",
+      "publisher": "ACSQHC",
+      "name": "Updates",
+      "feedUrl": "https://www.safetyandquality.gov.au/rss.xml",
+      "fallbackUrl": "https://www.safetyandquality.gov.au/news-and-media/latest-news",
+      "linkDomains": [
+        "www.safetyandquality.gov.au"
+      ]
+    },
+    {
+      "key": "tga-safety-alerts",
+      "publisher": "TGA",
+      "name": "Safety Alerts",
+      "feedUrl": "https://tga.gov.au/feeds/alert/safety-alerts.xml",
+      "fallbackUrl": "https://www.tga.gov.au/news",
+      "linkDomains": [
+        "www.tga.gov.au",
+        "tga.gov.au"
+      ]
+    },
+    {
+      "key": "tga-market-actions",
+      "publisher": "TGA",
+      "name": "Market Actions",
+      "feedUrl": "https://tga.gov.au/feeds/alert/market-actions.xml",
+      "fallbackUrl": "https://www.tga.gov.au/news",
+      "linkDomains": [
+        "www.tga.gov.au",
+        "tga.gov.au"
+      ]
+    },
+    {
+      "key": "tga-shortages",
+      "publisher": "TGA",
+      "name": "Shortages",
+      "feedUrl": "https://tga.gov.au/feeds/alert/medicine-shortage-alerts.xml",
+      "fallbackUrl": "https://www.tga.gov.au/news",
+      "linkDomains": [
+        "www.tga.gov.au",
+        "tga.gov.au"
+      ]
+    },
+    {
+      "key": "tga-guidance",
+      "publisher": "TGA",
+      "name": "Guidance",
+      "feedUrl": "https://tga.gov.au/feeds/guidance.xml",
+      "fallbackUrl": "https://www.tga.gov.au/news",
+      "linkDomains": [
+        "www.tga.gov.au",
+        "tga.gov.au"
+      ]
+    },
+    {
+      "key": "tga-safety-updates",
+      "publisher": "TGA",
+      "name": "Safety Updates",
+      "feedUrl": "https://tga.gov.au/feeds/article/safety-updates.xml",
+      "fallbackUrl": "https://www.tga.gov.au/news",
+      "linkDomains": [
+        "www.tga.gov.au",
+        "tga.gov.au"
+      ]
+    },
+    {
+      "key": "tga-scheduling-final",
+      "publisher": "TGA",
+      "name": "Scheduling Final",
+      "feedUrl": "https://tga.gov.au/feeds/publication/scheduling-decisions-final.xml",
+      "fallbackUrl": "https://www.tga.gov.au/news",
+      "linkDomains": [
+        "www.tga.gov.au",
+        "tga.gov.au"
+      ]
+    },
+    {
+      "key": "tga-scheduling-interim",
+      "publisher": "TGA",
+      "name": "Scheduling Interim",
+      "feedUrl": "https://tga.gov.au/feeds/publication/scheduling-decisions-interim.xml",
+      "fallbackUrl": "https://www.tga.gov.au/news",
+      "linkDomains": [
+        "www.tga.gov.au",
+        "tga.gov.au"
+      ]
+    },
+    {
+      "key": "tga-consultations",
+      "publisher": "TGA",
+      "name": "Consultations",
+      "feedUrl": "https://tga.gov.au/feeds/consultation.xml",
+      "fallbackUrl": "https://www.tga.gov.au/news",
+      "linkDomains": [
+        "www.tga.gov.au",
+        "tga.gov.au"
+      ]
+    }
+  ],
+  "newsletter": [
+    {
+      "key": "fictional-news",
+      "publisher": "Example",
+      "name": "Fictional newsletter",
+      "fallbackUrl": "https://example.invalid/news",
+      "linkDomains": [
+        "example.invalid"
+      ]
+    }
+  ],
+  "activationDefault": "Stopped",
+  "privateBindingFields": [
+    "site",
+    "listId",
+    "sharepoint",
+    "rss",
+    "outlook",
+    "folderId",
+    "senders",
+    "subjectContains"
+  ],
+  "unresolved": "Newsletter profile is fictional. Supply qualified source hosts, senders, folder and original sample privately. RSS endpoints require native qualification."
+}
