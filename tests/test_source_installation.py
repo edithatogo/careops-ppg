@@ -30,9 +30,10 @@ class InstallationTests(unittest.TestCase):
             self.assertEqual(one['files'],two['files'])
             self.assertEqual(len(one['datasets']),5)
             self.assertEqual(len(one['flows']),4)
+            for env in (a/'environmentvariabledefinitions').rglob('*.xml'):
+                self.assertFalse(env.read_bytes().startswith(b'<?xml'), 'Dataverse imports sharded component first child as an element')
             for p in (a/'Workflows').glob('*.json'):
-                f=json.loads(p.read_text());self.assertEqual(f['properties']['state'],'Stopped')
-                self.assertFalse(f['properties']['flowFailureAlertSubscribed'])
+                f=json.loads(p.read_text());self.assertEqual(f['schemaVersion'],'1.0.0.0');self.assertEqual(set(f['properties']),{'definition','connectionReferences','templateName'})
                 actions=json.dumps(f['properties']['definition']['actions'])
                 self.assertNotIn(settings['bindings']['site'],actions)
                 self.assertIn('connectionReferenceLogicalName',json.dumps(f))
@@ -53,6 +54,12 @@ class InstallationTests(unittest.TestCase):
                 p=Path(t)/'.local/out'
                 with self.assertRaisesRegex(ValueError,'Multiple writers'):build(s,p)
                 self.assertFalse(p.exists())
+
+    def test_isolated_schema_suffix_and_visible_views(self):
+        for s in schemas("Clean install test").values():
+            self.assertTrue(s["title"].endswith(" - Clean install test"))
+            self.assertGreater(len(s["views"][0]["fields"]),1)
+        with self.assertRaises(ValueError):schemas("../unsafe")
 
     def test_schema_preserves_source_types_and_human_notes(self):
         s=schemas();self.assertEqual(len(s),5)

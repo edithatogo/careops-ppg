@@ -1,0 +1,146 @@
+{
+  "success": true,
+  "result": {
+    "total": 2,
+    "records": [
+      {
+        "_id": 1,
+        "FacilityCode": "001",
+        "FacilityName": "Fictional facility 1",
+        "Address": "Fictional",
+        "ContactPhone": "Fictional",
+        "FacilityLatitude": "Fictional",
+        "FacilityLongitude": "Fictional",
+        "FacilityType": "Fictional",
+        "NumberOfTreatmentSpaces": 3,
+        "OpenHours": "Fictional",
+        "OpenDays": "Fictional",
+        "FacilityDescription": "Fictional",
+        "TreatmentSpacesUpdatedDate": "Fictional",
+        "WebUrl": "Fictional",
+        "LimitedOpenHours": "Fictional",
+        "OpenTime": "Fictional",
+        "CloseTime": "Fictional",
+        "DataUploadedTimestamp": "2026-10-30 07:00:00",
+        "FacilityNameShort": "Fictional",
+        "FacilityFirstNationName": "Fictional",
+        "CustomAlertActive": "Fictional",
+        "CustomAlertMessage": "Fictional"
+      },
+      {
+        "_id": 2,
+        "FacilityCode": "002",
+        "FacilityName": "Fictional facility 2",
+        "Address": null,
+        "ContactPhone": null,
+        "FacilityLatitude": null,
+        "FacilityLongitude": null,
+        "FacilityType": null,
+        "NumberOfTreatmentSpaces": null,
+        "OpenHours": null,
+        "OpenDays": null,
+        "FacilityDescription": null,
+        "TreatmentSpacesUpdatedDate": null,
+        "WebUrl": null,
+        "LimitedOpenHours": null,
+        "OpenTime": null,
+        "CloseTime": null,
+        "DataUploadedTimestamp": "2026-10-30 07:00:00",
+        "FacilityNameShort": null,
+        "FacilityFirstNationName": null,
+        "CustomAlertActive": null,
+        "CustomAlertMessage": null
+      }
+    ],
+    "fields": [
+      {
+        "id": "_id",
+        "type": "numeric"
+      },
+      {
+        "id": "FacilityCode",
+        "type": "text"
+      },
+      {
+        "id": "FacilityName",
+        "type": "text"
+      },
+      {
+        "id": "Address",
+        "type": "text"
+      },
+      {
+        "id": "ContactPhone",
+        "type": "text"
+      },
+      {
+        "id": "FacilityLatitude",
+        "type": "text"
+      },
+      {
+        "id": "FacilityLongitude",
+        "type": "text"
+      },
+      {
+        "id": "FacilityType",
+        "type": "text"
+      },
+      {
+        "id": "NumberOfTreatmentSpaces",
+        "type": "numeric"
+      },
+      {
+        "id": "OpenHours",
+        "type": "text"
+      },
+      {
+        "id": "OpenDays",
+        "type": "text"
+      },
+      {
+        "id": "FacilityDescription",
+        "type": "text"
+      },
+      {
+        "id": "TreatmentSpacesUpdatedDate",
+        "type": "text"
+      },
+      {
+        "id": "WebUrl",
+        "type": "text"
+      },
+      {
+        "id": "LimitedOpenHours",
+        "type": "text"
+      },
+      {
+        "id": "OpenTime",
+        "type": "text"
+      },
+      {
+        "id": "CloseTime",
+        "type": "text"
+      },
+      {
+        "id": "DataUploadedTimestamp",
+        "type": "text"
+      },
+      {
+        "id": "FacilityNameShort",
+        "type": "text"
+      },
+      {
+        "id": "FacilityFirstNationName",
+        "type": "text"
+      },
+      {
+        "id": "CustomAlertActive",
+        "type": "text"
+      },
+      {
+        "id": "CustomAlertMessage",
+        "type": "text"
+      }
+    ]
+  }
+}

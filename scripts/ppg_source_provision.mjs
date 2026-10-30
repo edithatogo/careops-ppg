@@ -3,14 +3,25 @@
  * No records, permissions, subscriptions, flows or source libraries are modified.
  */
 import fs from 'node:fs';
+import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {pathToFileURL} from 'node:url';
+import {pathToFileURL,fileURLToPath} from 'node:url';
 import path from 'node:path';
 const hash=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 const quote=s=>s.replaceAll("'","''");
 const xml=s=>s.replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
+export function sameViewQuery(actual, expected) {
+ if(typeof actual!=='string'||typeof expected!=='string')return false;
+ if(actual===expected)return true;
+ // Reuse the installer's pinned Python stdlib instead of introducing an XML dependency.
+ const python=new URL('../.venv/bin/python',import.meta.url);
+ const code="import json,sys,xml.etree.ElementTree as E; assert sys.version_info[:3]==(3,15,1) and sys.version_info.releaselevel=='final'; a,b=json.load(sys.stdin); print(E.canonicalize('<Query>'+a+'</Query>')==E.canonicalize('<Query>'+b+'</Query>'))";
+ const r=spawnSync(fileURLToPath(python),['-c',code],{input:JSON.stringify([actual,expected]),encoding:'utf8',timeout:10000});
+ if(r.error||r.status!==0)throw Error('VIEW_XML_COMPARISON_FAILED');
+ return r.stdout.trim()==='True';
+}
 export async function provision(client, schemas, {apply=false}={}) {
- const result={lists:{},created:0,fieldsCreated:0,verified:!apply};
+ const result={lists:{},created:0,fieldsCreated:0,viewsCreated:0,verified:!apply};
  if(!schemas||typeof schemas!=='object'||!Object.keys(schemas).length)throw Error('SCHEMAS_REQUIRED');
  for(const [key,s] of Object.entries(schemas)) {
   if(!/^[a-z][a-z0-9-]*$/.test(key)||typeof s.title!=='string'||!s.title.startsWith('PPG ')||s.baseTemplate!==100||s.enableVersioning!==true||s.enableAttachments!==false||!Array.isArray(s.fields))throw Error('SCHEMA_CONTRACT');
@@ -41,6 +52,20 @@ export async function provision(client, schemas, {apply=false}={}) {
    }
    if(a.length!==1||a[0].TypeAsString!==f.type||f.indexed&&a[0].Indexed!==true||f.unique&&a[0].EnforceUniqueValues!==true)throw Error('INCOMPATIBLE_FIELD_'+key+'_'+f.name);
   }
+  for(const v of s.views??[]){
+   if(typeof v.title!=='string'||!v.title.startsWith('PPG ')||!Array.isArray(v.fields)||v.fields.some(f=>f!=='Title'&&!names.has(f))||v.rowLimit!==100||typeof v.query!=='string')throw Error('VIEW_CONTRACT');
+   let views=await client.all(base+'/views'),matches=views.filter(x=>x.Title===v.title);
+   if(!matches.length){
+    if(!apply)throw Error('MISSING_VIEW_'+key);
+    await client.authorizeSchema({title:s.title,listId:id,operation:'create-view',baseTemplate:100});
+    const payload={parameters:{Title:v.title,ViewFields:v.fields,Query:v.query,PersonalView:false,SetAsDefaultView:true,Paged:true,RowLimit:v.rowLimit}};
+    await client.send({key:'install-'+key+'-view-'+hash(v).slice(0,12),route:base+'/views/add',payload,payloadSHA256:hash(payload)});
+    views=await client.all(base+'/views');matches=views.filter(x=>x.Title===v.title);result.viewsCreated++;
+   }
+   if(matches.length!==1||!sameViewQuery(matches[0].ViewQuery,v.query)||matches[0].RowLimit!==v.rowLimit||matches[0].Paged!==true)throw Error('INCOMPATIBLE_VIEW_'+key);
+   const nativeFields=await client.get(base+"/views(guid'"+matches[0].Id+"')/ViewFields");
+   if(JSON.stringify(nativeFields.Items)!==JSON.stringify(v.fields))throw Error('INCOMPATIBLE_VIEW_FIELDS_'+key);
+  }
   result.lists[key]=id;
  }
  result.verified=true;return result;
@@ -54,5 +79,5 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1]
  const c=await(await import(pathToFileURL(adapter))).connect();
  const r=await provision(c,JSON.parse(fs.readFileSync(option('--schemas'))),{apply});
  fs.writeFileSync(receipt,JSON.stringify(r,null,2)+'\n',{flag:'wx',mode:0o600});
- console.log(JSON.stringify({lists:Object.keys(r.lists).length,created:r.created,fieldsCreated:r.fieldsCreated,verified:r.verified}));
+ console.log(JSON.stringify({lists:Object.keys(r.lists).length,created:r.created,fieldsCreated:r.fieldsCreated,viewsCreated:r.viewsCreated,verified:r.verified}));
 }

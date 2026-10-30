@@ -38,3 +38,16 @@ class TenantRecoveryTests(unittest.TestCase):
     def test_unannotated_native_reference_refuses(self):
         del self.payload['entities']['examples']['records'][0]['references']['ParentId']
         with self.assertRaisesRegex(ValueError,'explicit remapping'):prepare(self.envelope(),self.destination)
+
+    def test_unreferenced_export_files_still_require_destination_binding(self):
+        self.payload['files']['unreferenced']={'sha256':'b'*64,'bytes':10}
+        result=prepare(self.envelope(),self.destination)
+        self.assertFalse(result['readyForNativeQualification'])
+        self.assertIn('file:unreferenced',result['unresolved'])
+
+    def test_provenance_retained_separately_from_destination_fields(self):
+        self.payload['entities']['examples']['records'][0]['provenance']={'sourceVersion':'2.0'}
+        result=prepare(self.envelope(),self.destination)
+        self.assertEqual(result['records'][0]['provenance']['retained']['sourceVersion'],'2.0')
+        self.assertEqual(len(result['files']),1)
+        self.assertNotIn('provenance',result['records'][0]['fields'])
