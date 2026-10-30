@@ -50,8 +50,8 @@
       {
         "path": "tools/standards/standards_context.ts",
         "role": "office-script",
-        "sha256": "3d5e7b0a9501b15be121e5092ce4ac6324677b38ca87429fabe91480073b0ea2",
-        "sourceRevision": "bea411eaf12cbae26fde476a4a4334ab17744630",
+        "sha256": "4bd9c4987356388fd519571acdb4318dbc73a0023d24e1f7a8f099f63b24574e",
+        "sourceRevision": "d27c82ef13e586e020bb2f057fde3308e061f489",
         "qualification": "source bytes only; exact native script identity and version require private readback"
       }
     ],
