@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.0.0",
+  "version": "1.0.1.0",
   "flows": [
     {
       "key": "citedevidencereaderpaqualification20261024r1",
@@ -336,13 +336,14 @@
         "__PPG_INSTALL_00190__",
         "__PPG_INSTALL_00257__",
         "__PPG_INSTALL_00276__",
-        "__PPG_INSTALL_00277__"
+        "__PPG_INSTALL_00277__",
+        "__PPG_INSTALL_00273__"
       ],
       "connectors": [
         "shared_sharepointonline",
         "shared_excelonlinebusiness"
       ],
-      "sha256": "431fcdfe1827ba6cc46ea4334d67c118baf44b9fb2c9465a0e6a2a0c8494db30"
+      "sha256": "86f9270c98924f9894d3d13340e96f2f83b03fb81b96a75f81dd4cd0f0775bdf"
     },
     {
       "key": "on-demandroleresponsibilityprojection",
@@ -9882,12 +9883,11 @@
       ]
     },
     "__PPG_INSTALL_00273__": {
-      "kind": "url",
-      "private": true,
+      "kind": "office-script:standards",
       "locations": [
         {
-          "flow": "lifecyclefictionaloperatorverificationoutcomes",
-          "path": "/properties/definition/actions/SelectedVerification_input/expression"
+          "flow": "on-demandstandardsandrelationshipcheck",
+          "path": "/properties/definition/actions/Run_standards_check/inputs/parameters/scriptId"
         }
       ]
     },

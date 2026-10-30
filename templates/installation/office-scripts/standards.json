@@ -1,0 +1,7 @@
+{
+  "version": "0.3.0",
+  "description": "Read-only edition-bound relationship context, dependency directions and changed-edition recheck leads",
+  "noCodeMetadata": "",
+  "apiInfo": "{\"variant\": \"synchronous\", \"variantVersion\": 2}",
+  "parameterInfo": "{\"version\": 1, \"originalParameterOrder\": [{\"name\": \"requestJson\", \"index\": 0}], \"parameterSchema\": {\"type\": \"object\", \"properties\": {\"requestJson\": {\"type\": \"string\"}}, \"required\": [\"requestJson\"]}, \"returnSchema\": {\"type\": \"object\", \"properties\": {\"result\": {\"type\": \"string\"}, \"logs\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}, \"signature\": {\"comment\": \"Bounded standards and relationship validation\", \"parameters\": [{\"name\": \"workbook\", \"comment\": \"\"}, {\"name\": \"requestJson\", \"comment\": \"\"}]}}"
+}

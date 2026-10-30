@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {
+      "key": "roles",
+      "source": "tools/roles/role_projection.ts",
+      "metadata": "templates/installation/office-scripts/roles.json",
+      "sourceSHA256": "14b5b017ae9a8f3489d69b54b0573001ce2c28d2700dce4c09ef7298c9fe8fa0",
+      "actions": [
+        "Run_role_projection"
+      ],
+      "host": "blank-workbook",
+      "workbookCellsModified": false
+    },
+    {
+      "key": "standards",
+      "source": "tools/standards/standards_context.ts",
+      "metadata": "templates/installation/office-scripts/standards.json",
+      "sourceSHA256": "4bd9c4987356388fd519571acdb4318dbc73a0023d24e1f7a8f099f63b24574e",
+      "actions": [
+        "Run_standards_check"
+      ],
+      "host": "blank-workbook",
+      "workbookCellsModified": false
+    },
+    {
+      "key": "followup",
+      "source": "tools/followup/followup.ts",
+      "metadata": "templates/installation/office-scripts/followup.json",
+      "sourceSHA256": "c3efb86d7a4f582b7caa0d20947c268894e0204139b4edf4fd796a83814c219d",
+      "actions": [
+        "Plan_followup",
+        "Verify_saved_rows",
+        "Verify_completion"
+      ],
+      "host": "blank-workbook",
+      "workbookCellsModified": false
+    },
+    {
+      "key": "catalogue",
+      "source": "scripts/ppg_candidate_builder.ts",
+      "metadata": "templates/installation/office-scripts/catalogue.json",
+      "sourceSHA256": "340a5fdc771462e45388fa82abb019a9a36dae33d4251f543cce7c6adc9c3c09",
+      "actions": [
+        "Extract_copy"
+      ],
+      "host": "isolated-source-copy",
+      "workbookCellsModified": false
+    },
+    {
+      "key": "cover",
+      "source": "templates/installation/office-scripts/cover.ts",
+      "metadata": "templates/installation/office-scripts/cover.json",
+      "sourceSHA256": "cce25aada350e4f9267400621d6916089c0e785dd0d70703808dd8d001c8deb7",
+      "actions": [
+        "Run_existing_cover_script"
+      ],
+      "host": "blank-workbook",
+      "workbookCellsModified": false
+    },
+    {
+      "key": "full-review",
+      "source": "templates/installation/office-scripts/full-review.ts",
+      "metadata": "templates/installation/office-scripts/full-review.json",
+      "sourceSHA256": "a3cdd46763424eb964884e9d514bc564a5d873cc0bca2339120600bd4fc8ca81",
+      "actions": [
+        "Run_full_review_existing"
+      ],
+      "host": "blank-workbook",
+      "workbookCellsModified": false
+    },
+    {
+      "key": "case-intake",
+      "source": "templates/installation/office-scripts/case-intake.ts",
+      "metadata": "templates/installation/office-scripts/case-intake.json",
+      "sourceSHA256": "1d8c10bfb10e461e01cd1238ead8334eff7650ccbb4f27ba3acb4a1de8113fc0",
+      "actions": [
+        "Run_case_intake_script"
+      ],
+      "host": "blank-workbook",
+      "workbookCellsModified": false
+    }
+  ]
+}

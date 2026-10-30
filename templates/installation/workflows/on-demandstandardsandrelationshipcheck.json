@@ -227,7 +227,7 @@
               "file": "__PPG_INSTALL_00257__",
               "scriptSource": "__PPG_INSTALL_00101__",
               "scriptDrive": "__PPG_INSTALL_00190__",
-              "scriptId": "01JB7U52DD4NQFRMUCOVEIV7P2BBWXBSMC",
+              "scriptId": "__PPG_INSTALL_00273__",
               "ScriptParameters/requestJson": "@string(outputs('Validation_request'))"
             },
             "authentication": "@parameters('$authentication')"
