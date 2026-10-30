@@ -32,3 +32,30 @@ def bind_checkpoint(definition, filename):
             return re.sub(r'(?<![\w.-])qw3-last-successful\.json(?![\w.-])', lambda _: filename, x)
         return x
     return walk(definition)
+
+def bind_catalogue_inputs(definition, application_file=None, fixture_uids=()):
+    """Select reviewed decisions and exclude explicitly retained installation fixtures.
+
+    No source identities are inferred. The caller must qualify each fixture before
+    supplying its UUID; all other unexpected catalogue identities still fail closed.
+    """
+    from uuid import UUID
+    if application_file and not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,100}\.json', application_file):
+        raise ValueError('Safe identity application filename required')
+    uids=[str(UUID(uid)) for uid in fixture_uids]
+    if len(uids)!=len(set(uids)):raise ValueError('Duplicate fixture UUID')
+    def walk(x):
+        if isinstance(x,list):return [walk(v) for v in x]
+        if not isinstance(x,dict):return x
+        result={k:walk(v) for k,v in x.items()}
+        for name in ('Read_current','Read_current_after'):
+            action=result.get(name)
+            if uids and isinstance(action,dict) and 'inputs' in action:
+                params=action['inputs']['parameters'];uri=params['parameters/uri']
+                if '$filter=' in uri:raise ValueError('Existing catalogue filter requires review')
+                params['parameters/uri']=uri+'&$filter='+ ' and '.join("DocumentUID ne '"+uid+"'" for uid in uids)
+        action=result.get('Read_identity_application')
+        if application_file and isinstance(action,dict) and 'inputs' in action:
+            params=action['inputs']['parameters'];params['parameters/uri']=params['parameters/uri'].replace('/identity-application.json', '/'+application_file)
+        return result
+    return walk(definition)

@@ -555,6 +555,7 @@
     "tests/test_preproof_recovery_qualification.py",
     "tests/test_preserve_source_bytes.py",
     "tests/test_process_measures.py",
+    "tests/test_product_commissioning.py",
     "tests/test_projection_library_metadata.py",
     "tests/test_public_dataset_flows.py",
     "tests/test_publication_admission.py",

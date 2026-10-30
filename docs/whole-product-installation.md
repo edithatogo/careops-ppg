@@ -73,3 +73,36 @@ real records or accepts publisher assertions merely because source access works.
 These are explicit commissioning inputs, separate from external API/access blockers.
 
 See [catalogue and selected-case commissioning](product-commissioning.md) for the usable CLI routes and exact external dependencies.
+
+## Native document and identity commissioning (1.0.3)
+
+Private `documentGeneration` settings may select the maintained saved-body builder
+for the existing document flow. Supply its qualified engine pins, script-library
+binding, isolated workbook host and explicit request item. Set
+`savedBodyFinalisation: true`; site, output library, review queue and catalogue
+must belong to this installation. Script storage and workbook storage can be
+separate drives: preserve both bindings. This uses the existing standard
+SharePoint/Excel route and adds no connector or generation framework.
+
+Compile the **actual saved maintained template bytes** with
+`ppg_full_document.compile_template` before creating a new request. SharePoint can
+stamp metadata after an earlier compilation. Compare document parts and controls;
+never replace a mismatched hash without explaining the difference. Keep the old
+compiled asset and request, create a new version and use a `saved-` revision. The
+native flow retains input pins, preserves edits and packages the exact saved Word
+body. Confirm the saved DOCX, package member and receipt hashes; a submitted run
+or a populated request is not generation proof.
+
+`identityApplicationFile` selects a separately retained, source-bound application
+compiled with `ppg_identity_application.py`. Preserve the prior application and
+checkpoint. Unknown aliases require explicit evidenced decisions; missing rows
+require exact-snapshot retain-unchanged acknowledgements. These do not constitute
+policy approval or retirement. Accepted/uploaded, applied and checkpoint-verified
+remain separate states.
+
+An installation may retain its original fictional reporting row alongside a
+commissioned catalogue. `catalogueFixtureDocumentUIDs` excludes only explicitly
+verified fixture UUIDs from the reconciliation's before/after reads. Inspect each
+row before configuring it; never use this setting to hide an unresolved source
+identity. All other unexpected identities still fail the existing guards. The
+fixture remains intact and visible for its reporting purpose.
