@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "title": "PPG Source Update Leads",
+  "baseTemplate": 100,
+  "enableVersioning": true,
+  "enableAttachments": false,
+  "fields": [
+    {
+      "name": "ChannelKey",
+      "type": "Text"
+    },
+    {
+      "name": "SourceKey",
+      "type": "Text"
+    },
+    {
+      "name": "Fingerprint",
+      "type": "Note"
+    },
+    {
+      "name": "ObservedAt",
+      "type": "DateTime"
+    },
+    {
+      "name": "SourceLink",
+      "type": "Note"
+    },
+    {
+      "name": "ProcessingState",
+      "type": "Text"
+    },
+    {
+      "name": "ObservationJSON",
+      "type": "Note"
+    }
+  ],
+  "recordStates": [
+    "Proposed",
+    "Failed"
+  ],
+  "sourceFieldsAppendOnlyByCollector": true,
+  "clinicalDecisionsGenerated": false
+}
