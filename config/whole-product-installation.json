@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.1.0",
+  "version": "1.0.2.0",
   "objects": [
     {
       "key": "accreditation-assessment-narratives",
@@ -6054,10 +6054,12 @@
     "Optional SharePoint content assembly and Developer Word entitlement"
   ],
   "deferred": [
-    "Cross-tenant recovery",
     "Power BI dashboard"
   ],
   "excludedPlatformFields": [
     "MediaServiceImageTags: Microsoft-managed image-tagging taxonomy, not a PPG field"
+  ],
+  "excludedScope": [
+    "Cross-tenant recovery: removed by user 31 October 2026"
   ]
 }

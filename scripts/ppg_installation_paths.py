@@ -20,3 +20,15 @@ def bind_paths(definition,site,objects,contract):
                 x=re.sub(r'(?<![A-Za-z0-9/])'+re.escape(old)+r'(?=[/\'"?)#]|$)',lambda _:new,x)
         return x
     return walk(definition)
+
+def bind_checkpoint(definition, filename):
+    """Select a separate commissioned checkpoint without replacing an existing fixture."""
+    if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,100}\.json', filename):
+        raise ValueError('Safe checkpoint filename required')
+    def walk(x):
+        if isinstance(x, dict): return {k: walk(v) for k, v in x.items()}
+        if isinstance(x, list): return [walk(v) for v in x]
+        if isinstance(x, str):
+            return re.sub(r'(?<![\w.-])qw3-last-successful\.json(?![\w.-])', lambda _: filename, x)
+        return x
+    return walk(definition)

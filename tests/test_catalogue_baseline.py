@@ -24,3 +24,11 @@ class CatalogueBaselineTests(unittest.TestCase):
         self.cp.update(retainedAbsentUIDs=[uid],catalogueReadbackCount=2)
         out=prepare(self.rows,self.cp,self.candidate)
         self.assertEqual((out['activeCount'],out['retainedAbsentCount']),(1,1))
+
+    def test_checkpoint_rebinding_keeps_existing_fixture_path_distinct(self):
+        from scripts.ppg_installation_paths import bind_checkpoint
+        value={'read':"/Evidence/qw3-last-successful.json')/$value",'other':'old-qw3-last-successful.json'}
+        result=bind_checkpoint(value,'commissioned-baseline.json')
+        self.assertEqual(result['read'],"/Evidence/commissioned-baseline.json')/$value")
+        self.assertEqual(result['other'],value['other'])
+        with self.assertRaises(ValueError):bind_checkpoint(value,'../old.json')

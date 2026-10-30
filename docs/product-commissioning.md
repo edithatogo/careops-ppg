@@ -29,6 +29,11 @@ An uncertain batch stops: respect Retry-After, read/reconcile persisted rows, an
 use an explicit new journal attempt before resuming only the missing identities.
 No write is retried automatically and no incomplete load is marked complete.
 
+After the load and files are verified, set private installation settings
+`baselineCheckpointFile` to `commissioned-baseline.json` and rebuild/import the
+existing solution. Readers and the single checkpoint writer use the new file; the
+original fixture and its history remain intact. All flows still import stopped.
+
 The selected installation baseline retains the original accepted date and missing
 source identities. A stale source-absence acknowledgement remains a current-source
 hold, even after the historical baseline is installed. The original collector,

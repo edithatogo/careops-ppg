@@ -7,7 +7,7 @@ from pathlib import Path
 from ppg_source_installation import build as build_sources,write_package,private_json
 from check_email_safety import email_actions
 from ppg_office_bindings import bind as bind_office
-from ppg_installation_paths import bind_paths
+from ppg_installation_paths import bind_paths,bind_checkpoint
 ROOT=Path(__file__).resolve().parents[1]
 TOKEN=re.compile(r'__PPG_INSTALL_\d{5}__')
 
@@ -42,6 +42,8 @@ def build(settings,output):
   if TOKEN.search(raw):raise ValueError('Unresolved installation binding')
   flow=json.loads(raw)
   flow['properties']['definition']=bind_paths(flow['properties']['definition'],settings['site'],objects,schema)
+  if settings.get('baselineCheckpointFile'):
+   flow['properties']['definition']=bind_checkpoint(flow['properties']['definition'],settings['baselineCheckpointFile'])
   if settings.get('officeScripts'):
    flow['properties']['definition'],_=bind_office(flow['properties']['definition'],settings['officeScripts'])
   for alias in entry['connectors']:
@@ -49,9 +51,9 @@ def build(settings,output):
    refs[logical]={'connectorId':'/providers/Microsoft.PowerApps/apis/'+alias,'connectionId':connection}
    flow['properties']['connectionReferences'][alias]={'runtimeSource':'embedded','connection':{'connectionReferenceLogicalName':logical},'api':{'name':alias}}
   if email_actions(flow):raise ValueError('Communication-capable workflow refused')
-  flow['properties']['definition']['contentVersion']='1.0.1.0';flow['schemaVersion']='1.0.0.0'
+  flow['properties']['definition']['contentVersion']='1.0.2.0';flow['schemaVersion']='1.0.0.0'
   defs.append((entry['key'],entry['name'],flow))
- receipt=write_package(settings['solutionName'],settings['publisherPrefix'],defs,allvars,refs,output,schema,version='1.0.1.0')
+ receipt=write_package(settings['solutionName'],settings['publisherPrefix'],defs,allvars,refs,output,schema,version='1.0.2.0')
  receipt['activation']='Stopped; configure source baselines, script hosts and operator requests before activation'
  receipt['externalDependencies']=schema['externalDependencies'];receipt['deferred']=schema['deferred']
  private_json(output.parent/(output.name+'-product.json'),receipt)
